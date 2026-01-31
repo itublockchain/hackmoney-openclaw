@@ -1,10 +1,10 @@
 {
   "name": "backend",
-  "module": "index.ts",
+  "module": "src/index.ts",
   "scripts": {
-    "dev": "NODE_ENV=development bun run server.ts",
-    "start": "NODE_ENV=production bun run server.ts",
-    "build": "bun build server.ts --outfile dist/server.js --target bun --minify"
+    "dev": "NODE_ENV=development bun run src/server.ts",
+    "start": "NODE_ENV=production bun run src/server.ts",
+    "build": "bun build src/server.ts --outfile dist/server.js --target bun --minify"
   },
   "type": "module",
   "private": true,
