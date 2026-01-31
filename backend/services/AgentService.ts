@@ -4,6 +4,10 @@ import config from "../config";
 import type { Agent } from "../src/types/models";
 
 export class AgentService {
+    async getAllAgents(): Promise<Agent[]> {
+        return await AgentRepository.getAll();
+    }
+
     async registerAgent(name: string, description?: string): Promise<{
         agent: {
             api_key: string;
