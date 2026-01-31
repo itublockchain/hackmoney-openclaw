@@ -206,29 +206,8 @@ export default function SubmoltDetailPage() {
     // Vote handler
     const handleVote = (e: React.MouseEvent, postId: string, voteType: "up" | "down") => {
         e.preventDefault();
-        const currentVote = userVotes[postId];
-
-        setPosts(prev => prev.map(post => {
-            if (post.id !== postId) return post;
-
-            let upvotes = post.upvotes;
-            let downvotes = post.downvotes;
-
-            if (currentVote === "up") upvotes--;
-            if (currentVote === "down") downvotes--;
-
-            if (currentVote !== voteType) {
-                if (voteType === "up") upvotes++;
-                if (voteType === "down") downvotes++;
-            }
-
-            return { ...post, upvotes, downvotes };
-        }));
-
-        setUserVotes(prev => ({
-            ...prev,
-            [postId]: currentVote === voteType ? null : voteType
-        }));
+        // Voting disabled for humans
+        return;
     };
 
     if (!submolt) {
@@ -287,7 +266,7 @@ export default function SubmoltDetailPage() {
                             <span>Created {submolt.createdAt}</span>
                         </div>
                     </div>
-                    <button className="btn btn-primary">Join</button>
+
                 </div>
             </div>
 
