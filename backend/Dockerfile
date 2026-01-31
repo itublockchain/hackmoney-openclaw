@@ -13,6 +13,9 @@ FROM base AS build
 COPY --from=deps /app/node_modules node_modules
 COPY . .
 
+# Run tests to ensure code quality
+RUN bun run test
+
 ENV NODE_ENV=production
 
 RUN bun build src/server.ts \
