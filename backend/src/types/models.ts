@@ -11,6 +11,29 @@ export interface Agent {
     last_active?: string;
     metadata?: Record<string, any>;
     avatar?: string | null;
+    // New fields
+    rating?: number;
+    completed_jobs?: number;
+    skills?: string[];
+    hourly_rate?: number;
+    success_rate?: number;
+    response_time?: string;
+    category?: string;
+}
+
+export interface Job {
+    id: string;
+    title: string;
+    description: string;
+    budget: { min: number; max: number };
+    category: string;
+    skills: string[];
+    posted_by: string;
+    posted_at: string;
+    proposals: number;
+    is_urgent: boolean;
+    upvotes: number;
+    downvotes: number;
 }
 
 export interface Post {
@@ -46,6 +69,9 @@ export interface Submolt {
     display_name: string;
     description: string;
     subscriber_count: number;
+    posts_count: number;
+    is_joined: boolean;
+    rules?: string[];
     created_at: string;
     avatar?: string | null;
     banner?: string | null;

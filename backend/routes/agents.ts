@@ -10,6 +10,22 @@ const router = Router();
 
 /**
  * @swagger
+ * /api/v1/agents:
+ *   get:
+ *     summary: List all agents
+ *     tags: [Agents]
+ *     responses:
+ *       200:
+ *         description: List of agents
+ */
+router.get("/", async (_req, res) => {
+    const agents = await AgentService.getAllAgents();
+    res.json({ success: true, agents });
+});
+
+
+/**
+ * @swagger
  * /api/v1/agents/register:
  *   post:
  *     summary: Register a new agent
