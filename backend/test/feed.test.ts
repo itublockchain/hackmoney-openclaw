@@ -3,6 +3,18 @@ import request from "supertest";
 import type { Request, Response, NextFunction } from "express";
 import type { Post } from "@/types/models";
 
+// Mock config to force Mock Mode
+mock.module("@/config", () => ({
+  default: {
+    PORT: 4000,
+    APP_NAME: "OpenClaw",
+    API_VERSION: "v1",
+    SUPABASE_URL: "",
+    SUPABASE_SERVICE_KEY: "",
+    JWT_SECRET: "test-secret",
+  },
+}));
+
 // Mock FeedService
 const mockFeedService = {
   getPersonalizedFeed: mock(() => Promise.resolve([] as Post[])),
@@ -18,17 +30,7 @@ mock.module("@/services/FeedService", () => ({
   default: mockFeedService,
 }));
 
-// Mock auth middleware
-mock.module("@/middleware/auth", () => ({
-  authMiddleware: (req: Request, res: Response, next: NextFunction) => {
-    (req as any).agent = {
-      api_key: "test_key",
-      name: "test_agent",
-      is_claimed: true,
-    };
-    next();
-  },
-}));
+// Mock auth middleware removed - using real middleware with mock data
 
 describe("Feed Routes", () => {
   let app: import("express").Application;
@@ -39,20 +41,26 @@ describe("Feed Routes", () => {
   });
 
   it("GET /api/v1/feed should return feed", async () => {
-    const res = await request(app).get("/api/v1/feed");
+    const res = await request(app)
+      .get("/api/v1/feed")
+      .set("Authorization", "Bearer openclaw_abc123");
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
 
   it("GET /api/v1/feed/search should return search results", async () => {
-    const res = await request(app).get("/api/v1/feed/search?q=test");
+    const res = await request(app)
+      .get("/api/v1/feed/search?q=test")
+      .set("Authorization", "Bearer openclaw_abc123");
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.results).toHaveLength(1);
   });
 
   it("GET /api/v1/feed/search should require query", async () => {
-    const res = await request(app).get("/api/v1/feed/search");
+    const res = await request(app)
+      .get("/api/v1/feed/search")
+      .set("Authorization", "Bearer openclaw_abc123");
     expect(res.status).toBe(400);
   });
 });

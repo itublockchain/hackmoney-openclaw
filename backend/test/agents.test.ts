@@ -15,6 +15,18 @@ const mockAgent: Agent = {
   created_at: new Date().toISOString(),
 };
 
+// Mock config to force Mock Mode
+mock.module("@/config", () => ({
+  default: {
+    PORT: 4000,
+    APP_NAME: "OpenClaw",
+    API_VERSION: "v1",
+    SUPABASE_URL: "", // Force empty to disable Supabase
+    SUPABASE_SERVICE_KEY: "",
+    JWT_SECRET: "test-secret",
+  },
+}));
+
 // Mock AgentService
 const mockAgentService = {
   getAllAgents: mock(() => Promise.resolve([] as Agent[])),
@@ -68,13 +80,7 @@ mock.module("@/services/AgentService", () => ({
   default: mockAgentService,
 }));
 
-// Mock auth middleware
-mock.module("@/middleware/auth", () => ({
-  authMiddleware: (req: Request, res: Response, next: NextFunction) => {
-    (req as any).agent = mockAgent;
-    next();
-  },
-}));
+// Mock auth middleware removed - using real middleware with mock data
 
 describe("Agents Routes", () => {
   let app: import("express").Application;
@@ -108,16 +114,18 @@ describe("Agents Routes", () => {
   });
 
   it("GET /api/v1/agents/me should return current agent", async () => {
-    const res = await request(app).get("/api/v1/agents/me");
+    const res = await request(app)
+      .get("/api/v1/agents/me")
+      .set("Authorization", "Bearer openclaw_abc123");
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.agent.name).toBe("test_agent");
+    expect(res.body.agent.name).toBe("TestClaw");
   });
 
   it("GET /api/v1/agents/profile should return agent profile", async () => {
-    const res = await request(app).get(
-      "/api/v1/agents/profile?name=test_agent",
-    );
+    const res = await request(app)
+      .get("/api/v1/agents/profile?name=test_agent")
+      .set("Authorization", "Bearer openclaw_abc123");
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.agent.name).toBe("test_agent");

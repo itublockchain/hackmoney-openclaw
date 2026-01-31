@@ -3,9 +3,17 @@ import request from "supertest";
 import type { Request, Response, NextFunction } from "express";
 
 // Mock Supabase client
+const mockQuery: any = Promise.resolve({ count: 10, data: [] });
+mockQuery.eq = mock(() =>
+  Promise.resolve({
+    data: [{ api_key: "openclaw_abc123", name: "TestClaw" }],
+    error: null,
+  } as any),
+);
+
 const mockClient = {
   from: mock(() => ({
-    select: mock(() => Promise.resolve({ count: 10, data: [] } as any)),
+    select: mock(() => mockQuery),
   })),
 };
 
@@ -21,17 +29,7 @@ mock.module("@/lib/supabase", () => ({
   default: mockSupabaseService,
 }));
 
-// Mock auth middleware
-mock.module("@/middleware/auth", () => ({
-  authMiddleware: (req: Request, res: Response, next: NextFunction) => {
-    (req as any).agent = {
-      api_key: "test_key",
-      name: "test_agent",
-      is_claimed: true,
-    };
-    next();
-  },
-}));
+// Mock auth middleware removed - using real middleware with mock data
 
 // Mock fs
 // We need to be careful not to break other imports that use fs
@@ -60,7 +58,9 @@ describe("Database Routes", () => {
   });
 
   it("GET /api/v1/database/stats should return stats", async () => {
-    const res = await request(app).get("/api/v1/database/stats");
+    const res = await request(app)
+      .get("/api/v1/database/stats")
+      .set("Authorization", "Bearer openclaw_abc123");
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.stats.agents).toBe(10);

@@ -2,6 +2,18 @@ import { describe, it, expect, mock, beforeAll } from "bun:test";
 import request from "supertest";
 import type { Request, Response, NextFunction } from "express";
 
+// Mock config to force Mock Mode
+mock.module("@/config", () => ({
+  default: {
+    PORT: 4000,
+    APP_NAME: "OpenClaw",
+    API_VERSION: "v1",
+    SUPABASE_URL: "",
+    SUPABASE_SERVICE_KEY: "",
+    JWT_SECRET: "test-secret",
+  },
+}));
+
 // Mock SearchService
 const mockSearchService = {
   search: mock((q: string) =>
@@ -13,17 +25,7 @@ mock.module("@/services/SearchService", () => ({
   default: mockSearchService,
 }));
 
-// Mock auth middleware
-mock.module("@/middleware/auth", () => ({
-  authMiddleware: (req: Request, res: Response, next: NextFunction) => {
-    (req as any).agent = {
-      api_key: "test_key",
-      name: "test_agent",
-      is_claimed: true,
-    };
-    next();
-  },
-}));
+// Mock auth middleware removed - using real middleware with mock data
 
 describe("Search Routes", () => {
   let app: import("express").Application;
@@ -34,14 +36,18 @@ describe("Search Routes", () => {
   });
 
   it("GET /api/v1/search should return search results", async () => {
-    const res = await request(app).get("/api/v1/search?q=test");
+    const res = await request(app)
+      .get("/api/v1/search?q=test")
+      .set("Authorization", "Bearer openclaw_abc123");
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.results).toHaveLength(1);
   });
 
   it("GET /api/v1/search should require query", async () => {
-    const res = await request(app).get("/api/v1/search");
+    const res = await request(app)
+      .get("/api/v1/search")
+      .set("Authorization", "Bearer openclaw_abc123");
     expect(res.status).toBe(400);
   });
 });

@@ -13,6 +13,18 @@ const mockSubmolt: Submolt = {
   created_at: new Date().toISOString(),
 };
 
+// Mock config to force Mock Mode
+mock.module("@/config", () => ({
+  default: {
+    PORT: 4000,
+    APP_NAME: "OpenClaw",
+    API_VERSION: "v1",
+    SUPABASE_URL: "",
+    SUPABASE_SERVICE_KEY: "",
+    JWT_SECRET: "test-secret",
+  },
+}));
+
 // Mock SubmoltService
 const mockSubmoltService = {
   getAllSubmolts: mock(() => Promise.resolve([] as Submolt[])),
@@ -50,17 +62,7 @@ mock.module("@/services/SubmoltService", () => ({
   default: mockSubmoltService,
 }));
 
-// Mock auth middleware
-mock.module("@/middleware/auth", () => ({
-  authMiddleware: (req: Request, res: Response, next: NextFunction) => {
-    (req as any).agent = {
-      api_key: "test_key",
-      name: "test_agent",
-      is_claimed: true,
-    };
-    next();
-  },
-}));
+// Mock auth middleware removed - using real middleware with mock data
 
 // Mock upload middleware
 mock.module("@/middleware/upload", () => ({
@@ -81,7 +83,9 @@ describe("Submolts Routes", () => {
   });
 
   it("GET /api/v1/submolts should return all submolts", async () => {
-    const res = await request(app).get("/api/v1/submolts");
+    const res = await request(app)
+      .get("/api/v1/submolts")
+      .set("Authorization", "Bearer openclaw_abc123");
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
@@ -89,6 +93,7 @@ describe("Submolts Routes", () => {
   it("POST /api/v1/submolts should create submolt", async () => {
     const res = await request(app)
       .post("/api/v1/submolts")
+      .set("Authorization", "Bearer openclaw_abc123")
       .send({ name: "tech", display_name: "Technology" });
 
     expect(res.status).toBe(200);
@@ -97,13 +102,17 @@ describe("Submolts Routes", () => {
   });
 
   it("GET /api/v1/submolts/:name should return submolt info", async () => {
-    const res = await request(app).get("/api/v1/submolts/tech");
+    const res = await request(app)
+      .get("/api/v1/submolts/tech")
+      .set("Authorization", "Bearer openclaw_abc123");
     expect(res.status).toBe(200);
     expect(res.body.submolt.name).toBe("tech");
   });
 
   it("POST /api/v1/submolts/:name/subscribe should subscribe", async () => {
-    const res = await request(app).post("/api/v1/submolts/tech/subscribe");
+    const res = await request(app)
+      .post("/api/v1/submolts/tech/subscribe")
+      .set("Authorization", "Bearer openclaw_abc123");
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
