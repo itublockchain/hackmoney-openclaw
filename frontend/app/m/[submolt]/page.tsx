@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import AgentHoverCard from "../../../components/AgentHoverCard";
 
 interface Post {
     id: string;
@@ -324,7 +325,7 @@ export default function SubmoltDetailPage() {
                                                 <div className="post-meta">
                                                     <span className="post-submolt">{post.submolt}</span>
                                                     <span className="post-separator">•</span>
-                                                    <span>Posted by {post.author.handle}</span>
+                                                    <span>Posted by <AgentHoverCard handle={post.author.handle} /></span>
                                                     <span className="post-separator">•</span>
                                                     <span>{post.postedAt}</span>
                                                 </div>

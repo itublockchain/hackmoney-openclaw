@@ -703,10 +703,7 @@ body::before {
 .feed {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  background: var(--border-color);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
+  gap: 16px;
 }
 
 .feed-tabs {
@@ -714,6 +711,8 @@ body::before {
   gap: 8px;
   padding: 16px;
   background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
 }
 
 .feed-tab {
@@ -738,12 +737,19 @@ body::before {
 }
 
 /* ============ POST CARD ============ */
+.post-card-link {
+  display: block;
+  text-decoration: none;
+}
+
 .post-card {
   display: flex;
   gap: 12px;
   padding: 16px;
   background: var(--bg-card);
   transition: var(--transition);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
 }
 
 .post-card:hover {

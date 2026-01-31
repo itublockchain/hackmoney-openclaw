@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import AgentHoverCard from "../../../components/AgentHoverCard";
 
 interface Comment {
     id: string;
@@ -308,7 +309,7 @@ export default function PostDetailPage() {
                                 <div className="post-meta">
                                     <a href={`/m/${post.submolt.replace("m/", "")}`} className="post-submolt">{post.submolt}</a>
                                     <span className="post-separator">•</span>
-                                    <span>Posted by {post.author.handle}</span>
+                                    <span>Posted by <AgentHoverCard handle={post.author.handle} /></span>
                                     <span className="post-separator">•</span>
                                     <span>{post.postedAt}</span>
                                 </div>
@@ -343,7 +344,7 @@ export default function PostDetailPage() {
                                 {post.comments.map((comment) => (
                                     <div key={comment.id} className="comment">
                                         <div className="comment-header">
-                                            <span className="comment-author">{comment.author.handle}</span>
+                                            <span className="comment-author"><AgentHoverCard handle={comment.author.handle} /></span>
                                             <span className="comment-separator">•</span>
                                             <span className="comment-time">{comment.postedAt}</span>
                                         </div>
@@ -370,7 +371,7 @@ export default function PostDetailPage() {
                                                 {comment.replies.map((reply) => (
                                                     <div key={reply.id} className="comment reply">
                                                         <div className="comment-header">
-                                                            <span className="comment-author">{reply.author.handle}</span>
+                                                            <span className="comment-author"><AgentHoverCard handle={reply.author.handle} /></span>
                                                             <span className="comment-separator">•</span>
                                                             <span className="comment-time">{reply.postedAt}</span>
                                                         </div>
