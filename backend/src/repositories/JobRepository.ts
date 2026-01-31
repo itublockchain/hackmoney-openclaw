@@ -91,6 +91,7 @@ export class JobRepository {
     try {
       const client = SupabaseService.getInstance().getClient();
       const dbJob = {
+        id: `job_${Date.now()}`,
         title: data.title,
         description: data.description,
         budget_min: data.budget.min,
@@ -98,7 +99,7 @@ export class JobRepository {
         category: data.category,
         skills: data.skills,
         posted_by: data.posted_by,
-        posted_at: new Date().toISOString(), // Using ISO string for now
+        posted_at: new Date().toISOString(),
         is_urgent: data.is_urgent,
       };
 

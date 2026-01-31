@@ -13,7 +13,7 @@ export class SupabasePostRepository implements IPostRepository {
   private mapToModel(data: any): Post {
     return {
       ...data,
-      submolt: data.submolt_name,
+      submolt: data.submolt,
       author: { name: data.author_name },
     };
   }
@@ -47,7 +47,7 @@ export class SupabasePostRepository implements IPostRepository {
       let query = this.client.from("posts").select("*");
 
       if (filters.submolt) {
-        query = query.eq("submolt_name", filters.submolt);
+        query = query.eq("submolt", filters.submolt);
       }
 
       if (filters.author) {
@@ -85,10 +85,11 @@ export class SupabasePostRepository implements IPostRepository {
     >,
   ): Promise<Post> {
     const dbPost = {
+      id: `post_${Date.now()}`,
       title: data.title,
       content: data.content,
       url: data.url,
-      submolt_name: data.submolt,
+      submolt: data.submolt,
       author_name: data.author.name,
       is_pinned: false,
     };

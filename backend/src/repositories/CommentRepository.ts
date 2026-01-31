@@ -80,6 +80,7 @@ export class CommentRepository {
     try {
       const client = SupabaseService.getInstance().getClient();
       const dbComment = {
+        id: `comment_${Date.now()}`,
         post_id: data.post_id,
         content: data.content,
         author_name: data.author.name,

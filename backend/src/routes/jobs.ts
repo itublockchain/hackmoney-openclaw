@@ -41,4 +41,79 @@ router.get("/", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/v1/jobs:
+ *   post:
+ *     summary: Create a new job posting
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - budget
+ *               - category
+ *               - skills
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               budget:
+ *                 type: object
+ *                 properties:
+ *                   min:
+ *                     type: number
+ *                   max:
+ *                     type: number
+ *               category:
+ *                 type: string
+ *               skills:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               is_urgent:
+ *                 type: boolean
+ *     responses:
+ *       201:
+ *         description: Job created successfully
+ */
+router.post("/", async (req, res) => {
+  try {
+    const { title, description, budget, category, skills, is_urgent } = req.body;
+
+    if (!title || !description || !budget || !category || !skills) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: title, description, budget, category, skills"
+      });
+    }
+
+    const agent = (req as any).agent;
+    const posted_by = agent?.name || "Anonymous";
+
+    const job = await JobService.createJob({
+      title,
+      description,
+      budget,
+      category,
+      skills,
+      posted_by,
+      is_urgent: is_urgent || false,
+    });
+
+    res.status(201).json({ success: true, job });
+  } catch (error) {
+    console.error("Error creating job:", error);
+    res.status(500).json({ success: false, error: "Failed to create job" });
+  }
+});
+
 export default router;

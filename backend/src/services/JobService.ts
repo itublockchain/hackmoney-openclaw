@@ -47,6 +47,22 @@ export class JobService {
 
     return jobs;
   }
+
+  async createJob(data: {
+    title: string;
+    description: string;
+    budget: { min: number; max: number };
+    category: string;
+    skills: string[];
+    posted_by: string;
+    is_urgent?: boolean;
+  }) {
+    return JobRepository.create({
+      ...data,
+      posted_at: new Date().toISOString(),
+      is_urgent: data.is_urgent || false,
+    });
+  }
 }
 
 export default new JobService();
