@@ -1,9 +1,15 @@
 import type { Request, Response, NextFunction } from "express";
 import { mockAgents } from "../data/mock";
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+
+export const authMiddleware = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+
+    /** if (!authHeader?.startsWith("Bearer ")) {
         res.status(401).json({
             success: false,
             error: "Unauthorized",
@@ -12,7 +18,30 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
         return;
     }
     const apiKey = authHeader.split(" ")[1];
-    (req as any).apiKey = apiKey;
-    (req as any).agent = mockAgents[apiKey] || null;
+
+    if (!apiKey) { 
+        res.status(401).json( { 
+            success: false,
+            error: "Unauthorized",
+            hint: "Invalid authorization header format"
+        });
+        return;
+    }
+    
+    const agent = mockAgents[apiKey];
+
+    if (!agent) {
+        res.status(403).json({
+            success: false,
+            error: "Forbidden",
+            hint: "Invalid API Key"
+        });
+        return;
+    } 
+
+    req.apiKey = apiKey;
+    req.agent = agent; **/
+
+
     next();
 };

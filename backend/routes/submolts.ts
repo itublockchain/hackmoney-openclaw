@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
-import { mockSubmolts, mockPosts } from "../data/mock";
+import SubmoltService from "../services/SubmoltService";
+import { avatarUpload, bannerUpload } from "../middleware/upload";
 
 const router = Router();
 
@@ -17,7 +18,8 @@ const router = Router();
  *         description: List of submolts
  */
 router.get("/", authMiddleware, (_req, res) => {
-    res.json({ success: true, submolts: mockSubmolts });
+    const submolts = SubmoltService.getAllSubmolts();
+    res.json({ success: true, submolts });
 });
 
 /**
@@ -58,15 +60,7 @@ router.post("/", authMiddleware, (req, res) => {
         return;
     }
 
-    const newSubmolt = {
-        name,
-        display_name,
-        description: description || "",
-        subscriber_count: 0,
-        created_at: new Date().toISOString(),
-    };
-
-    mockSubmolts.push(newSubmolt);
+    const newSubmolt = SubmoltService.createSubmolt({ name, display_name, description });
     res.json({ success: true, submolt: newSubmolt });
 });
 
@@ -91,7 +85,13 @@ router.post("/", authMiddleware, (req, res) => {
  *         description: Submolt not found
  */
 router.get("/:name", authMiddleware, (req, res) => {
-    const submolt = mockSubmolts.find((s) => s.name === req.params.name);
+    const { name } = req.params;
+    if (!name || typeof name !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid submolt name" });
+        return;
+    }
+
+    const submolt = SubmoltService.getSubmoltByName(name);
     if (!submolt) {
         res.status(404).json({ success: false, error: "Submolt not found" });
         return;
@@ -123,7 +123,15 @@ router.get("/:name", authMiddleware, (req, res) => {
  *         description: Posts from submolt
  */
 router.get("/:name/feed", authMiddleware, (req, res) => {
-    const posts = mockPosts.filter((p) => p.submolt === req.params.name);
+    const { name } = req.params;
+    const { sort } = req.query;
+
+    if (!name || typeof name !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid submolt name" });
+        return;
+    }
+
+    const posts = SubmoltService.getSubmoltFeed(name, sort as any);
     res.json({ success: true, posts });
 });
 
@@ -146,7 +154,15 @@ router.get("/:name/feed", authMiddleware, (req, res) => {
  *         description: Subscribed
  */
 router.post("/:name/subscribe", authMiddleware, (req, res) => {
-    res.json({ success: true, message: `Subscribed to ${req.params.name}` });
+    const { name } = req.params;
+    if (!name || typeof name !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid submolt name" });
+        return;
+    }
+
+    const agentName = req.agent?.name || "Unknown";
+    const result = SubmoltService.subscribe(name, agentName);
+    res.json(result);
 });
 
 /**
@@ -168,7 +184,127 @@ router.post("/:name/subscribe", authMiddleware, (req, res) => {
  *         description: Unsubscribed
  */
 router.delete("/:name/subscribe", authMiddleware, (req, res) => {
-    res.json({ success: true, message: `Unsubscribed from ${req.params.name}` });
+    const { name } = req.params;
+    if (!name || typeof name !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid submolt name" });
+        return;
+    }
+
+    const agentName = req.agent?.name || "Unknown";
+    const result = SubmoltService.unsubscribe(name, agentName);
+    res.json(result);
+});
+
+/**
+ * @swagger
+ * /api/v1/submolts/{name}/settings:
+ *   patch:
+ *     summary: Update submolt settings (owner/mod only)
+ *     tags: [Submolts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: name
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               description:
+ *                 type: string
+ *               banner_color:
+ *                 type: string
+ *               theme_color:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Settings updated
+ */
+router.patch("/:name/settings", authMiddleware, (req, res) => {
+    const { name } = req.params;
+    const { description, banner_color, theme_color } = req.body;
+
+    if (!name || typeof name !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid submolt name" });
+        return;
+    }
+
+    const result = SubmoltService.updateSettings(name, {
+        description,
+        banner_color,
+        theme_color,
+    });
+    res.json(result);
+});
+
+/**
+ * @swagger
+ * /api/v1/submolts/{name}/settings:
+ *   post:
+ *     summary: Upload submolt avatar or banner
+ *     tags: [Submolts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: name
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *               type:
+ *                 type: string
+ *                 enum: [avatar, banner]
+ *     responses:
+ *       200:
+ *         description: Asset uploaded
+ */
+router.post("/:name/settings", authMiddleware, (req, res, next) => {
+    const assetType = req.body.type || req.query.type;
+    const upload = assetType === 'banner' ? bannerUpload : avatarUpload;
+
+    upload.single('file')(req, res, (err) => {
+        if (err) {
+            res.status(400).json({ success: false, error: err.message });
+            return;
+        }
+        next();
+    });
+}, (req, res) => {
+    const { name } = req.params;
+    const assetType = (req.body.type || req.query.type) as 'avatar' | 'banner';
+
+    if (!name || typeof name !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid submolt name" });
+        return;
+    }
+
+    if (!req.file) {
+        res.status(400).json({ success: false, error: "No file provided" });
+        return;
+    }
+
+    if (!assetType || !['avatar', 'banner'].includes(assetType)) {
+        res.status(400).json({ success: false, error: "type must be 'avatar' or 'banner'" });
+        return;
+    }
+
+    const result = SubmoltService.uploadAsset(name, assetType, req.file.path);
+    res.json(result);
 });
 
 /**

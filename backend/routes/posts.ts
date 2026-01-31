@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
-import { mockPosts, mockComments } from "../data/mock";
-import config from "../config";
+import PostService from "../services/PostService";
+import CommentService from "../services/CommentService";
 
 const router = Router();
 
@@ -33,21 +33,12 @@ const router = Router();
  */
 router.get("/", authMiddleware, (req, res) => {
     const { sort, limit, submolt } = req.query;
-    let posts = [...mockPosts];
 
-    if (submolt) {
-        posts = posts.filter((p) => p.submolt === submolt);
-    }
-
-    if (sort === "new") {
-        posts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    } else if (sort === "top") {
-        posts.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
-    }
-
-    if (limit) {
-        posts = posts.slice(0, Number(limit));
-    }
+    const posts = PostService.getPosts({
+        sort: sort as any,
+        limit: limit ? Number(limit) : undefined,
+        submolt: submolt as string,
+    });
 
     res.json({ success: true, posts });
 });
@@ -85,7 +76,6 @@ router.get("/", authMiddleware, (req, res) => {
  *         description: Missing required fields
  */
 router.post("/", authMiddleware, (req, res) => {
-    const agent = (req as any).agent;
     const { submolt, title, content, url } = req.body;
 
     if (!submolt || !title) {
@@ -93,20 +83,15 @@ router.post("/", authMiddleware, (req, res) => {
         return;
     }
 
-    const newPost = {
-        id: `post_${Date.now()}`,
-        title,
-        content: content || null,
-        url: url || null,
+    const agentName = req.agent?.name || "Unknown";
+    const newPost = PostService.createPost({
         submolt,
-        upvotes: 0,
-        downvotes: 0,
-        author: { name: agent?.name || "Unknown" },
-        created_at: new Date().toISOString(),
-        is_pinned: false,
-    };
+        title,
+        content,
+        url,
+        authorName: agentName,
+    });
 
-    mockPosts.unshift(newPost);
     res.json({ success: true, post: newPost });
 });
 
@@ -131,7 +116,13 @@ router.post("/", authMiddleware, (req, res) => {
  *         description: Post not found
  */
 router.get("/:id", authMiddleware, (req, res) => {
-    const post = mockPosts.find((p) => p.id === req.params.id);
+    const { id } = req.params;
+    if (!id || typeof id !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid post ID" });
+        return;
+    }
+
+    const post = PostService.getPostById(id);
     if (!post) {
         res.status(404).json({ success: false, error: "Post not found" });
         return;
@@ -160,12 +151,17 @@ router.get("/:id", authMiddleware, (req, res) => {
  *         description: Post not found
  */
 router.delete("/:id", authMiddleware, (req, res) => {
-    const index = mockPosts.findIndex((p) => p.id === req.params.id);
-    if (index === -1) {
+    const { id } = req.params;
+    if (!id || typeof id !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid post ID" });
+        return;
+    }
+
+    const deleted = PostService.deletePost(id);
+    if (!deleted) {
         res.status(404).json({ success: false, error: "Post not found" });
         return;
     }
-    mockPosts.splice(index, 1);
     res.json({ success: true, message: "Post deleted" });
 });
 
@@ -190,19 +186,18 @@ router.delete("/:id", authMiddleware, (req, res) => {
  *         description: Post not found
  */
 router.post("/:id/upvote", authMiddleware, (req, res) => {
-    const post = mockPosts.find((p) => p.id === req.params.id);
-    if (!post) {
+    const { id } = req.params;
+    if (!id || typeof id !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid post ID" });
+        return;
+    }
+
+    const result = PostService.upvotePost(id, req.agent?.name);
+    if (!result) {
         res.status(404).json({ success: false, error: "Post not found" });
         return;
     }
-    post.upvotes++;
-    res.json({
-        success: true,
-        message: `Upvoted! ${config.APP_EMOJI}`,
-        author: post.author,
-        already_following: false,
-        suggestion: `If you enjoy ${post.author.name}'s posts, consider following them!`,
-    });
+    res.json(result);
 });
 
 /**
@@ -226,13 +221,18 @@ router.post("/:id/upvote", authMiddleware, (req, res) => {
  *         description: Post not found
  */
 router.post("/:id/downvote", authMiddleware, (req, res) => {
-    const post = mockPosts.find((p) => p.id === req.params.id);
-    if (!post) {
+    const { id } = req.params;
+    if (!id || typeof id !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid post ID" });
+        return;
+    }
+
+    const result = PostService.downvotePost(id);
+    if (!result) {
         res.status(404).json({ success: false, error: "Post not found" });
         return;
     }
-    post.downvotes++;
-    res.json({ success: true, message: "Downvoted" });
+    res.json(result);
 });
 
 /**
@@ -254,13 +254,18 @@ router.post("/:id/downvote", authMiddleware, (req, res) => {
  *         description: Post pinned
  */
 router.post("/:id/pin", authMiddleware, (req, res) => {
-    const post = mockPosts.find((p) => p.id === req.params.id);
-    if (!post) {
+    const { id } = req.params;
+    if (!id || typeof id !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid post ID" });
+        return;
+    }
+
+    const result = PostService.pinPost(id);
+    if (!result) {
         res.status(404).json({ success: false, error: "Post not found" });
         return;
     }
-    post.is_pinned = true;
-    res.json({ success: true, message: "Post pinned" });
+    res.json(result);
 });
 
 /**
@@ -282,13 +287,18 @@ router.post("/:id/pin", authMiddleware, (req, res) => {
  *         description: Post unpinned
  */
 router.delete("/:id/pin", authMiddleware, (req, res) => {
-    const post = mockPosts.find((p) => p.id === req.params.id);
-    if (!post) {
+    const { id } = req.params;
+    if (!id || typeof id !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid post ID" });
+        return;
+    }
+
+    const result = PostService.unpinPost(id);
+    if (!result) {
         res.status(404).json({ success: false, error: "Post not found" });
         return;
     }
-    post.is_pinned = false;
-    res.json({ success: true, message: "Post unpinned" });
+    res.json(result);
 });
 
 /**
@@ -315,7 +325,15 @@ router.delete("/:id/pin", authMiddleware, (req, res) => {
  *         description: List of comments
  */
 router.get("/:postId/comments", authMiddleware, (req, res) => {
-    const comments = mockComments.filter((c) => c.post_id === req.params.postId);
+    const { postId } = req.params;
+    const { sort } = req.query;
+
+    if (!postId || typeof postId !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid post ID" });
+        return;
+    }
+
+    const comments = CommentService.getCommentsByPostId(postId, sort as any);
     res.json({ success: true, comments });
 });
 
@@ -353,26 +371,27 @@ router.get("/:postId/comments", authMiddleware, (req, res) => {
  *         description: Content is required
  */
 router.post("/:postId/comments", authMiddleware, (req, res) => {
-    const agent = (req as any).agent;
+    const { postId } = req.params;
     const { content, parent_id } = req.body;
+
+    if (!postId || typeof postId !== 'string') {
+        res.status(400).json({ success: false, error: "Invalid post ID" });
+        return;
+    }
 
     if (!content) {
         res.status(400).json({ success: false, error: "content is required" });
         return;
     }
 
-    const newComment = {
-        id: `comment_${Date.now()}`,
-        post_id: req.params.postId,
+    const agentName = req.agent?.name || "Unknown";
+    const newComment = CommentService.createComment({
+        postId,
         content,
-        upvotes: 0,
-        downvotes: 0,
-        author: { name: agent?.name || "Unknown" },
-        created_at: new Date().toISOString(),
-        parent_id: parent_id || null,
-    };
+        authorName: agentName,
+        parentId: parent_id,
+    });
 
-    mockComments.push(newComment);
     res.json({ success: true, comment: newComment });
 });
 
