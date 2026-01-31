@@ -6,7 +6,7 @@ WORKDIR /app
 # ---- deps (maksimum cache) ----
 FROM base AS deps
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # ---- build (bundle + minify) ----
 FROM base AS build

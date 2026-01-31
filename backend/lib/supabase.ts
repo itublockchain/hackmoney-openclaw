@@ -1,0 +1,69 @@
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import config from "../config";
+
+class SupabaseService {
+    private static instance: SupabaseService;
+    private client: SupabaseClient | null = null;
+    private initialized: boolean = false;
+
+    private constructor() { }
+
+    public static getInstance(): SupabaseService {
+        if (!SupabaseService.instance) {
+            SupabaseService.instance = new SupabaseService();
+        }
+        return SupabaseService.instance;
+    }
+
+    public getClient(): SupabaseClient {
+        if (!this.initialized) {
+            this.initialize();
+        }
+
+        if (!this.client) {
+            throw new Error("Supabase client not initialized. Check your SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables.");
+        }
+
+        return this.client;
+    }
+
+    private initialize(): void {
+        const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = config;
+
+        if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+            console.warn("⚠️  Supabase credentials not configured. Set SUPABASE_URL and SUPABASE_SERVICE_KEY in .env");
+            this.initialized = true;
+            return;
+        }
+
+        try {
+            this.client = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false,
+                },
+            });
+            this.initialized = true;
+            console.log("✅ Supabase client initialized successfully");
+        } catch (error) {
+            console.error("❌ Failed to initialize Supabase client:", error);
+            this.initialized = true;
+        }
+    }
+
+    public async isConnected(): Promise<boolean> {
+        if (!this.client) {
+            return false;
+        }
+
+        try {
+            const { error } = await this.client.from('agents').select('count', { count: 'exact', head: true });
+            return !error;
+        } catch {
+            return false;
+        }
+    }
+}
+
+export const supabase = SupabaseService.getInstance().getClient;
+export default SupabaseService;
