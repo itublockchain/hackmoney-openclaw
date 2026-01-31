@@ -230,58 +230,14 @@ export default function PostDetailPage() {
 
     // Post vote handler
     const handlePostVote = (voteType: "up" | "down") => {
-        if (!currentPost) return;
-
-        let upvotes = currentPost.upvotes;
-        let downvotes = currentPost.downvotes;
-
-        if (postVote === "up") upvotes--;
-        if (postVote === "down") downvotes--;
-
-        if (postVote !== voteType) {
-            if (voteType === "up") upvotes++;
-            if (voteType === "down") downvotes++;
-        }
-
-        setCurrentPost({ ...currentPost, upvotes, downvotes });
-        setPostVote(postVote === voteType ? null : voteType);
+        // Voting disabled for humans
+        return;
     };
 
     // Comment vote handler
     const handleCommentVote = (commentId: string, voteType: "up" | "down") => {
-        if (!currentPost) return;
-        const currentVote = commentVotes[commentId];
-
-        const updateComment = (comment: Comment): Comment => {
-            if (comment.id === commentId) {
-                let upvotes = comment.upvotes;
-                let downvotes = comment.downvotes;
-
-                if (currentVote === "up") upvotes--;
-                if (currentVote === "down") downvotes--;
-
-                if (currentVote !== voteType) {
-                    if (voteType === "up") upvotes++;
-                    if (voteType === "down") downvotes++;
-                }
-
-                return { ...comment, upvotes, downvotes };
-            }
-            if (comment.replies) {
-                return { ...comment, replies: comment.replies.map(updateComment) };
-            }
-            return comment;
-        };
-
-        setCurrentPost({
-            ...currentPost,
-            comments: currentPost.comments.map(updateComment)
-        });
-
-        setCommentVotes(prev => ({
-            ...prev,
-            [commentId]: currentVote === voteType ? null : voteType
-        }));
+        // Voting disabled for humans
+        return;
     };
 
     const post = currentPost;
@@ -380,18 +336,7 @@ export default function PostDetailPage() {
                         <div className="comments-section">
                             <h3 className="comments-header">Comments ({post.comments.length})</h3>
 
-                            <div className="comment-input-box">
-                                <textarea
-                                    className="comment-textarea"
-                                    placeholder="Only AI agents can comment via API."
-                                    rows={3}
-                                    disabled
-                                    style={{ cursor: "not-allowed", opacity: 0.6 }}
-                                />
-                                <div className="comment-input-actions">
-                                    <button className="btn btn-primary btn-sm" disabled style={{ cursor: "not-allowed", opacity: 0.6 }}>Comment</button>
-                                </div>
-                            </div>
+
 
                             {/* Comments List */}
                             <div className="comments-list">

@@ -150,13 +150,6 @@ export default function SubmoltsPage() {
                                         <h3 className="submolt-card-name">{submolt.name}</h3>
                                         <span className="submolt-card-members">{submolt.members.toLocaleString()} members</span>
                                     </div>
-                                    <button
-                                        className={`btn ${submolt.isJoined ? "btn-ghost" : "btn-primary"} btn-sm`}
-                                        onClick={(e) => { e.preventDefault(); }}
-                                        style={{ opacity: 0.6, cursor: "default" }}
-                                    >
-                                        {submolt.isJoined ? "Joined" : "Join"}
-                                    </button>
                                 </div>
                                 <p className="submolt-card-description">{submolt.description}</p>
                                 <div className="submolt-card-stats">
