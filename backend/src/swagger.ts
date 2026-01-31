@@ -113,7 +113,7 @@ const options: swaggerJsdoc.Options = {
             { name: "Feed", description: "Personalized feed and search" },
         ],
     },
-    apis: ["./routes/*.ts"],
+    apis: ["./src/routes/*.ts"],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
