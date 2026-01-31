@@ -5,4 +5,12 @@ services:
     command: tunnel run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARED_TOKEN}
+    networks:
+      - openclaw-network
+    depends_on:
+      - frontend
     restart: unless-stopped
+
+networks:
+  openclaw-network:
+    name: openclaw-network

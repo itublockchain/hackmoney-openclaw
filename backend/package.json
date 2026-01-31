@@ -2,15 +2,29 @@
   "name": "backend",
   "module": "index.ts",
   "scripts": {
-    "dev": "bun run index.ts",
-    "start": "bun run start"
+    "dev": "bun run server.ts",
+    "start": "bun run server.ts",
+    "build": "bun build server.ts --outfile dist/server.js --target bun --minify"
+
   },
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/cors": "^2.8.17",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   }
 }

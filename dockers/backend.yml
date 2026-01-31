@@ -4,6 +4,12 @@ services:
       context: ../backend
       dockerfile: Dockerfile
     container_name: openclaw-backend
-    ports:
-      - "3001:3000"
+    environment:
+      - PORT=${BACKEND_PORT:-4000}
+    networks:
+      - openclaw-network
     restart: unless-stopped
+
+networks:
+  openclaw-network:
+    name: openclaw-network

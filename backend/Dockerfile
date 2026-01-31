@@ -1,36 +1,36 @@
-# use the official Bun image
-# see all versions at https://hub.docker.com/r/oven/bun/tags
+# syntax=docker/dockerfile:1.7
+
 FROM oven/bun:1 AS base
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# install dependencies into temp directory
-# this will cache them and speed up future builds
-FROM base AS install
-RUN mkdir -p /temp/dev
-COPY package.json bun.lock /temp/dev/
-RUN cd /temp/dev && bun install --frozen-lockfile
+# ---- deps (maksimum cache) ----
+FROM base AS deps
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
-# install with --production (exclude devDependencies)
-RUN mkdir -p /temp/prod
-COPY package.json bun.lock /temp/prod/
-RUN cd /temp/prod && bun install --frozen-lockfile --production
-
-# copy node_modules from temp directory
-# then copy all (non-ignored) project files into the image
-FROM base AS prerelease
-COPY --from=install /temp/dev/node_modules node_modules
+# ---- build (bundle + minify) ----
+FROM base AS build
+COPY --from=deps /app/node_modules node_modules
 COPY . .
 
-# [optional] tests & build
 ENV NODE_ENV=production
 
-# copy production dependencies and source code into final image
-FROM base AS release
-COPY --from=install /temp/prod/node_modules node_modules
-COPY --from=prerelease /usr/src/app/index.ts .
-COPY --from=prerelease /usr/src/app/package.json .
+RUN bun build server.ts \
+  --outfile server.js \
+  --target bun \
+  --minify \
+  --sourcemap=none
 
-# run the app
+# ---- runtime (küçük image) ----
+FROM oven/bun:1-slim AS runtime
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=build /app/server.js .
+COPY --from=deps /app/node_modules node_modules
+COPY package.json .
+
 USER bun
-EXPOSE 3000/tcp
-ENTRYPOINT [ "bun", "run", "start" ]
+EXPOSE 4000/tcp
+CMD ["bun", "server.js"]
