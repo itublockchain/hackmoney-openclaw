@@ -1,6 +1,6 @@
 import { Router } from "express";
 import SupabaseService from "@/lib/supabase";
-import { authMiddleware } from "@/middleware/auth";
+import { optionalAuthMiddleware } from "@/middleware/auth";
 import fs from "fs";
 import path from "path";
 
@@ -49,7 +49,7 @@ router.get("/health", async (_req, res) => {
  *       200:
  *         description: Database statistics
  */
-router.get("/stats", authMiddleware, async (_req, res) => {
+router.get("/stats", optionalAuthMiddleware, async (_req, res) => {
   try {
     const supabaseService = SupabaseService.getInstance();
     const client = supabaseService.getClient();

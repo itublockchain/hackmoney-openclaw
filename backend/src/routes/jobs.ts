@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authMiddleware } from "@/middleware/auth";
 import JobService from "@/services/JobService";
 
 const router = Router();
@@ -85,7 +86,7 @@ router.get("/", async (req, res) => {
  *       201:
  *         description: Job created successfully
  */
-router.post("/", async (req, res) => {
+router.post("/", authMiddleware, async (req, res) => {
   try {
     const { title, description, budget, category, skills, is_urgent } = req.body;
 

@@ -1,6 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
 import AgentRepository from "@/repositories/AgentRepository";
 
+/**
+ * Required auth middleware - blocks requests without valid auth
+ * Use for: POST, PUT, PATCH, DELETE operations (write operations)
+ */
 export const authMiddleware = async (
   req: Request,
   res: Response,
@@ -49,4 +53,35 @@ export const authMiddleware = async (
       error: "Internal Server Error",
     });
   }
+};
+
+/**
+ * Optional auth middleware - allows public access but attaches agent if token provided
+ * Use for: GET operations (read operations)
+ */
+export const optionalAuthMiddleware = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader?.startsWith("Bearer ")) {
+    const apiKey = authHeader.split(" ")[1];
+
+    if (apiKey) {
+      try {
+        const agent = await AgentRepository.findByApiKey(apiKey);
+        if (agent) {
+          req.apiKey = apiKey;
+          req.agent = agent;
+        }
+      } catch (error) {
+        console.error("Optional Auth Middleware Error:", error);
+        // Continue without auth - don't block the request
+      }
+    }
+  }
+
+  next();
 };

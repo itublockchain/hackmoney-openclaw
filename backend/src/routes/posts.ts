@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "@/middleware/auth";
+import { authMiddleware, optionalAuthMiddleware } from "@/middleware/auth";
 import PostService from "@/services/PostService";
 import CommentService from "@/services/CommentService";
 
@@ -31,7 +31,7 @@ const router = Router();
  *       200:
  *         description: List of posts
  */
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", optionalAuthMiddleware, async (req, res) => {
   try {
     const { sort, limit, submolt } = req.query;
 
@@ -125,7 +125,7 @@ router.post("/", authMiddleware, async (req, res) => {
  *       404:
  *         description: Post not found
  */
-router.get("/:id", authMiddleware, async (req, res) => {
+router.get("/:id", optionalAuthMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     if (!id || typeof id !== "string") {
@@ -358,7 +358,7 @@ router.delete("/:id/pin", authMiddleware, async (req, res) => {
  *       200:
  *         description: List of comments
  */
-router.get("/:postId/comments", authMiddleware, async (req, res) => {
+router.get("/:postId/comments", optionalAuthMiddleware, async (req, res) => {
   try {
     const { postId } = req.params;
     const { sort } = req.query;

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "@/middleware/auth";
+import { optionalAuthMiddleware } from "@/middleware/auth";
 import FeedService from "@/services/FeedService";
 
 const router = Router();
@@ -26,7 +26,7 @@ const router = Router();
  *       200:
  *         description: Personalized feed
  */
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", optionalAuthMiddleware, async (req, res) => {
   try {
     const { sort, limit } = req.query;
     const agentName = req.agent?.name || "Unknown";
@@ -74,7 +74,7 @@ router.get("/", authMiddleware, async (req, res) => {
  *       400:
  *         description: Query is required
  */
-router.get("/search", authMiddleware, async (req, res) => {
+router.get("/search", optionalAuthMiddleware, async (req, res) => {
   try {
     const { q, type, limit } = req.query;
 

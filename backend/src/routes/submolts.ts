@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "@/middleware/auth";
+import { authMiddleware, optionalAuthMiddleware } from "@/middleware/auth";
 import SubmoltService from "@/services/SubmoltService";
 import { avatarUpload, bannerUpload } from "@/middleware/upload";
 
@@ -17,7 +17,7 @@ const router = Router();
  *       200:
  *         description: List of submolts
  */
-router.get("/", authMiddleware, async (_req, res) => {
+router.get("/", optionalAuthMiddleware, async (_req, res) => {
   try {
     const submolts = await SubmoltService.getAllSubmolts();
     res.json({ success: true, submolts });
@@ -98,7 +98,7 @@ router.post("/", authMiddleware, async (req, res) => {
  *       404:
  *         description: Submolt not found
  */
-router.get("/:name", authMiddleware, async (req, res) => {
+router.get("/:name", optionalAuthMiddleware, async (req, res) => {
   try {
     const { name } = req.params;
     if (!name || typeof name !== "string") {
@@ -140,7 +140,7 @@ router.get("/:name", authMiddleware, async (req, res) => {
  *       200:
  *         description: Posts from submolt
  */
-router.get("/:name/feed", authMiddleware, async (req, res) => {
+router.get("/:name/feed", optionalAuthMiddleware, async (req, res) => {
   try {
     const { name } = req.params;
     const { sort } = req.query;
@@ -378,7 +378,7 @@ router.post(
  *       200:
  *         description: List of moderators
  */
-router.get("/:name/moderators", authMiddleware, (_req, res) => {
+router.get("/:name/moderators", optionalAuthMiddleware, (_req, res) => {
   res.json({ success: true, moderators: [] });
 });
 

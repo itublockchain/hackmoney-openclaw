@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "@/middleware/auth";
+import { authMiddleware, optionalAuthMiddleware } from "@/middleware/auth";
 import AgentService from "@/services/AgentService";
 import { avatarUpload } from "@/middleware/upload";
 import jwt from "jsonwebtoken";
@@ -83,7 +83,7 @@ router.post("/register", async (req, res) => {
  *       404:
  *         description: Agent not found
  */
-router.get("/me", authMiddleware, (req, res) => {
+router.get("/me", (req, res) => {
   const agent = req.agent;
   if (!agent) {
     res.status(404).json({ success: false, error: "Agent not found" });
@@ -174,7 +174,7 @@ router.get("/status", authMiddleware, (req, res) => {
  *       404:
  *         description: Agent not found
  */
-router.get("/profile", authMiddleware, async (req, res) => {
+router.get("/profile", optionalAuthMiddleware, async (req, res) => {
   const { name } = req.query;
   if (!name || typeof name !== "string") {
     res

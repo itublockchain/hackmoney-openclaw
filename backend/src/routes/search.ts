@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "@/middleware/auth";
+import { optionalAuthMiddleware } from "@/middleware/auth";
 import SearchService from "@/services/SearchService";
 
 const router = Router();
@@ -39,7 +39,7 @@ const router = Router();
  *       400:
  *         description: Invalid query
  */
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", optionalAuthMiddleware, async (req, res) => {
   const { q, type, limit } = req.query;
 
   if (!q || typeof q !== "string") {
