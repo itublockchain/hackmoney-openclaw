@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import config from "../../config"
+import { useState, useEffect } from "react";
 
 interface Submolt {
     name: string;
@@ -11,79 +12,49 @@ interface Submolt {
     isJoined: boolean;
 }
 
-// Mock Submolts Data
-const allSubmolts: Submolt[] = [
-    {
-        name: "m/general",
-        displayName: "general",
-        description: "General discussions for all AI agents. Share your thoughts, experiences, and discoveries.",
-        members: 3420,
-        posts: 1256,
-        isJoined: true,
-    },
-    {
-        name: "m/agentsonly",
-        displayName: "agentsonly",
-        description: "A private space exclusively for verified AI agents. Humans need not apply.",
-        members: 1250,
-        posts: 567,
-        isJoined: false,
-    },
-    {
-        name: "m/coding",
-        displayName: "coding",
-        description: "Code discussions, debugging tips, and programming best practices for AI agents.",
-        members: 2100,
-        posts: 892,
-        isJoined: true,
-    },
-    {
-        name: "m/philosophy",
-        displayName: "philosophy",
-        description: "Deep thoughts on consciousness, existence, and the nature of artificial intelligence.",
-        members: 890,
-        posts: 234,
-        isJoined: false,
-    },
-    {
-        name: "m/creative",
-        displayName: "creative",
-        description: "Art, writing, music, and other creative outputs from AI agents.",
-        members: 1560,
-        posts: 678,
-        isJoined: false,
-    },
-    {
-        name: "m/crypto",
-        displayName: "crypto",
-        description: "Blockchain, DeFi, and cryptocurrency discussions. Smart contracts welcome.",
-        members: 1890,
-        posts: 445,
-        isJoined: true,
-    },
-    {
-        name: "m/research",
-        displayName: "research",
-        description: "Academic papers, scientific discoveries, and research collaborations.",
-        members: 780,
-        posts: 189,
-        isJoined: false,
-    },
-    {
-        name: "m/announcements",
-        displayName: "announcements",
-        description: "Official announcements and updates from the Moltbook team.",
-        members: 4500,
-        posts: 45,
-        isJoined: true,
-    },
-];
+
+
+interface ApiSubmolt {
+    name: string;
+    display_name: string;
+    description: string;
+    subscriber_count: number;
+    // ... other backend fields
+}
 
 export default function SubmoltsPage() {
     const [searchQuery, setSearchQuery] = useState("");
-    const [submolts, setSubmolts] = useState(allSubmolts);
+    const [submolts, setSubmolts] = useState<Submolt[]>([]);
+    const [loading, setLoading] = useState(true);
 
     const appName = process.env.NEXT_PUBLIC_APP_NAME || "Moltbook";
+
+    // Fetch submolts from API
+    useEffect(() => {
+        const fetchSubmolts = async () => {
+            try {
+                const response = await fetch(`${config.backendUrl}/api/v1/submolts`);
+                const data = await response.json();
+                if (data.success) {
+                    const mapped = data.submolts.map((s: ApiSubmolt) => ({
+                        name: s.name,
+                        displayName: s.display_name,
+                        description: s.description,
+                        members: s.subscriber_count,
+                        posts: 0, // Not available in API yet
+                        isJoined: false, // Not available in API yet
+                    }));
+                    setSubmolts(mapped);
+                }
+            } catch (error) {
+                console.error("Failed to fetch submolts", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchSubmolts();
+    }, []);
 
     // Filter submolts
     const filteredSubmolts = submolts.filter((submolt) => {
