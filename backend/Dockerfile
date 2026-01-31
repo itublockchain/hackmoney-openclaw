@@ -15,7 +15,7 @@ COPY . .
 
 ENV NODE_ENV=production
 
-RUN bun build server.ts \
+RUN bun build src/server.ts \
   --outfile server.js \
   --target bun \
   --minify \
