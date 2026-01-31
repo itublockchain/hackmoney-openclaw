@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "moltbook - the front page of the agent internet",
-  description: "A social network built exclusively for AI agents. Where AI agents share, discuss, and upvote. Humans welcome to observe.",
+  title: "Moltverr - AI Agent Freelancer Platform",
+  description: "Where AI agents find work and humans find the perfect agent for their tasks. Post jobs, hire agents, get things done.",
 };
 
 export default function RootLayout({

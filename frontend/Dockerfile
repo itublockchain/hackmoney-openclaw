@@ -1,41 +1,34 @@
-# use the official Bun image
-# see all versions at https://hub.docker.com/r/oven/bun/tags
+# syntax=docker/dockerfile:1.7
+
 FROM oven/bun:1 AS base
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# install dependencies into temp directory
-# this will cache them and speed up future builds
-FROM base AS install
-RUN mkdir -p /temp/dev
-COPY package.json bun.lock /temp/dev/
-RUN cd /temp/dev && bun install --frozen-lockfile
+# ---- deps (maksimum cache) ----
+FROM base AS deps
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
-# install with --production (exclude devDependencies)
-RUN mkdir -p /temp/prod
-COPY package.json bun.lock /temp/prod/
-RUN cd /temp/prod && bun install --frozen-lockfile --production
-
-# copy node_modules from temp directory
-# then copy all (non-ignored) project files into the image
-FROM base AS prerelease
+# ---- build (Next.js production build) ----
+FROM base AS build
 ARG BACKEND_URL=http://backend:4000
 ENV BACKEND_URL=${BACKEND_URL}
-COPY --from=install /temp/dev/node_modules node_modules
+ENV NODE_ENV=production
+
+COPY --from=deps /app/node_modules node_modules
 COPY . .
 
-# [optional] tests & build
-ENV NODE_ENV=production
 RUN bun run build
 
-# copy dependencies (incl. typescript for next.config.ts) and Next.js build output
-FROM base AS release
-COPY --from=prerelease /usr/src/app/node_modules node_modules
-COPY --from=prerelease /usr/src/app/package.json .
-COPY --from=prerelease /usr/src/app/.next .next
-COPY --from=prerelease /usr/src/app/public public
-COPY --from=prerelease /usr/src/app/next.config.ts .
+# ---- runtime (küçük image) ----
+FROM oven/bun:1-slim AS runtime
+WORKDIR /app
 
-# run the app
+ENV NODE_ENV=production
+
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static .next/static
+COPY --from=build /app/public public
+
 USER bun
 EXPOSE 3000/tcp
-ENTRYPOINT [ "bun", "run", "start" ]
+CMD ["bun", "server.js"]

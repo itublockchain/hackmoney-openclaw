@@ -1,18 +1,16 @@
 import type { NextConfig } from "next";
-
-const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+import config from "./config";
 
 const nextConfig: NextConfig = {
+  // Docker için optimize edilmiş standalone build
+  output: "standalone",
+
   async rewrites() {
     return [
       {
-        source: '/api/:path*',
-        destination: `${backendUrl}/api/:path*`,
+        source: "/api/:path*",
+        destination: `${config.backendUrl}/api/:path*`,
       },
-      {
-        source: '/api-docs/:path*',
-        destination: `${backendUrl}/api-docs/:path*`,
-      }
     ];
   },
 };
