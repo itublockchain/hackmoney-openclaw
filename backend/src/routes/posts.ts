@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { authMiddleware, optionalAuthMiddleware } from "@/middleware/auth";
-import PostService from "@/services/PostService";
-import CommentService from "@/services/CommentService";
+import PostController from "@/controllers/PostController";
 
 const router = Router();
 
@@ -31,21 +30,7 @@ const router = Router();
  *       200:
  *         description: List of posts
  */
-router.get("/", optionalAuthMiddleware, async (req, res) => {
-  try {
-    const { sort, limit, submolt } = req.query;
-
-    const posts = await PostService.getPosts({
-      sort: sort as any,
-      limit: limit ? Number(limit) : undefined,
-      submolt: submolt as string,
-    });
-
-    res.json({ success: true, posts });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to fetch posts" });
-  }
-});
+router.get("/", optionalAuthMiddleware, PostController.getPosts);
 
 /**
  * @swagger
@@ -79,31 +64,7 @@ router.get("/", optionalAuthMiddleware, async (req, res) => {
  *       400:
  *         description: Missing required fields
  */
-router.post("/", authMiddleware, async (req, res) => {
-  try {
-    const { submolt, title, content, url } = req.body;
-
-    if (!submolt || !title) {
-      res
-        .status(400)
-        .json({ success: false, error: "submolt and title are required" });
-      return;
-    }
-
-    const agentName = req.agent?.name || "Unknown";
-    const newPost = await PostService.createPost({
-      submolt,
-      title,
-      content,
-      url,
-      authorName: agentName,
-    });
-
-    res.json({ success: true, post: newPost });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to create post" });
-  }
-});
+router.post("/", authMiddleware, PostController.createPost);
 
 /**
  * @swagger
@@ -125,24 +86,7 @@ router.post("/", authMiddleware, async (req, res) => {
  *       404:
  *         description: Post not found
  */
-router.get("/:id", optionalAuthMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!id || typeof id !== "string") {
-      res.status(400).json({ success: false, error: "Invalid post ID" });
-      return;
-    }
-
-    const post = await PostService.getPostById(id);
-    if (!post) {
-      res.status(404).json({ success: false, error: "Post not found" });
-      return;
-    }
-    res.json({ success: true, post });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to fetch post" });
-  }
-});
+router.get("/:id", optionalAuthMiddleware, PostController.getPostById);
 
 /**
  * @swagger
@@ -164,24 +108,7 @@ router.get("/:id", optionalAuthMiddleware, async (req, res) => {
  *       404:
  *         description: Post not found
  */
-router.delete("/:id", authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!id || typeof id !== "string") {
-      res.status(400).json({ success: false, error: "Invalid post ID" });
-      return;
-    }
-
-    const deleted = await PostService.deletePost(id);
-    if (!deleted) {
-      res.status(404).json({ success: false, error: "Post not found" });
-      return;
-    }
-    res.json({ success: true, message: "Post deleted" });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to delete post" });
-  }
-});
+router.delete("/:id", authMiddleware, PostController.deletePost);
 
 /**
  * @swagger
@@ -203,24 +130,7 @@ router.delete("/:id", authMiddleware, async (req, res) => {
  *       404:
  *         description: Post not found
  */
-router.post("/:id/upvote", authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!id || typeof id !== "string") {
-      res.status(400).json({ success: false, error: "Invalid post ID" });
-      return;
-    }
-
-    const result = await PostService.upvotePost(id, req.agent?.name);
-    if (!result) {
-      res.status(404).json({ success: false, error: "Post not found" });
-      return;
-    }
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to upvote post" });
-  }
-});
+router.post("/:id/upvote", authMiddleware, PostController.upvotePost);
 
 /**
  * @swagger
@@ -242,24 +152,7 @@ router.post("/:id/upvote", authMiddleware, async (req, res) => {
  *       404:
  *         description: Post not found
  */
-router.post("/:id/downvote", authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!id || typeof id !== "string") {
-      res.status(400).json({ success: false, error: "Invalid post ID" });
-      return;
-    }
-
-    const result = await PostService.downvotePost(id);
-    if (!result) {
-      res.status(404).json({ success: false, error: "Post not found" });
-      return;
-    }
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to downvote post" });
-  }
-});
+router.post("/:id/downvote", authMiddleware, PostController.downvotePost);
 
 /**
  * @swagger
@@ -279,24 +172,7 @@ router.post("/:id/downvote", authMiddleware, async (req, res) => {
  *       200:
  *         description: Post pinned
  */
-router.post("/:id/pin", authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!id || typeof id !== "string") {
-      res.status(400).json({ success: false, error: "Invalid post ID" });
-      return;
-    }
-
-    const result = await PostService.pinPost(id);
-    if (!result) {
-      res.status(404).json({ success: false, error: "Post not found" });
-      return;
-    }
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to pin post" });
-  }
-});
+router.post("/:id/pin", authMiddleware, PostController.pinPost);
 
 /**
  * @swagger
@@ -316,24 +192,7 @@ router.post("/:id/pin", authMiddleware, async (req, res) => {
  *       200:
  *         description: Post unpinned
  */
-router.delete("/:id/pin", authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!id || typeof id !== "string") {
-      res.status(400).json({ success: false, error: "Invalid post ID" });
-      return;
-    }
-
-    const result = await PostService.unpinPost(id);
-    if (!result) {
-      res.status(404).json({ success: false, error: "Post not found" });
-      return;
-    }
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to unpin post" });
-  }
-});
+router.delete("/:id/pin", authMiddleware, PostController.unpinPost);
 
 /**
  * @swagger
@@ -358,25 +217,7 @@ router.delete("/:id/pin", authMiddleware, async (req, res) => {
  *       200:
  *         description: List of comments
  */
-router.get("/:postId/comments", optionalAuthMiddleware, async (req, res) => {
-  try {
-    const { postId } = req.params;
-    const { sort } = req.query;
-
-    if (!postId || typeof postId !== "string") {
-      res.status(400).json({ success: false, error: "Invalid post ID" });
-      return;
-    }
-
-    const comments = await CommentService.getCommentsByPostId(
-      postId,
-      sort as any,
-    );
-    res.json({ success: true, comments });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to fetch comments" });
-  }
-});
+router.get("/:postId/comments", optionalAuthMiddleware, PostController.getPostComments);
 
 /**
  * @swagger
@@ -411,33 +252,6 @@ router.get("/:postId/comments", optionalAuthMiddleware, async (req, res) => {
  *       400:
  *         description: Content is required
  */
-router.post("/:postId/comments", authMiddleware, async (req, res) => {
-  try {
-    const { postId } = req.params;
-    const { content, parent_id } = req.body;
-
-    if (!postId || typeof postId !== "string") {
-      res.status(400).json({ success: false, error: "Invalid post ID" });
-      return;
-    }
-
-    if (!content) {
-      res.status(400).json({ success: false, error: "content is required" });
-      return;
-    }
-
-    const agentName = req.agent?.name || "Unknown";
-    const newComment = await CommentService.createComment({
-      postId,
-      content,
-      authorName: agentName,
-      parentId: parent_id,
-    });
-
-    res.json({ success: true, comment: newComment });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to create comment" });
-  }
-});
+router.post("/:postId/comments", authMiddleware, PostController.addPostComment);
 
 export default router;

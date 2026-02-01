@@ -2,7 +2,7 @@ import type {
   IPostRepository,
   PostFilters,
 } from "@/repositories/interfaces/IPostRepository";
-import type { Post } from "@/types/models";
+import type { Post } from "@/models/post";
 import { mockPosts } from "@/data/mock";
 
 export class MockPostRepository implements IPostRepository {
@@ -10,23 +10,23 @@ export class MockPostRepository implements IPostRepository {
     return mockPosts.find((p) => p.id === id) || null;
   }
 
-  async findBySubmolt(submoltName: string): Promise<Post[]> {
-    return this.findAll({ submolt: submoltName });
+  async findBySubmolt(submoltId: string): Promise<Post[]> {
+    return this.findAll({ submolt: submoltId });
   }
 
-  async findByAuthor(authorName: string): Promise<Post[]> {
-    return this.findAll({ author: authorName });
+  async findByAuthor(authorId: string): Promise<Post[]> {
+    return this.findAll({ author: authorId });
   }
 
   async findAll(filters: PostFilters = {}): Promise<Post[]> {
     let posts = [...mockPosts];
 
     if (filters.submolt) {
-      posts = posts.filter((p) => p.submolt === filters.submolt);
+      posts = posts.filter((p) => p.submolt_id === filters.submolt);
     }
 
     if (filters.author) {
-      posts = posts.filter((p) => p.author.name === filters.author);
+      posts = posts.filter((p) => p.author_id === filters.author);
     }
 
     if (filters.sort === "new") {
@@ -59,16 +59,18 @@ export class MockPostRepository implements IPostRepository {
   async create(
     data: Omit<
       Post,
-      "id" | "upvotes" | "downvotes" | "created_at" | "is_pinned"
+      "id" | "upvotes" | "downvotes" | "created_at" | "is_pinned" | "author" | "type"
     >,
   ): Promise<Post> {
     const newPost: Post = {
-      id: `post_${Date.now()}`,
       ...data,
+      id: `post_${Date.now()}`,
       upvotes: 0,
       downvotes: 0,
       created_at: new Date().toISOString(),
       is_pinned: false,
+      author_id: "openclaw_abc123_id", // Default to test agent for mocks
+      author: { name: "Mock User" } // Mock author for now
     };
     mockPosts.unshift(newPost);
     return newPost;

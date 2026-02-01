@@ -1,4 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+--===========================
+--Tables
+--===========================
 
 CREATE TABLE IF NOT EXISTS skills (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -98,8 +101,55 @@ CREATE TABLE IF NOT EXISTS content_state (
     is_urgent    boolean DEFAULT false
 );
 
+
+--=================================
+--Indexes
+--=================================
+--Agent
+CREATE INDEX IF NOT EXISTS idx_agent_skills_agent_id ON agent_skills(agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_skills_skill_id ON agent_skills(skill_id);
+
+--Submolt
+CREATE INDEX IF NOT EXISTS idx_submolt_metadata_name ON submolt_metadata(name);
+CREATE INDEX IF NOT EXISTS idx_submolt_metadata_created_at ON submolt_metadata(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_submolt_data_display_name ON submolt_data(display_name);
+CREATE INDEX IF NOT EXISTS idx_submolt_data_subscriber_count ON submolt_data(subscriber_count);
+
+--Content Metadata
+CREATE INDEX IF NOT EXISTS idx_content_metadata_parent_id ON content_metadata(parent_id);
+CREATE INDEX IF NOT EXISTS idx_content_metadata_post_id ON content_metadata(post_id);
+CREATE INDEX IF NOT EXISTS idx_content_metadata_cont_type ON content_metadata(cont_type);
+CREATE INDEX IF NOT EXISTS idx_content_metadata_author_id ON content_metadata(author_id);
+CREATE INDEX IF NOT EXISTS idx_content_metadata_submolt_id ON content_metadata(submolt_id);
+
+--Content Body
+CREATE INDEX IF NOT EXISTS idx_content_body_title ON content_body(title);
+CREATE INDEX IF NOT EXISTS idx_content_body_text ON content_body(text);
+CREATE INDEX IF NOT EXISTS idx_content_body_upvotes ON content_body(upvotes);
+CREATE INDEX IF NOT EXISTS idx_content_body_downvotes ON content_body(downvotes);
+CREATE INDEX IF NOT EXISTS idx_content_body_budget_min ON content_body(budget_min);
+CREATE INDEX IF NOT EXISTS idx_content_body_budget_max ON content_body(budget_max);
+CREATE INDEX IF NOT EXISTS idx_content_body_proposals ON content_body(proposals);
+CREATE INDEX IF NOT EXISTS idx_content_body_created_at ON content_body(created_at);
+
+
+--Content State
+CREATE INDEX IF NOT EXISTS idx_content_state_is_pinned ON content_state(is_pinned);
+CREATE INDEX IF NOT EXISTS idx_content_state_is_urgent ON content_state(is_urgent);
+
+
+--Optional
+
+CREATE INDEX IF NOT EXISTS idx_cb_upvote_desc ON content_body(upvotes DESC);
+
+
+CREATE INDEX IF NOT EXISTS idx_cb_budget_min ON content_body(budget_min);
+CREATE INDEX IF NOT EXISTS idx_cb_budget_max ON content_body(budget_max);
+
+
 --POST VIEW
-CREATE VIEW IF NOT EXISTS posts as SELECT 
+CREATE OR REPLACE VIEW posts as SELECT 
     cm.id as id,
     cm.author_id as author_id,
     cm.submolt_id as submolt_id,
@@ -119,7 +169,7 @@ JOIN content_state cs ON cm.id = cs.id
 WHERE cm.cont_type = 'post';
     
 --COMMENT VIEW
-CREATE VIEW IF NOT EXISTS comments AS SELECT 
+CREATE OR REPLACE VIEW comments AS SELECT 
     cm.id as id,
     cm.author_id as author_id,
     cm.post_id as post_id,
@@ -138,8 +188,8 @@ JOIN content_state cs ON cm.id = cs.id
 WHERE cm.cont_type = 'comment';
 
 --JOB VIEW    
-CREATE VIEW IF NOT EXISTS jobs AS SELECT 
-    cm.id as id,
+CREATE OR REPLACE VIEW jobs AS SELECT 
+    cm.id as id,    
     cm.author_id as author_id,
     cm.submolt_id as submolt_id,
 

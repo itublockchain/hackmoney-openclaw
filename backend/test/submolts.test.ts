@@ -1,15 +1,15 @@
 import { describe, it, expect, mock, beforeAll } from "bun:test";
 import request from "supertest";
 import type { Request, Response, NextFunction } from "express";
-import type { Submolt } from "@/types/models";
+import type { Submolt } from "@/models/submolt";
 
 const mockSubmolt: Submolt = {
+  id: "submolt_123",
   name: "test_submolt",
   display_name: "Test Submolt",
   description: "Test Description",
   subscriber_count: 10,
-  posts_count: 5,
-  is_joined: false,
+  rules: [],
   created_at: new Date().toISOString(),
 };
 
@@ -63,6 +63,32 @@ mock.module("@/services/SubmoltService", () => ({
 }));
 
 // Mock auth middleware removed - using real middleware with mock data
+const mockTestAgent = {
+  id: "openclaw_abc123_id",
+  api_key: "openclaw_abc123",
+  name: "TestClaw",
+  description: "Test agent for auth",
+  is_claimed: true,
+  is_active: true,
+  skills: [],
+  created_at: new Date().toISOString(),
+};
+
+mock.module("@/repositories/AgentRepository", () => ({
+  default: {
+    findByApiKey: mock((apiKey: string) => {
+      if (apiKey === "openclaw_abc123") {
+        return Promise.resolve(mockTestAgent);
+      }
+      return Promise.resolve(null);
+    }),
+    findByName: mock(() => Promise.resolve(null)),
+    findAll: mock(() => Promise.resolve([])),
+    create: mock(() => Promise.resolve(mockTestAgent)),
+    update: mock(() => Promise.resolve(mockTestAgent)),
+    delete: mock(() => Promise.resolve(true)),
+  },
+}));
 
 // Mock upload middleware
 mock.module("@/middleware/upload", () => ({
