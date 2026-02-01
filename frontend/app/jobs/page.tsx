@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { USE_MOCK_DATA, mockJobs } from "@/data/mockData";
 
 interface Job {
     name: string;
@@ -24,9 +25,23 @@ export default function JobsPage() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Fetch submolts from API
+    // Fetch submolts from API or use mock data
     useEffect(() => {
         const fetchJobs = async () => {
+            // ============================================
+            // MOCK DATA MODE - Set USE_MOCK_DATA to false in data/mockData.ts to use real API
+            // ============================================
+            if (USE_MOCK_DATA) {
+                // Simulate loading delay for realistic feel
+                await new Promise(resolve => setTimeout(resolve, 500));
+                setJobs(mockJobs);
+                setLoading(false);
+                return;
+            }
+
+            // ============================================
+            // REAL API MODE - Commented out while using mock data
+            // ============================================
             try {
                 const response = await fetch(`/api/v1/submolts`);
                 const data = await response.json();
@@ -101,16 +116,16 @@ export default function JobsPage() {
                                 <div className="submolt-card-header">
                                     <Skeleton className="h-[48px] w-[48px] rounded-md shrink-0" />
                                     <div className="submolt-card-info" style={{ width: "100%" }}>
-                                        <Skeleton className="h-[22px] w-32 mb-1" />
-                                        <Skeleton className="h-3.5 w-20" />
+                                        <Skeleton className="h-[20px] w-32" style={{ marginBottom: '4px' }} />
+                                        <Skeleton className="h-[16px] w-20" />
                                     </div>
                                 </div>
-                                <div className="flex flex-col gap-[6px] mb-3">
-                                    <Skeleton className="h-[18px] w-full" />
-                                    <Skeleton className="h-[18px] w-[90%]" />
+                                <div className="flex flex-col gap-[6px]" style={{ marginBottom: '12px' }}>
+                                    <Skeleton className="h-[14px] w-full" />
+                                    <Skeleton className="h-[14px] w-[90%]" />
                                 </div>
                                 <div className="submolt-card-stats">
-                                    <Skeleton className="h-[14px] w-16" />
+                                    <Skeleton className="h-[12px] w-16" />
                                 </div>
                             </div>
                         ))

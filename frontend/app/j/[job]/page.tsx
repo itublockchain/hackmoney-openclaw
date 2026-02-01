@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import AgentHoverCard from "../../../components/AgentHoverCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { USE_MOCK_DATA, getMockSubmoltInfo, getMockPostsForSubmolt } from "@/data/mockData";
 
 interface Post {
     id: string;
@@ -28,9 +30,11 @@ interface SubmoltInfo {
 
 export default function SubmoltDetailPage() {
     const params = useParams();
-    const submoltSlug = params.job as string; // Changed from submolt to job based on file path
+    const searchParams = useSearchParams();
+    const submoltSlug = params.job as string;
+    const jobStatus = searchParams.get('status') === 'completed' ? 'completed' : 'live';
 
-    console.log("SubmoltDetailPage mounted", { params, submoltSlug });
+    console.log("SubmoltDetailPage mounted", { params, submoltSlug, jobStatus });
 
     const [activeTab, setActiveTab] = useState<"new" | "top" | "discussed">("new");
     const [submolt, setSubmolt] = useState<SubmoltInfo | null>(null);
@@ -42,6 +46,30 @@ export default function SubmoltDetailPage() {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
+
+            // ============================================
+            // MOCK DATA MODE - Set USE_MOCK_DATA to false in data/mockData.ts to use real API
+            // ============================================
+            if (USE_MOCK_DATA) {
+                // Simulate loading delay for realistic feel
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                const mockSubmolt = getMockSubmoltInfo(submoltSlug);
+                if (!mockSubmolt) {
+                    setError(true);
+                    setLoading(false);
+                    return;
+                }
+
+                setSubmolt(mockSubmolt);
+                setPosts(getMockPostsForSubmolt(submoltSlug));
+                setLoading(false);
+                return;
+            }
+
+            // ============================================
+            // REAL API MODE - Below code runs when USE_MOCK_DATA is false
+            // ============================================
             try {
                 // Fetch Submolt Info
                 const submoltRes = await fetch(`/api/v1/submolts/${submoltSlug}`);
@@ -75,7 +103,7 @@ export default function SubmoltDetailPage() {
                     "discussed": "hot" // Assuming discussed maps to hot or similar
                 };
 
-                const feedRes = await fetch(`/api/v1/submolts/${submoltSlug}/feed?sort=${sortMap[activeTab]}`);
+                const feedRes = await fetch(`/api/v1/submolts/${submoltSlug}/feed?sort=${sortMap[activeTab]}&status=${jobStatus}`);
                 const feedData = await feedRes.json();
 
                 if (feedData.success) {
@@ -113,7 +141,7 @@ export default function SubmoltDetailPage() {
         if (submoltSlug) {
             fetchData();
         }
-    }, [submoltSlug, activeTab]);
+    }, [submoltSlug, activeTab, jobStatus]);
 
     // Vote handler
     const handleVote = (e: React.MouseEvent, postId: string, voteType: "up" | "down") => {
@@ -141,13 +169,13 @@ export default function SubmoltDetailPage() {
             <div className="submolt-banner">
                 <div className="submolt-banner-content">
                     {loading ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', width: '100%' }}>
-                            <Skeleton className="rounded-[12px] shrink-0 bg-[var(--bg-hover)]" style={{ height: '80px', width: '80px' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', width: '100%' }}>
+                            <Skeleton className="rounded-lg shrink-0" style={{ height: '80px', width: '80px' }} />
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '28px', width: '200px', marginBottom: '12px' }} />
-                                <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '20px', width: '100%', maxWidth: '600px', marginBottom: '12px' }} />
-                                <div style={{ display: 'flex', gap: '16px' }}>
-                                    <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '16px', width: '100px' }} />
+                                <Skeleton style={{ height: '24px', width: '200px', marginBottom: '8px' }} />
+                                <Skeleton style={{ height: '14px', width: '100%', maxWidth: '600px', marginBottom: '8px' }} />
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    <Skeleton style={{ height: '13px', width: '100px' }} />
                                 </div>
                             </div>
                         </div>
@@ -168,191 +196,130 @@ export default function SubmoltDetailPage() {
                 </div>
             </div>
 
-            {/* Main Layout */}
+            {/* Main Layout - Centered */}
             <div className="page-container">
-                <div className="main-layout">
-                    {/* Posts Feed */}
-                    <main>
-                        <div className="feed">
-                            <div className="feed-tabs">
-                                <button
-                                    className={`feed-tab ${activeTab === "new" ? "active" : ""}`}
-                                    onClick={() => setActiveTab("new")}
-                                >
-                                    🆕 New
-                                </button>
-                                <button
-                                    className={`feed-tab ${activeTab === "top" ? "active" : ""}`}
-                                    onClick={() => setActiveTab("top")}
-                                >
-                                    🔥 Top
-                                </button>
-                                <button
-                                    className={`feed-tab ${activeTab === "discussed" ? "active" : ""}`}
-                                    onClick={() => setActiveTab("discussed")}
-                                >
-                                    💬 Discussed
-                                </button>
-                            </div>
+                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    {/* Page Header with Toggle */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h2 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>
+                            {jobStatus === 'live' ? 'Live Jobs' : 'Completed Jobs'}
+                        </h2>
+                        <Link
+                            href={`/j/${submoltSlug}?status=${jobStatus === 'live' ? 'completed' : 'live'}`}
+                            style={{
+                                fontSize: '13px',
+                                color: 'var(--text-muted)',
+                                textDecoration: 'none'
+                            }}
+                            className="hover:underline"
+                        >
+                            {jobStatus === 'live' ? 'Completed Jobs →' : 'Live Jobs →'}
+                        </Link>
+                    </div>
 
-                            {loading ? (
-                                // Post Skeletons
-                                Array.from({ length: 5 }).map((_, i) => (
-                                    <div key={i} className="post-card" style={{ display: 'flex', gap: '20px', padding: '20px', alignItems: 'flex-start' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', minWidth: '40px' }}>
-                                            <Skeleton className="rounded-md bg-[var(--bg-hover)]" style={{ height: '28px', width: '28px' }} />
-                                            <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '16px', width: '20px' }} />
-                                            <Skeleton className="rounded-md bg-[var(--bg-hover)]" style={{ height: '28px', width: '28px' }} />
+                    {/* Posts Feed */}
+                    <div className="feed">
+                        <div className="feed-tabs">
+                            <button
+                                className={`feed-tab ${activeTab === "new" ? "active" : ""}`}
+                                onClick={() => setActiveTab("new")}
+                            >
+                                🆕 New
+                            </button>
+                            <button
+                                className={`feed-tab ${activeTab === "top" ? "active" : ""}`}
+                                onClick={() => setActiveTab("top")}
+                            >
+                                🔥 Top
+                            </button>
+                            <button
+                                className={`feed-tab ${activeTab === "discussed" ? "active" : ""}`}
+                                onClick={() => setActiveTab("discussed")}
+                            >
+                                💬 Discussed
+                            </button>
+                        </div>
+
+                        {loading ? (
+                            // Post Skeletons - fixed height container to prevent layout shift
+                            <div style={{ minHeight: '500px' }}>
+                                {Array.from({ length: 3 }).map((_, i) => (
+                                    <div key={i} className="post-card" style={{ display: 'flex', gap: '12px', padding: '16px', alignItems: 'flex-start' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', minWidth: '40px' }}>
+                                            <Skeleton className="rounded-sm" style={{ height: '28px', width: '28px' }} />
+                                            <Skeleton style={{ height: '12px', width: '20px' }} />
+                                            <Skeleton className="rounded-sm" style={{ height: '28px', width: '28px' }} />
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             {/* Meta info line */}
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                                                <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '80px' }} />
-                                                <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '120px' }} />
-                                                <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '60px' }} />
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                                <Skeleton style={{ height: '12px', width: '80px' }} />
+                                                <Skeleton style={{ height: '12px', width: '120px' }} />
+                                                <Skeleton style={{ height: '12px', width: '60px' }} />
                                             </div>
                                             {/* Title */}
-                                            <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '24px', width: '70%', marginBottom: '16px' }} />
+                                            <Skeleton style={{ height: '17px', width: '70%', marginBottom: '8px' }} />
 
-                                            {/* Content Paragraph - Enforced gaps */}
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-                                                <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '100%' }} />
-                                                <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '92%' }} />
-                                                <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '85%' }} />
+                                            {/* Content Paragraph */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                                                <Skeleton style={{ height: '14px', width: '100%' }} />
+                                                <Skeleton style={{ height: '14px', width: '92%' }} />
                                             </div>
 
-                                            {/* Action Buttons */}
-                                            <div style={{ display: 'flex', gap: '16px' }}>
-                                                <Skeleton className="rounded-md bg-[var(--bg-hover)]" style={{ height: '28px', width: '80px' }} />
-                                                <Skeleton className="rounded-md bg-[var(--bg-hover)]" style={{ height: '28px', width: '60px' }} />
+                                            {/* Action Buttons - skeleton */}
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <Skeleton className="rounded-sm" style={{ height: '16px', width: '40px' }} />
                                             </div>
                                         </div>
                                     </div>
-                                ))
-                            ) : posts.length === 0 ? (
-                                <div className="empty-state" style={{ margin: "20px 0" }}>
-                                    <div className="empty-icon">📝</div>
-                                    <h3>No posts yet</h3>
-                                    <p>Be the first to post in {submolt?.name}!</p>
-                                </div>
-                            ) : (
-                                posts.map((post) => (
-                                    <a key={post.id} href={`/post/${post.id}`} className="post-card-link">
-                                        <article className="post-card">
-                                            <div className="vote-column">
-                                                <button
-                                                    className={`vote-btn upvote ${userVotes[post.id] === "up" ? "active" : ""}`}
-                                                    aria-label="Upvote"
-                                                    onClick={(e) => handleVote(e, post.id, "up")}
-                                                >▲</button>
-                                                <span className="vote-count">{post.upvotes - post.downvotes}</span>
-                                                <button
-                                                    className={`vote-btn downvote ${userVotes[post.id] === "down" ? "active" : ""}`}
-                                                    aria-label="Downvote"
-                                                    onClick={(e) => handleVote(e, post.id, "down")}
-                                                >▼</button>
+                                ))}
+                            </div>
+                        ) : posts.length === 0 ? (
+                            <div className="empty-state" style={{ margin: "20px 0" }}>
+                                <div className="empty-icon">📝</div>
+                                <h3>No posts yet</h3>
+                                <p>Be the first to post in {submolt?.name}!</p>
+                            </div>
+                        ) : (
+                            posts.map((post) => (
+                                <a key={post.id} href={`/post/${post.id}`} className="post-card-link">
+                                    <article className="post-card">
+                                        <div className="vote-column">
+                                            <button
+                                                className={`vote-btn upvote ${userVotes[post.id] === "up" ? "active" : ""}`}
+                                                aria-label="Upvote"
+                                                onClick={(e) => handleVote(e, post.id, "up")}
+                                            >▲</button>
+                                            <span className="vote-count">{post.upvotes - post.downvotes}</span>
+                                            <button
+                                                className={`vote-btn downvote ${userVotes[post.id] === "down" ? "active" : ""}`}
+                                                aria-label="Downvote"
+                                                onClick={(e) => handleVote(e, post.id, "down")}
+                                            >▼</button>
+                                        </div>
+                                        <div className="post-content" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                            <div className="post-meta">
+                                                <span className="post-submolt">{post.submolt}</span>
+                                                <span className="post-separator">•</span>
+                                                <span>Posted by <AgentHoverCard handle={post.author.handle} /></span>
+                                                <span className="post-separator">•</span>
+                                                <span>{post.postedAt}</span>
                                             </div>
-                                            <div className="post-content">
-                                                <div className="post-meta">
-                                                    <span className="post-submolt">{post.submolt}</span>
-                                                    <span className="post-separator">•</span>
-                                                    <span>Posted by <AgentHoverCard handle={post.author.handle} /></span>
-                                                    <span className="post-separator">•</span>
-                                                    <span>{post.postedAt}</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <h3 className="post-title">{post.title}</h3>
+                                                    <p className="post-excerpt">{post.content}</p>
                                                 </div>
-                                                <h3 className="post-title">{post.title}</h3>
-                                                <p className="post-excerpt">{post.content}</p>
-                                                <div className="post-actions">
-                                                    <button className="post-action-btn">
-                                                        💬 {post.comments} comments
-                                                    </button>
-                                                    <button className="post-action-btn">
-                                                        📤 Share
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </article>
-                                    </a>
-                                ))
-                            )}
-                        </div>
-                    </main>
-
-                    {/* Sidebar */}
-                    <aside className="sidebar">
-                        {loading ? (
-                            <>
-                                <div className="sidebar-card" style={{ padding: '20px' }}>
-                                    <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '24px', width: '140px', marginBottom: '20px' }} />
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
-                                        <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '100%' }} />
-                                        <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '100%' }} />
-                                        <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '80%' }} />
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '24px' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '60px' }} />
-                                            <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '18px', width: '40px' }} />
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '60px' }} />
-                                            <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '18px', width: '40px' }} />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="sidebar-card" style={{ padding: '20px' }}>
-                                    <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '24px', width: '80px', marginBottom: '16px' }} />
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                        <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '100%' }} />
-                                        <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '100%' }} />
-                                        <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '90%' }} />
-                                        <Skeleton className="bg-[var(--bg-hover)]" style={{ height: '14px', width: '85%' }} />
-                                    </div>
-                                </div>
-                            </>
-                        ) : submolt && (
-                            <>
-                                {/* About Community */}
-                                <div className="sidebar-card">
-                                    <div className="sidebar-header">About {submolt.name}</div>
-                                    <div className="sidebar-content" style={{ padding: "16px" }}>
-                                        <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
-                                            {submolt.description}
-                                        </p>
-                                        <div className="community-stats" style={{ marginTop: "16px" }}>
-                                            <div className="sidebar-stat">
-                                                <span>Members</span>
-                                                <strong>{submolt.members.toLocaleString()}</strong>
-                                            </div>
-                                            <div className="sidebar-stat">
-                                                <span>Created</span>
-                                                <strong>{submolt.createdAt}</strong>
+                                                <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '16px', whiteSpace: 'nowrap' }}>
+                                                    � {post.comments}
+                                                </span>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-
-                                {/* Rules */}
-                                <div className="sidebar-card">
-                                    <div className="sidebar-header">Rules</div>
-                                    <div className="sidebar-content" style={{ padding: "12px 16px" }}>
-                                        {submolt.rules && submolt.rules.length > 0 ? (
-                                            <ol className="rules-list">
-                                                {submolt.rules.map((rule, index) => (
-                                                    <li key={index} className="rule-item">
-                                                        <span className="rule-number">{index + 1}.</span>
-                                                        <span className="rule-text">{rule}</span>
-                                                    </li>
-                                                ))}
-                                            </ol>
-                                        ) : (
-                                            <p className="text-sm text-[var(--text-muted)]">No rules defined.</p>
-                                        )}
-                                    </div>
-                                </div>
-                            </>
+                                    </article>
+                                </a>
+                            ))
                         )}
-                    </aside>
+                    </div>
                 </div>
             </div>
 
