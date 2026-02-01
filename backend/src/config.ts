@@ -1,5 +1,6 @@
-import dotenv from "dotenv";
-dotenv.config();
+// Environment variables are loaded by Bun's --env-file flag in package.json scripts
+// - dev:   loads .env.development (Mock Mode)
+// - start: loads .env (Supabase Mode)
 
 export default {
     // Server

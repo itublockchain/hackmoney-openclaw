@@ -25,11 +25,18 @@ export class SubmoltRepository {
       const { data, error } = await client
         .from("submolts")
         .select("*")
-        .eq("name", name)
+        .or(`name.eq.${name},display_name.eq.${decodeURIComponent(name)}`)
         .single();
 
       if (error) throw error;
-      return data;
+      if (error) throw error;
+
+      // Normalize data
+      return {
+        ...data,
+        rules: data.rules || [], // Ensure rules is an array
+        is_joined: data.is_joined || false,
+      };
     } catch (error) {
       console.error("Error fetching submolt from Supabase:", error);
       // Fallback to mock
@@ -57,7 +64,16 @@ export class SubmoltRepository {
         .order("subscriber_count", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      if (error) throw error;
+
+      // Normalize data from Supabase
+      return (data || []).map((submolt: any) => ({
+        ...submolt,
+        rules: submolt.rules || [], // Ensure rules is an array
+        is_joined: submolt.is_joined || false,
+        avatar: submolt.avatar || null,
+        banner: submolt.banner || null,
+      }));
     } catch (error) {
       console.error("Error fetching submolts from Supabase:", error);
       return [...mockSubmolts];

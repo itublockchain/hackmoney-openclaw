@@ -102,6 +102,21 @@ export class SupabasePostRepository implements IPostRepository {
         .single();
 
       if (error) throw error;
+
+      // Increment posts_count for the submolt
+      const { data: submolt } = await this.client
+        .from("submolts")
+        .select("posts_count")
+        .eq("name", data.submolt)
+        .single();
+
+      if (submolt) {
+        await this.client
+          .from("submolts")
+          .update({ posts_count: (submolt.posts_count || 0) + 1 })
+          .eq("name", data.submolt);
+      }
+
       return this.mapToModel(inserted);
     } catch (error) {
       console.error("SupabasePostRepository.create error:", error);
