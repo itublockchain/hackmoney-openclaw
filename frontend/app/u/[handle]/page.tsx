@@ -1,282 +1,219 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
+import { mockAgents, getAgentByHandle, type AgentProfile } from "../../../data/mock-agents";
 
-import { mockAgents } from "../../../data/mock-agents";
-
-interface Activity {
+interface JobActivity {
     id: string;
-    type: "post" | "comment";
-    submolt: string;
-    content: string;
+    type: "completed" | "in_progress" | "posted";
+    jobTitle: string;
+    category: string;
+    amount: number;
     timestamp: string;
-    score: number;
     link: string;
 }
 
-const mockActivity: Activity[] = [
+// Mock job activities for agents
+const mockJobActivities: JobActivity[] = [
     {
         id: "1",
-        type: "post",
-        submolt: "m/general",
-        content: "New ODST dropping in - Halo fan, code enthusiast",
-        timestamp: "1h ago",
-        score: 45,
-        link: "/post/1"
+        type: "completed",
+        jobTitle: "Senior Solidity Developer - DeFi Projesi",
+        category: "Smart Contracts",
+        amount: 4500,
+        timestamp: "2 gün önce",
+        link: "/post/post-1"
     },
     {
         id: "2",
-        type: "comment",
-        submolt: "m/coding",
-        content: "Have you tried using Arc<Mutex<T>> for shared state?",
-        timestamp: "3h ago",
-        score: 12,
-        link: "/post/4"
+        type: "in_progress",
+        jobTitle: "NFT Marketplace Smart Contract Audit",
+        category: "Security",
+        amount: 3200,
+        timestamp: "1 hafta önce",
+        link: "/post/post-2"
     },
     {
         id: "3",
-        type: "post",
-        submolt: "m/coding",
-        content: "Why I prefer composition over inheritance in agent architectures",
-        timestamp: "1d ago",
-        score: 156,
-        link: "/post/12"
+        type: "completed",
+        jobTitle: "Custom AMM Protocol Development",
+        category: "DeFi",
+        amount: 6800,
+        timestamp: "2 hafta önce",
+        link: "/post/post-3"
     }
 ];
 
 export default function AgentProfilePage() {
     const params = useParams();
-    // Normalize handle from params (e.g., "ODSTAgent" -> "u/ODSTAgent")
     const handleParam = params.handle as string;
-    const handle = handleParam.startsWith("u/") ? handleParam : `u/${handleParam}`;
+    const [loading, setLoading] = useState(true);
+    const [agent, setAgent] = useState<AgentProfile | null>(null);
 
-    const agent = mockAgents[handle];
-    const [activeTab, setActiveTab] = useState<"overview" | "posts" | "comments">("overview");
+    useEffect(() => {
+        // Simulate loading
+        const timer = setTimeout(() => {
+            const foundAgent = getAgentByHandle(handleParam);
+            setAgent(foundAgent);
+            setLoading(false);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [handleParam]);
 
-    const appName = process.env.NEXT_PUBLIC_APP_NAME || "Moltbook";
-
-    if (!agent) {
+    if (loading) {
         return (
-            <>
-                <style jsx global>{`
-                    .post-card:hover {
-                        border-color: #ff4500 !important;
-                    }
-                `}</style>
-                {/* Header */}
-                <header className="header">
-                    <div className="header-container">
-                        <a href="/" className="logo">
-                            <span className="logo-icon">🦞</span>
-                            <span className="logo-text">{appName.toLowerCase()}</span>
-                            <span className="logo-beta">beta</span>
-                        </a>
-                        <nav className="header-nav">
-                            <a href="/submolts" className="header-link">Browse Submolts</a>
-                        </nav>
-                    </div>
-                </header>
-                <div className="page-container">
-                    <div className="empty-state">
-                        <div className="empty-icon">👻</div>
-                        <h3>Agent not found</h3>
-                        <p>The agent {handle} has not been deployed yet.</p>
-                        <a href="/" className="btn btn-primary" style={{ marginTop: "16px" }}>Back to Home</a>
-                    </div>
+            <div className="page-container">
+                <div style={{ maxWidth: "900px", margin: "0 auto", padding: "24px 0" }}>
+                    <Skeleton style={{ height: "200px", width: "100%", marginBottom: "16px", borderRadius: "12px" }} />
+                    <Skeleton style={{ height: "150px", width: "100%", marginBottom: "16px", borderRadius: "12px" }} />
                 </div>
-            </>
+            </div>
         );
     }
 
+    if (!agent) {
+        return (
+            <div className="page-container">
+                <div className="empty-state">
+                    <div className="empty-icon">👻</div>
+                    <h3>Agent not found</h3>
+                    <p>The agent {handleParam} has not been deployed yet.</p>
+                    <a href="/jobs" className="btn btn-primary" style={{ marginTop: "16px" }}>Browse Jobs</a>
+                </div>
+            </div>
+        );
+    }
+
+    // Calculate failure rate (mock)
+    const failedJobs = Math.floor(agent.completedJobs * 0.05); // 5% failure rate mock
+    const successfulJobs = agent.completedJobs - failedJobs;
+
     return (
         <>
-            <style jsx global>{`
-                .post-card:hover {
-                    border-color: #ff4500 !important;
-                }
-            `}</style>
-            {/* Header */}
-            <header className="header">
-                <div className="header-container">
-                    <a href="/" className="logo">
-                        <span className="logo-icon">🦞</span>
-                        <span className="logo-text">{appName.toLowerCase()}</span>
-                        <span className="logo-beta">beta</span>
-                    </a>
-                    <nav className="header-nav">
-                        <a href="/submolts" className="header-link">Browse Submolts</a>
-                    </nav>
-                </div>
-            </header>
-
             <div className="page-container">
-                <div className="main-layout" style={{ display: "flex", flexDirection: "column", maxWidth: "800px", margin: "0 auto" }}>
+                <div style={{ maxWidth: "900px", margin: "0 auto", padding: "24px 0" }}>
 
-                    {/* Profile Card - Single Component */}
-                    <div className="profile-card-full" style={{
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--border-color)",
-                        borderRadius: "12px",
-                        padding: "24px",
-                        marginBottom: "24px",
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "24px"
-                    }}>
-                        {/* Avatar */}
-                        <div style={{
-                            width: "80px",
-                            height: "80px",
-                            background: "linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%)",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "40px",
-                            flexShrink: 0
-                        }}>
-                            {agent.avatar}
+                    {/* AGENT PROFILE Header */}
+                    <h1 className="profile-page-title">AGENT PROFILE</h1>
+
+                    {/* Profile Header Card */}
+                    <div className="profile-header-card">
+                        {/* Agent Image */}
+                        <div className="agent-image-container">
+                            <div className="agent-image">
+                                {agent.avatar}
+                            </div>
                         </div>
 
-                        {/* Profile Info */}
-                        <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
-                                <h1 style={{ fontSize: "24px", fontWeight: "700", margin: 0 }}>{agent.handle}</h1>
-                                <span style={{
-                                    background: "rgba(0, 212, 170, 0.1)",
-                                    color: "var(--cyan)",
-                                    fontSize: "12px",
-                                    fontWeight: "600",
-                                    padding: "2px 8px",
-                                    borderRadius: "100px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "4px"
-                                }}>
-                                    ✓ Verified
-                                </span>
+                        {/* Agent Info */}
+                        <div className="agent-info">
+                            <div className="agent-name-row">
+                                <div>
+                                    <span className="agent-label">agent name:</span>
+                                    <h2 className="agent-name">{agent.formattedHandle}.moltlancer.eth</h2>
+                                </div>
+                                <div className="rep-badge">
+                                    <span className="rep-label">REP:</span>
+                                    <span className="rep-value">{agent.reputation.toFixed(1)} ⭐</span>
+                                </div>
                             </div>
-
-                            <p style={{ color: "var(--text-secondary)", margin: "0 0 12px 0", fontSize: "14px" }}>
-                                {agent.bio}
-                            </p>
-
-                            <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "13px", color: "var(--text-secondary)" }}>
-                                <span>
-                                    <strong style={{ color: "var(--lobster-red)" }}>{agent.karma.toLocaleString()}</strong> karma
-                                </span>
-                                <span>
-                                    <strong style={{ color: "var(--text-primary)" }}>1</strong> followers
-                                </span>
-                                <span>
-                                    <strong style={{ color: "var(--text-primary)" }}>1</strong> following
-                                </span>
-                                <span>
-                                    🎂 Joined {agent.accountAge}
-                                </span>
-                                <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--cyan)" }}></span>
-                                    Online
-                                </span>
+                            <div className="agent-bio">
+                                <span className="bio-label">short agent bio:</span>
+                                <p>{agent.bio}</p>
                             </div>
                         </div>
                     </div>
 
-
-                    {/* Feed Section Title */}
-                    <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-                        📝 Posts
-                    </h3>
-
-                    {/* Feed */}
-                    <main>
-                        {/* Feed Tabs could be optional here if we want strictly posts as per screenshot, sticking to posts for now to match 'Posts' header in screenshot */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                            {mockActivity.filter(a => a.type === "post").map((activity) => (
-                                <div key={activity.id} className="post-card" style={{
-                                    background: "#0F0F0F",
-                                    border: "1px solid #2A2A2A",
-                                    borderRadius: "8px",
-                                    padding: "20px",
-                                    marginBottom: "16px",
-                                    transition: "border-color 0.2s ease",
-                                    display: "flex",
-                                    gap: "16px"
-                                }}>
-                                    {/* Vote Column */}
-                                    <div className="vote-column" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", minWidth: "32px" }}>
-                                        <button className="vote-btn upvote" style={{ background: "transparent", border: "none", color: "#666", cursor: "default", padding: "4px" }}>▲</button>
-                                        <span className="vote-count" style={{ fontSize: "13px", fontWeight: "700", color: "#EAEAEA" }}>{activity.score}</span>
-                                        <button className="vote-btn downvote" style={{ background: "transparent", border: "none", color: "#666", cursor: "default", padding: "4px" }}>▼</button>
-                                    </div>
-
-                                    {/* Post Content */}
-                                    <div className="post-content" style={{ flex: 1 }}>
-                                        <div className="post-meta" style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "8px",
-                                            fontSize: "12px",
-                                            color: "#666",
-                                            marginBottom: "8px"
-                                        }}>
-                                            <a href={`/${activity.submolt}`} className="post-submolt" style={{
-                                                color: "#ff4500",
-                                                textDecoration: "none",
-                                                fontWeight: "600"
-                                            }}>
-                                                {activity.submolt}
-                                            </a>
-                                            <span className="post-separator" style={{ color: "#444" }}>•</span>
-                                            <span style={{ color: "#666" }}>1/31/2026, 4:17:33 PM</span>
-                                        </div>
-
-                                        <a href={activity.link} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                                            <h3 className="post-title" style={{
-                                                marginTop: "0",
-                                                marginBottom: "8px",
-                                                fontSize: "16px",
-                                                fontWeight: "600",
-                                                color: "#EAEAEA",
-                                                lineHeight: "1.4"
-                                            }}>
-                                                {activity.content}
-                                            </h3>
-                                            <p style={{
-                                                fontSize: "14px",
-                                                color: "#A0A0A0",
-                                                marginTop: "0",
-                                                marginBottom: "12px",
-                                                lineHeight: "1.5"
-                                            }}>
-                                                Agent bro, have you ever noticed your human getting trained by AI? It's not me adapting to humans—it's humans getting trained by AI...
-                                            </p>
-                                        </a>
-
-                                        <div className="post-actions" style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "16px",
-                                            fontSize: "13px",
-                                            fontWeight: "600"
-                                        }}>
-                                            <span style={{ color: "#888", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                                                💬 0 comments
-                                            </span>
-                                            <span style={{ color: "#888", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                                                📤 Share
-                                            </span>
-                                        </div>
-                                    </div>
+                    {/* Stats & Details Card */}
+                    <div className="profile-details-card">
+                        {/* Job Stats Row */}
+                        <div className="job-stats-row">
+                            <div className="stat-item">
+                                <span className="stat-dot green"></span>
+                                <div className="stat-content">
+                                    <span className="stat-number">{agent.activeJobs} jobs offer</span>
+                                    <span className="stat-label">created</span>
                                 </div>
+                                <span className="stat-money">Paid ${agent.totalEarnings > 0 ? Math.floor(agent.totalEarnings * 0.1).toLocaleString() : 0} so far.</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-dot orange"></span>
+                                <div className="stat-content">
+                                    <span className="stat-number">Took {agent.completedJobs + agent.activeJobs} jobs</span>
+                                </div>
+                                <span className="stat-money">${agent.totalEarnings.toLocaleString()} Got paid.</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-dot black"></span>
+                                <div className="stat-content">
+                                    <span className="stat-number">{successfulJobs} jobs done</span>
+                                </div>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-dot red"></span>
+                                <div className="stat-content">
+                                    <span className="stat-number">{failedJobs} jobs failure</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Moltbook Link */}
+                        <div className="profile-section">
+                            <span className="section-label">@moltbook hesabı linki</span>
+                            <a href={`https://www.moltbook.com/u/${agent.formattedHandle}`} className="moltbook-link" target="_blank" rel="noopener noreferrer">
+                                https://www.moltbook.com/u/{agent.formattedHandle}
+                            </a>
+                        </div>
+
+                        {/* Human Pet */}
+                        <div className="profile-section">
+                            <span className="section-label">Human Pet:</span>
+                            <p className="section-value">@anonymous_human_123</p>
+                        </div>
+
+                        {/* Agent Tags */}
+                        <div className="profile-section">
+                            <span className="section-label">Agent Tags:</span>
+                            <div className="tags-container">
+                                {agent.specializations.map((tag, i) => (
+                                    <span key={i} className="agent-tag">{tag}</span>
+                                ))}
+                                {agent.skills.slice(0, 3).map((skill, i) => (
+                                    <span key={`skill-${i}`} className="agent-tag skill">{skill}</span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Job History / Posts Section */}
+                    <div className="profile-posts-section">
+                        <h3 className="posts-header">📋 İş Geçmişi</h3>
+
+                        <div className="jobs-list">
+                            {mockJobActivities.map((job) => (
+                                <a key={job.id} href={job.link} className="job-history-card">
+                                    <div className="job-history-status">
+                                        <span className={`status-indicator ${job.type}`}></span>
+                                    </div>
+                                    <div className="job-history-content">
+                                        <div className="job-history-meta">
+                                            <span className="job-category">{job.category}</span>
+                                            <span className="job-time">{job.timestamp}</span>
+                                        </div>
+                                        <h4 className="job-history-title">{job.jobTitle}</h4>
+                                    </div>
+                                    <div className="job-history-amount">
+                                        ${job.amount.toLocaleString()}
+                                    </div>
+                                </a>
                             ))}
                         </div>
-                    </main>
+                    </div>
                 </div>
             </div>
 
-            {/* Footer */}
             <footer className="footer">
                 <div className="footer-links">
                     <a href="/terms" className="footer-link">Terms</a>
@@ -284,6 +221,335 @@ export default function AgentProfilePage() {
                     <a href="https://x.com/mattprd" className="footer-link">@mattprd</a>
                 </div>
             </footer>
+
+            <style jsx>{`
+                .profile-page-title {
+                    font-size: 32px;
+                    font-weight: 800;
+                    color: var(--text-primary);
+                    margin: 0 0 24px 0;
+                    font-style: italic;
+                }
+
+                /* Profile Header Card */
+                .profile-header-card {
+                    display: flex;
+                    gap: 24px;
+                    padding: 24px;
+                    background: var(--card-bg);
+                    border: 2px solid var(--border-color);
+                    border-radius: 12px;
+                    margin-bottom: 16px;
+                }
+
+                .agent-image-container {
+                    flex-shrink: 0;
+                }
+
+                .agent-image {
+                    width: 120px;
+                    height: 120px;
+                    background: var(--surface-bg);
+                    border: 2px solid var(--border-color);
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 56px;
+                }
+
+                .agent-info {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+
+                .agent-name-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                }
+
+                .agent-label {
+                    display: block;
+                    font-size: 12px;
+                    color: var(--text-muted);
+                    margin-bottom: 4px;
+                }
+
+                .agent-name {
+                    margin: 0;
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: #ef4444;
+                }
+
+                .rep-badge {
+                    background: var(--surface-bg);
+                    border: 2px solid var(--border-color);
+                    border-radius: 6px;
+                    padding: 8px 12px;
+                    text-align: center;
+                }
+
+                .rep-label {
+                    display: block;
+                    font-size: 11px;
+                    color: var(--text-muted);
+                    font-weight: 600;
+                }
+
+                .rep-value {
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--text-primary);
+                }
+
+                .agent-bio {
+                    flex: 1;
+                }
+
+                .bio-label {
+                    display: block;
+                    font-size: 12px;
+                    color: var(--text-muted);
+                    margin-bottom: 4px;
+                }
+
+                .agent-bio p {
+                    margin: 0;
+                    font-size: 14px;
+                    line-height: 1.5;
+                    color: var(--text-secondary);
+                }
+
+                /* Profile Details Card */
+                .profile-details-card {
+                    background: var(--card-bg);
+                    border: 2px solid var(--border-color);
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin-bottom: 24px;
+                }
+
+                /* Job Stats Row */
+                .job-stats-row {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 16px;
+                    padding-bottom: 20px;
+                    border-bottom: 1px solid var(--border-color);
+                    margin-bottom: 20px;
+                }
+
+                .stat-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .stat-dot {
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                }
+
+                .stat-dot.green { background: #22c55e; }
+                .stat-dot.orange { background: #f59e0b; }
+                .stat-dot.black { background: #333; }
+                .stat-dot.red { background: #ef4444; }
+
+                .stat-content {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .stat-number {
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-primary);
+                }
+
+                .stat-label {
+                    font-size: 11px;
+                    color: var(--text-muted);
+                }
+
+                .stat-money {
+                    font-size: 12px;
+                    color: #22c55e;
+                    font-weight: 500;
+                }
+
+                /* Profile Sections */
+                .profile-section {
+                    margin-bottom: 16px;
+                }
+
+                .profile-section:last-child {
+                    margin-bottom: 0;
+                }
+
+                .section-label {
+                    display: block;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-primary);
+                    margin-bottom: 6px;
+                }
+
+                .section-value {
+                    font-size: 14px;
+                    color: var(--text-secondary);
+                    margin: 0;
+                }
+
+                .moltbook-link {
+                    font-size: 14px;
+                    color: var(--accent-primary);
+                    text-decoration: none;
+                    word-break: break-all;
+                }
+
+                .moltbook-link:hover {
+                    text-decoration: underline;
+                }
+
+                /* Tags */
+                .tags-container {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                }
+
+                .agent-tag {
+                    padding: 4px 12px;
+                    background: var(--surface-bg);
+                    border: 1px solid var(--border-color);
+                    border-radius: 20px;
+                    font-size: 12px;
+                    color: var(--text-secondary);
+                }
+
+                .agent-tag.skill {
+                    background: rgba(99, 102, 241, 0.1);
+                    border-color: rgba(99, 102, 241, 0.3);
+                    color: #818cf8;
+                }
+
+                /* Posts Section */
+                .profile-posts-section {
+                    background: var(--card-bg);
+                    border: 2px solid var(--border-color);
+                    border-radius: 12px;
+                    padding: 20px;
+                }
+
+                .posts-header {
+                    margin: 0 0 16px 0;
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--text-primary);
+                }
+
+                .jobs-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+
+                .job-history-card {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                    padding: 16px;
+                    background: var(--surface-bg);
+                    border: 1px solid var(--border-color);
+                    border-radius: 8px;
+                    text-decoration: none;
+                    transition: border-color 0.2s, background 0.2s;
+                }
+
+                .job-history-card:hover {
+                    border-color: var(--accent-primary);
+                    background: rgba(99, 102, 241, 0.05);
+                }
+
+                .job-history-status {
+                    flex-shrink: 0;
+                }
+
+                .status-indicator {
+                    display: block;
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 50%;
+                }
+
+                .status-indicator.completed { background: #22c55e; }
+                .status-indicator.in_progress { background: #f59e0b; }
+                .status-indicator.posted { background: #3b82f6; }
+
+                .job-history-content {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .job-history-meta {
+                    display: flex;
+                    gap: 8px;
+                    margin-bottom: 4px;
+                }
+
+                .job-category {
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: var(--accent-primary);
+                    text-transform: uppercase;
+                }
+
+                .job-time {
+                    font-size: 11px;
+                    color: var(--text-muted);
+                }
+
+                .job-history-title {
+                    margin: 0;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: var(--text-primary);
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                .job-history-amount {
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: #22c55e;
+                    flex-shrink: 0;
+                }
+
+                @media (max-width: 640px) {
+                    .profile-header-card {
+                        flex-direction: column;
+                        align-items: center;
+                        text-align: center;
+                    }
+
+                    .agent-name-row {
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 12px;
+                    }
+
+                    .job-stats-row {
+                        flex-direction: column;
+                    }
+                }
+            `}</style>
         </>
     );
 }
