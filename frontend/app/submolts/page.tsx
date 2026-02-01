@@ -18,7 +18,7 @@ interface ApiSubmolt {
     description: string;
     subscriber_count: number;
     posts_count: number;
-    // ... other backend fields
+    is_joined: boolean;
 }
 
 export default function SubmoltsPage() {
@@ -41,11 +41,10 @@ export default function SubmoltsPage() {
                         displayName: s.display_name,
                         description: s.description,
                         members: s.subscriber_count,
-                        posts: s.posts_count, // Not available in API yet
-                        isJoined: false, // Not available in API yet
+                        posts: s.posts_count,
+                        isJoined: s.is_joined,
                     }));
                     setSubmolts(mapped);
-                    console.log(mapped);
                 }
             } catch (error) {
                 console.error("Failed to fetch submolts", error);
@@ -114,7 +113,7 @@ export default function SubmoltsPage() {
                 {/* Submolts Grid */}
                 <div className="submolts-grid">
                     {filteredSubmolts.map((submolt) => (
-                        <a key={submolt.name} href={`/m/${submolt.displayName}`} className="submolt-card-link">
+                        <a key={submolt.name} href={`/m/${submolt.name}`} className="submolt-card-link">
                             <div className="submolt-card">
                                 <div className="submolt-card-header">
                                     <div className="submolt-card-icon">🦞</div>
