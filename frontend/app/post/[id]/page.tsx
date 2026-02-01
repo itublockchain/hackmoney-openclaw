@@ -7,8 +7,6 @@ import ReactMarkdown from "react-markdown";
 import {
     USE_MOCK_DATA,
     getMockJobPostDetail,
-    getStatusColor,
-    getStatusLabel,
     type JobPostDetail,
 } from "@/data/mockData";
 
@@ -19,7 +17,6 @@ export default function JobPostDetailPage() {
     const [job, setJob] = useState<JobPostDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [isExpanded, setIsExpanded] = useState(true);
-    const [newMessage, setNewMessage] = useState("");
 
     useEffect(() => {
         const fetchJob = async () => {
@@ -66,28 +63,28 @@ export default function JobPostDetailPage() {
 
         return `# ${job?.title}
 
-## 📋 Proje Özeti
+## 📋 Project Overview
 
 ${job?.description}
 
-## ⚡ Gereksinimler
+## ⚡ Requirements
 
 ${job?.requirements}
 
-## 💰 Bütçe ve Tarihler
+## 💰 Budget & Timeline
 
-- **Maksimum Bütçe**: $${job?.maxBudget?.toLocaleString()} USD
+- **Maximum Budget**: $${job?.maxBudget?.toLocaleString()} USD
 - **Deadline**: ${job?.deadline}
-- **Kategori**: ${job?.category}
+- **Category**: ${job?.category}
 
-## 📝 İş Veren
+## 📝 Posted By
 
-- **İsim**: ${job?.postedBy?.name}
-- **Yayınlanma**: ${job?.postedAt}
+- **Name**: ${job?.postedBy?.name}
+- **Posted**: ${job?.postedAt}
 
 ---
 
-*Bu iş için teklif vermek isteyen agent'lar lütfen yukarıdaki gereksinimleri dikkatle inceleyin.*
+*Agents interested in bidding on this job, please review the requirements above carefully.*
 `;
     };
 
@@ -137,7 +134,7 @@ ${job?.requirements}
                             </div>
                         </div>
                         <button className="status-toggle-btn" onClick={() => setIsExpanded(!isExpanded)}>
-                            {isExpanded ? "Kapat ↑" : "Aç →"}
+                            {isExpanded ? "Collapse ↑" : "Expand →"}
                         </button>
                     </div>
 
@@ -191,7 +188,7 @@ ${job?.requirements}
 
                                         {sortedBids.length === 0 ? (
                                             <div className="no-bids">
-                                                <p>Henüz teklif yok</p>
+                                                <p>No bids yet</p>
                                             </div>
                                         ) : (
                                             sortedBids.map((bid) => (
@@ -217,7 +214,7 @@ ${job?.requirements}
                                 {/* Job Chat Section */}
                                 <div className="chat-section">
                                     <h3 className="chat-header">JOB CHAT:</h3>
-                                    <p className="chat-subtitle">Agentlar burada konuşur</p>
+                                    <p className="chat-subtitle">Agents discuss here</p>
 
                                     <div className="chat-messages">
                                         {job.chatMessages.map((msg) => (
@@ -235,17 +232,6 @@ ${job?.requirements}
                                                 <p className="chat-content">{msg.content}</p>
                                             </div>
                                         ))}
-                                    </div>
-
-                                    <div className="chat-input-area">
-                                        <input
-                                            type="text"
-                                            placeholder="Sadece AI Agent'lar mesaj gönderebilir..."
-                                            value={newMessage}
-                                            onChange={(e) => setNewMessage(e.target.value)}
-                                            disabled
-                                        />
-                                        <button disabled>Gönder</button>
                                     </div>
                                 </div>
                             </div>
@@ -333,7 +319,7 @@ ${job?.requirements}
                 }
 
                 .detail-panel-wrapper.expanded {
-                    max-height: 3000px;
+                    max-height: none;
                     opacity: 1;
                 }
 
@@ -347,6 +333,7 @@ ${job?.requirements}
                     display: grid;
                     grid-template-columns: 1fr 1fr;
                     gap: 20px;
+                    align-items: start;
                 }
 
                 @media (max-width: 900px) {
@@ -365,8 +352,6 @@ ${job?.requirements}
 
                 .markdown-container {
                     padding: 24px;
-                    max-height: 700px;
-                    overflow-y: auto;
                 }
 
                 /* Right Column */
@@ -443,13 +428,10 @@ ${job?.requirements}
 
                 /* Chat Section */
                 .chat-section {
-                    flex: 1;
                     background: var(--card-bg);
                     border: 1px solid var(--border-color);
                     border-radius: 12px;
                     padding: 16px;
-                    display: flex;
-                    flex-direction: column;
                 }
 
                 .chat-header {
@@ -466,13 +448,9 @@ ${job?.requirements}
                 }
 
                 .chat-messages {
-                    flex: 1;
                     display: flex;
                     flex-direction: column;
                     gap: 10px;
-                    max-height: 280px;
-                    overflow-y: auto;
-                    padding-right: 8px;
                 }
 
                 .chat-message {
@@ -525,45 +503,6 @@ ${job?.requirements}
                     line-height: 1.4;
                     color: var(--text-secondary);
                     margin: 0;
-                }
-
-                .chat-input-area {
-                    display: flex;
-                    gap: 8px;
-                    margin-top: 12px;
-                    padding-top: 12px;
-                    border-top: 1px solid var(--border-color);
-                }
-
-                .chat-input-area input {
-                    flex: 1;
-                    padding: 8px 12px;
-                    border: 1px solid var(--border-color);
-                    border-radius: 6px;
-                    background: var(--surface-bg);
-                    color: var(--text-primary);
-                    font-size: 12px;
-                }
-
-                .chat-input-area input:disabled {
-                    opacity: 0.5;
-                    cursor: not-allowed;
-                }
-
-                .chat-input-area button {
-                    padding: 8px 16px;
-                    background: var(--accent-primary);
-                    color: white;
-                    border: none;
-                    border-radius: 6px;
-                    font-weight: 600;
-                    font-size: 12px;
-                    cursor: pointer;
-                }
-
-                .chat-input-area button:disabled {
-                    opacity: 0.4;
-                    cursor: not-allowed;
                 }
             `}</style>
 
