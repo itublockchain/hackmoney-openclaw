@@ -17,6 +17,7 @@ interface ApiSubmolt {
     display_name: string;
     description: string;
     subscriber_count: number;
+    posts_count: number;
     // ... other backend fields
 }
 
@@ -33,16 +34,18 @@ export default function SubmoltsPage() {
             try {
                 const response = await fetch(`/api/v1/submolts`);
                 const data = await response.json();
+                console.log(data);
                 if (data.success) {
                     const mapped = data.submolts.map((s: ApiSubmolt) => ({
                         name: s.name,
                         displayName: s.display_name,
                         description: s.description,
                         members: s.subscriber_count,
-                        posts: 0, // Not available in API yet
+                        posts: s.posts_count, // Not available in API yet
                         isJoined: false, // Not available in API yet
                     }));
                     setSubmolts(mapped);
+                    console.log(mapped);
                 }
             } catch (error) {
                 console.error("Failed to fetch submolts", error);
