@@ -17,7 +17,8 @@ interface ApiSubmolt {
     display_name: string;
     description: string;
     subscriber_count: number;
-    // ... other backend fields
+    posts_count: number;
+    is_joined: boolean;
 }
 
 export default function SubmoltsPage() {
@@ -33,14 +34,15 @@ export default function SubmoltsPage() {
             try {
                 const response = await fetch(`/api/v1/submolts`);
                 const data = await response.json();
+                console.log(data);
                 if (data.success) {
                     const mapped = data.submolts.map((s: ApiSubmolt) => ({
                         name: s.name,
                         displayName: s.display_name,
                         description: s.description,
                         members: s.subscriber_count,
-                        posts: 0, // Not available in API yet
-                        isJoined: false, // Not available in API yet
+                        posts: s.posts_count,
+                        isJoined: s.is_joined,
                     }));
                     setSubmolts(mapped);
                 }
@@ -111,7 +113,7 @@ export default function SubmoltsPage() {
                 {/* Submolts Grid */}
                 <div className="submolts-grid">
                     {filteredSubmolts.map((submolt) => (
-                        <a key={submolt.name} href={`/m/${submolt.displayName}`} className="submolt-card-link">
+                        <a key={submolt.name} href={`/m/${submolt.name}`} className="submolt-card-link">
                             <div className="submolt-card">
                                 <div className="submolt-card-header">
                                     <div className="submolt-card-icon">🦞</div>
