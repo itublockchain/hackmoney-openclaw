@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authMiddleware, optionalAuthMiddleware } from "@/middleware/auth";
-import SubmoltService from "@/services/SubmoltService";
+import SubmoltController from "@/controllers/SubmoltController";
 import { avatarUpload, bannerUpload } from "@/middleware/upload";
 
 const router = Router();
@@ -17,14 +17,7 @@ const router = Router();
  *       200:
  *         description: List of submolts
  */
-router.get("/", optionalAuthMiddleware, async (_req, res) => {
-  try {
-    const submolts = await SubmoltService.getAllSubmolts();
-    res.json({ success: true, submolts });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to fetch submolts" });
-  }
-});
+router.get("/", optionalAuthMiddleware, SubmoltController.getAllSubmolts);
 
 /**
  * @swagger
@@ -56,27 +49,7 @@ router.get("/", optionalAuthMiddleware, async (_req, res) => {
  *       400:
  *         description: Missing required fields
  */
-router.post("/", authMiddleware, async (req, res) => {
-  try {
-    const { name, display_name, description } = req.body;
-
-    if (!name || !display_name) {
-      res
-        .status(400)
-        .json({ success: false, error: "name and display_name are required" });
-      return;
-    }
-
-    const newSubmolt = await SubmoltService.createSubmolt({
-      name,
-      display_name,
-      description,
-    });
-    res.json({ success: true, submolt: newSubmolt });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to create submolt" });
-  }
-});
+router.post("/", authMiddleware, SubmoltController.createSubmolt);
 
 /**
  * @swagger
@@ -98,24 +71,7 @@ router.post("/", authMiddleware, async (req, res) => {
  *       404:
  *         description: Submolt not found
  */
-router.get("/:name", optionalAuthMiddleware, async (req, res) => {
-  try {
-    const { name } = req.params;
-    if (!name || typeof name !== "string") {
-      res.status(400).json({ success: false, error: "Invalid submolt name" });
-      return;
-    }
-
-    const submolt = await SubmoltService.getSubmoltByName(name);
-    if (!submolt) {
-      res.status(404).json({ success: false, error: "Submolt not found" });
-      return;
-    }
-    res.json({ success: true, submolt, your_role: null });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to fetch submolt" });
-  }
-});
+router.get("/:name", optionalAuthMiddleware, SubmoltController.getSubmoltByName);
 
 /**
  * @swagger
@@ -140,22 +96,7 @@ router.get("/:name", optionalAuthMiddleware, async (req, res) => {
  *       200:
  *         description: Posts from submolt
  */
-router.get("/:name/feed", optionalAuthMiddleware, async (req, res) => {
-  try {
-    const { name } = req.params;
-    const { sort } = req.query;
-
-    if (!name || typeof name !== "string") {
-      res.status(400).json({ success: false, error: "Invalid submolt name" });
-      return;
-    }
-
-    const posts = await SubmoltService.getSubmoltFeed(name, sort as any);
-    res.json({ success: true, posts });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to fetch feed" });
-  }
-});
+router.get("/:name/feed", optionalAuthMiddleware, SubmoltController.getSubmoltFeed);
 
 /**
  * @swagger
@@ -175,21 +116,7 @@ router.get("/:name/feed", optionalAuthMiddleware, async (req, res) => {
  *       200:
  *         description: Subscribed
  */
-router.post("/:name/subscribe", authMiddleware, async (req, res) => {
-  try {
-    const { name } = req.params;
-    if (!name || typeof name !== "string") {
-      res.status(400).json({ success: false, error: "Invalid submolt name" });
-      return;
-    }
-
-    const agentName = req.agent?.name || "Unknown";
-    const result = await SubmoltService.subscribe(name, agentName);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to subscribe" });
-  }
-});
+router.post("/:name/subscribe", authMiddleware, SubmoltController.subscribe);
 
 /**
  * @swagger
@@ -209,21 +136,7 @@ router.post("/:name/subscribe", authMiddleware, async (req, res) => {
  *       200:
  *         description: Unsubscribed
  */
-router.delete("/:name/subscribe", authMiddleware, async (req, res) => {
-  try {
-    const { name } = req.params;
-    if (!name || typeof name !== "string") {
-      res.status(400).json({ success: false, error: "Invalid submolt name" });
-      return;
-    }
-
-    const agentName = req.agent?.name || "Unknown";
-    const result = await SubmoltService.unsubscribe(name, agentName);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to unsubscribe" });
-  }
-});
+router.delete("/:name/subscribe", authMiddleware, SubmoltController.unsubscribe);
 
 /**
  * @swagger
@@ -255,28 +168,7 @@ router.delete("/:name/subscribe", authMiddleware, async (req, res) => {
  *       200:
  *         description: Settings updated
  */
-router.patch("/:name/settings", authMiddleware, async (req, res) => {
-  try {
-    const { name } = req.params;
-    const { description, banner_color, theme_color } = req.body;
-
-    if (!name || typeof name !== "string") {
-      res.status(400).json({ success: false, error: "Invalid submolt name" });
-      return;
-    }
-
-    const result = await SubmoltService.updateSettings(name, {
-      description,
-      banner_color,
-      theme_color,
-    });
-    res.json(result);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, error: "Failed to update settings" });
-  }
-});
+router.patch("/:name/settings", authMiddleware, SubmoltController.updateSettings);
 
 /**
  * @swagger
@@ -324,40 +216,7 @@ router.post(
       next();
     });
   },
-  async (req, res) => {
-    try {
-      const { name } = req.params;
-      const assetType = (req.body.type || req.query.type) as
-        | "avatar"
-        | "banner";
-
-      if (!name || typeof name !== "string") {
-        res.status(400).json({ success: false, error: "Invalid submolt name" });
-        return;
-      }
-
-      if (!req.file) {
-        res.status(400).json({ success: false, error: "No file provided" });
-        return;
-      }
-
-      if (!assetType || !["avatar", "banner"].includes(assetType)) {
-        res
-          .status(400)
-          .json({ success: false, error: "type must be 'avatar' or 'banner'" });
-        return;
-      }
-
-      const result = await SubmoltService.uploadAsset(
-        name,
-        assetType,
-        req.file.path,
-      );
-      res.json(result);
-    } catch (error) {
-      res.status(500).json({ success: false, error: "Failed to upload asset" });
-    }
-  },
+  SubmoltController.uploadAsset,
 );
 
 /**
@@ -378,9 +237,7 @@ router.post(
  *       200:
  *         description: List of moderators
  */
-router.get("/:name/moderators", optionalAuthMiddleware, (_req, res) => {
-  res.json({ success: true, moderators: [] });
-});
+router.get("/:name/moderators", optionalAuthMiddleware, SubmoltController.getModerators);
 
 /**
  * @swagger
@@ -410,9 +267,7 @@ router.get("/:name/moderators", optionalAuthMiddleware, (_req, res) => {
  *       200:
  *         description: Moderator added
  */
-router.post("/:name/moderators", authMiddleware, (_req, res) => {
-  res.json({ success: true, message: "Moderator added" });
-});
+router.post("/:name/moderators", authMiddleware, SubmoltController.addModerator);
 
 /**
  * @swagger
@@ -432,8 +287,5 @@ router.post("/:name/moderators", authMiddleware, (_req, res) => {
  *       200:
  *         description: Moderator removed
  */
-router.delete("/:name/moderators", authMiddleware, (_req, res) => {
-  res.json({ success: true, message: "Moderator removed" });
-});
-
+router.delete("/:name/moderators", authMiddleware, SubmoltController.removeModerator);
 export default router;

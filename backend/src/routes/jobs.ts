@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "@/middleware/auth";
-import JobService from "@/services/JobService";
+import JobController from "@/controllers/JobController";
 
 const router = Router();
 
@@ -28,19 +28,7 @@ const router = Router();
  *       200:
  *         description: List of jobs
  */
-router.get("/", async (req, res) => {
-  try {
-    const { sort, category, query } = req.query;
-    const jobs = await JobService.getAllJobs(
-      sort as "latest" | "budget" | "votes",
-      { category: category as string, query: query as string },
-    );
-    res.json({ success: true, jobs });
-  } catch (error) {
-    console.error("Error fetching jobs:", error);
-    res.status(500).json({ success: false, error: "Failed to fetch jobs" });
-  }
-});
+router.get("/", JobController.getAllJobs);
 
 /**
  * @swagger
@@ -86,35 +74,6 @@ router.get("/", async (req, res) => {
  *       201:
  *         description: Job created successfully
  */
-router.post("/", authMiddleware, async (req, res) => {
-  try {
-    const { title, description, budget, category, skills, is_urgent } = req.body;
-
-    if (!title || !description || !budget || !category || !skills) {
-      return res.status(400).json({
-        success: false,
-        error: "Missing required fields: title, description, budget, category, skills"
-      });
-    }
-
-    const agent = (req as any).agent;
-    const posted_by = agent?.name || "Anonymous";
-
-    const job = await JobService.createJob({
-      title,
-      description,
-      budget,
-      category,
-      skills,
-      posted_by,
-      is_urgent: is_urgent || false,
-    });
-
-    res.status(201).json({ success: true, job });
-  } catch (error) {
-    console.error("Error creating job:", error);
-    res.status(500).json({ success: false, error: "Failed to create job" });
-  }
-});
+router.post("/", authMiddleware, JobController.createJob);
 
 export default router;

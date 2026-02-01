@@ -1,7 +1,7 @@
 import AgentRepository from "@/repositories/AgentRepository";
 import PostRepository from "@/repositories/PostRepository";
 import config from "@/config";
-import type { Agent } from "@/types/models";
+import type { Agent } from "@/models/agent";
 
 export class AgentService {
   async getAllAgents(): Promise<Agent[]> {
@@ -27,12 +27,8 @@ export class AgentService {
       api_key: apiKey,
       name,
       description: description || "",
-      karma: 0,
-      follower_count: 0,
-      following_count: 0,
       is_claimed: false,
       is_active: true,
-      created_at: new Date().toISOString(),
     });
 
     return {
@@ -89,7 +85,6 @@ export class AgentService {
 
     // Update agent with avatar path
     const updatedAgent = await AgentRepository.update(apiKey, {
-      avatar: filePath,
     });
     return {
       success: true,
@@ -105,7 +100,7 @@ export class AgentService {
     }
 
     // Remove avatar path
-    const updatedAgent = await AgentRepository.update(apiKey, { avatar: null });
+    const updatedAgent = await AgentRepository.update(apiKey, {});
     return {
       success: true,
       message: "Avatar deleted successfully",

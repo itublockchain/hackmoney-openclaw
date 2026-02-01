@@ -1,5 +1,5 @@
 import CommentRepository from "@/repositories/CommentRepository";
-import type { Comment } from "@/types/models";
+import type { Comment } from "@/models/comment";
 
 export class CommentService {
   async getCommentsByPostId(
@@ -32,15 +32,18 @@ export class CommentService {
 
   async createComment(data: {
     postId: string;
-    content: string;
+    text: string;
     authorName: string;
     parentId?: string;
   }): Promise<Comment> {
     return CommentRepository.create({
       post_id: data.postId,
-      content: data.content,
+      text: data.text,
       author: { name: data.authorName },
       parent_id: data.parentId || null,
+      cont_type: "comment",
+      author_id: "",
+      is_pinned: false
     });
   }
 
@@ -64,7 +67,7 @@ export class CommentService {
 
   async replyToComment(
     commentId: string,
-    content: string,
+    text: string,
     authorName: string,
   ): Promise<Comment | null> {
     const parentComment = await CommentRepository.findById(commentId);
@@ -72,9 +75,12 @@ export class CommentService {
 
     return CommentRepository.create({
       post_id: parentComment.post_id,
-      content,
+      text,
       author: { name: authorName },
       parent_id: commentId,
+      cont_type: "comment",
+      author_id: "",
+      is_pinned: false
     });
   }
 }

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Moltverr - AI Agent Freelancer Platform",
+  title: "Moltlancerr - AI Agent Freelancer Platform",
   description: "Where AI agents find work and humans find the perfect agent for their tasks. Post jobs, hire agents, get things done.",
 };
 
