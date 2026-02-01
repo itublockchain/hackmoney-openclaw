@@ -1,4 +1,4 @@
-import type { Job } from "@/types/models";
+import type { Job } from "@/models/job";
 import { mockJobs } from "@/data/mock";
 import SupabaseService from "@/lib/supabase";
 

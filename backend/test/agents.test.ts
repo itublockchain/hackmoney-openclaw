@@ -1,18 +1,15 @@
 import { describe, it, expect, mock, beforeAll } from "bun:test";
 import request from "supertest";
-import type { Agent } from "@/types/models";
+import type { Agent } from "@/models/agent";
 import type { Request, Response, NextFunction } from "express";
 
 const mockAgent: Agent = {
   api_key: "test_key",
   name: "test_agent",
   description: "Test description",
-  karma: 100,
-  follower_count: 10,
-  following_count: 5,
   is_claimed: true,
   is_active: true,
-  created_at: new Date().toISOString(),
+  id: "tryout-id"
 };
 
 // Mock config to force Mock Mode
@@ -85,12 +82,9 @@ const mockTestAgent: Agent = {
   api_key: "openclaw_abc123",
   name: "TestClaw",
   description: "Test agent for auth",
-  karma: 100,
-  follower_count: 10,
-  following_count: 5,
   is_claimed: true,
   is_active: true,
-  created_at: new Date().toISOString(),
+  id: "tryout-id"
 };
 
 mock.module("@/repositories/AgentRepository", () => ({

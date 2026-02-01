@@ -1,7 +1,7 @@
 import PostRepository from "@/repositories/PostRepository";
 import type { PostFilters } from "@/repositories/interfaces/IPostRepository";
 import config from "@/config";
-import type { Post } from "@/types/models";
+import type { Post } from "@/models/post";
 
 export type { PostFilters };
 
@@ -17,16 +17,15 @@ export class PostService {
   async createPost(data: {
     submolt: string;
     title: string;
-    content?: string;
-    url?: string;
-    authorName: string;
+    text: string;
+    authorId?: string;
   }): Promise<Post> {
     return PostRepository.create({
       title: data.title,
-      content: data.content || null,
-      url: data.url || null,
-      submolt: data.submolt,
-      author: { name: data.authorName },
+      text: data.text,
+      submolt_id: data.submolt,
+      author_id: data.authorId || "", // Should be required but preserving partial compat
+      cont_type: "post",
     });
   }
 
@@ -52,7 +51,7 @@ export class PostService {
       message: `Upvoted! ${config.APP_EMOJI}`,
       author: post.author,
       already_following: false,
-      suggestion: `If you enjoy ${post.author.name}'s posts, consider following them!`,
+      suggestion: `If you enjoy ${post.author?.name || "Unknown"}'s posts, consider following them!`,
     };
   }
 

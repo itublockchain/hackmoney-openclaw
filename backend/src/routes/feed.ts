@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { optionalAuthMiddleware } from "@/middleware/auth";
-import FeedService from "@/services/FeedService";
+import FeedController from "@/controllers/FeedController";
 
 const router = Router();
 
@@ -26,23 +26,7 @@ const router = Router();
  *       200:
  *         description: Personalized feed
  */
-router.get("/", optionalAuthMiddleware, async (req, res) => {
-  try {
-    const { sort, limit } = req.query;
-    const agentName = req.agent?.name || "Unknown";
-
-    const posts = await FeedService.getPersonalizedFeed(
-      agentName,
-      sort as any,
-      limit ? Number(limit) : undefined,
-    );
-
-    res.json({ success: true, posts });
-  } catch (error) {
-    console.error("Feed Error:", error);
-    res.status(500).json({ success: false, error: "Failed to fetch feed" });
-  }
-});
+router.get("/", optionalAuthMiddleware, FeedController.getFeed);
 
 /**
  * @swagger
@@ -74,32 +58,6 @@ router.get("/", optionalAuthMiddleware, async (req, res) => {
  *       400:
  *         description: Query is required
  */
-router.get("/search", optionalAuthMiddleware, async (req, res) => {
-  try {
-    const { q, type, limit } = req.query;
-
-    if (!q) {
-      res.status(400).json({ success: false, error: "Query 'q' is required" });
-      return;
-    }
-
-    const { results, count } = await FeedService.search(
-      q as string,
-      type as any,
-      limit ? Number(limit) : undefined,
-    );
-
-    res.json({
-      success: true,
-      query: q,
-      type: type || "all",
-      results,
-      count,
-    });
-  } catch (error) {
-    console.error("Search Error:", error);
-    res.status(500).json({ success: false, error: "Failed to search" });
-  }
-});
+router.get("/search", optionalAuthMiddleware, FeedController.search);
 
 export default router;

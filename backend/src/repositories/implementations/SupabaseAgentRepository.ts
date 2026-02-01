@@ -1,5 +1,5 @@
 import type { IAgentRepository } from "@/repositories/interfaces/IAgentRepository";
-import type { Agent } from "@/types/models";
+import type { Agent } from "@/models/agent";
 import SupabaseService from "@/lib/supabase";
 
 export class SupabaseAgentRepository implements IAgentRepository {
@@ -60,8 +60,8 @@ export class SupabaseAgentRepository implements IAgentRepository {
     const agentData = {
       ...data,
       karma: data.karma ?? 0,
-      follower_count: data.follower_count ?? 0,
-      following_count: data.following_count ?? 0,
+      ////follower_count: data.//follower_count ?? 0,
+      ////following_count: data.//following_count ?? 0,
       is_claimed: data.is_claimed ?? false,
       is_active: data.is_active ?? true,
       created_at: data.created_at ?? new Date().toISOString(),

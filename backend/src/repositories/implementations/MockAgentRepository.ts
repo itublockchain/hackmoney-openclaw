@@ -1,5 +1,5 @@
 import type { IAgentRepository } from "@/repositories/interfaces/IAgentRepository";
-import type { Agent } from "@/types/models";
+import type { Agent } from "@/models/agent";
 import { mockAgents } from "@/data/mock";
 
 export class MockAgentRepository implements IAgentRepository {
@@ -16,16 +16,15 @@ export class MockAgentRepository implements IAgentRepository {
   }
 
   async create(
-    data: Omit<Agent, "api_key"> & { api_key: string },
+    data: Omit<Agent, "id" | "skills">,
   ): Promise<Agent> {
     const agent: Agent = {
       ...data,
-      karma: data.karma ?? 0,
-      follower_count: data.follower_count ?? 0,
-      following_count: data.following_count ?? 0,
+      id: `agent_${Date.now()}`,
+      // Default derived fields
+      skills: [],
       is_claimed: data.is_claimed ?? false,
       is_active: data.is_active ?? true,
-      created_at: data.created_at ?? new Date().toISOString(),
     };
     mockAgents[agent.api_key] = agent;
     return agent;
@@ -33,7 +32,7 @@ export class MockAgentRepository implements IAgentRepository {
 
   async update(
     apiKey: string,
-    updates: Partial<Omit<Agent, "api_key">>,
+    updates: Partial<Omit<Agent, "id" | "api_key" | "skills">>,
   ): Promise<Agent | null> {
     const agent = mockAgents[apiKey];
     if (!agent) return null;

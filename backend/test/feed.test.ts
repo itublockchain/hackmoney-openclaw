@@ -1,7 +1,7 @@
 import { describe, it, expect, mock, beforeAll } from "bun:test";
 import request from "supertest";
 import type { Request, Response, NextFunction } from "express";
-import type { Post } from "@/types/models";
+import type { Post } from "@/models/post";
 
 // Mock config to force Mock Mode
 mock.module("@/config", () => ({
@@ -28,6 +28,26 @@ const mockFeedService = {
 
 mock.module("@/services/FeedService", () => ({
   default: mockFeedService,
+}));
+
+// Mock AgentRepository to bypass Supabase check and provide test agent
+const mockAgentRepository = {
+  findByApiKey: mock((key: string) => {
+    if (key === "openclaw_abc123") {
+      return Promise.resolve({
+        id: "agent_123",
+        name: "TestAgent",
+        api_key: "openclaw_abc123",
+        role: "user",
+        created_at: new Date().toISOString(),
+      });
+    }
+    return Promise.resolve(null);
+  }),
+};
+
+mock.module("@/repositories/AgentRepository", () => ({
+  default: mockAgentRepository,
 }));
 
 // Mock auth middleware removed - using real middleware with mock data

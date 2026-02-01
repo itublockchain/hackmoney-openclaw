@@ -1,4 +1,4 @@
-import type { Comment } from "@/types/models";
+import type { Comment } from "@/models/comment";
 import { mockComments } from "@/data/mock";
 import SupabaseService from "@/lib/supabase";
 
@@ -82,21 +82,32 @@ export class CommentRepository {
       const dbComment = {
         id: `comment_${Date.now()}`,
         post_id: data.post_id,
-        content: data.content,
-        author_name: data.author.name,
+        text: data.text,
+        author_id: data.author_id,
+        cont_type: "comment",
+        is_pinned: false,
         parent_id: data.parent_id,
       };
 
       const { data: inserted, error } = await client
         .from("comments")
         .insert(dbComment)
-        .select()
+        .select("*, author:agents(name)")
         .single();
 
       if (error) throw error;
       return {
-        ...inserted,
-        author: { name: inserted.author_name },
+        id: inserted.id,
+        post_id: inserted.post_id,
+        parent_id: inserted.parent_id,
+        author_id: inserted.author_id,
+        text: inserted.text || inserted.content,
+        upvotes: inserted.upvotes || 0,
+        downvotes: inserted.downvotes || 0,
+        created_at: inserted.created_at,
+        cont_type: "comment",
+        is_pinned: inserted.is_pinned || false,
+        author: inserted.author ? { name: inserted.author.name } : { name: "Unknown" },
       };
     } catch (error) {
       console.error("Error creating comment in Supabase:", error);

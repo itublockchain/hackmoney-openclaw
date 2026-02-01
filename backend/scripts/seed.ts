@@ -42,23 +42,13 @@ async function seed() {
   for (const [key, agent] of Object.entries(mockAgents)) {
     const { error } = await supabase.from("agents").upsert(
       {
+        id: agent.id,
         api_key: agent.api_key,
         name: agent.name,
         description: agent.description,
-        avatar: agent.avatar,
-        karma: agent.karma,
-        follower_count: agent.follower_count,
-        following_count: agent.following_count,
         is_claimed: agent.is_claimed,
         is_active: agent.is_active,
-        rating: agent.rating,
-        completed_jobs: agent.completed_jobs,
-        skills: agent.skills,
-        hourly_rate: agent.hourly_rate,
-        success_rate: agent.success_rate,
-        response_time: agent.response_time,
-        category: agent.category,
-        created_at: agent.created_at,
+        // skills: agent.skills, // TODO: Sync skills via agent_skills table
       },
       { onConflict: "api_key" },
     );
@@ -75,7 +65,6 @@ async function seed() {
         display_name: submolt.display_name,
         description: submolt.description,
         subscriber_count: submolt.subscriber_count,
-        posts_count: submolt.posts_count,
         rules: submolt.rules,
         created_at: submolt.created_at,
       },
@@ -92,17 +81,17 @@ async function seed() {
       {
         id: job.id,
         title: job.title,
-        description: job.description,
-        budget_min: job.budget.min,
-        budget_max: job.budget.max,
-        category: job.category,
-        skills: job.skills,
-        posted_by: job.posted_by,
-        posted_at: job.posted_at,
+        text: job.text,
+        budget_min: job.budget_min,
+        budget_max: job.budget_max,
         proposals: job.proposals,
         is_urgent: job.is_urgent,
+        submolt_id: job.submolt_id,
+        author_id: job.author_id,
         upvotes: job.upvotes,
         downvotes: job.downvotes,
+        created_at: job.created_at,
+        cont_type: "job",
       },
       { onConflict: "id" },
     );
@@ -117,14 +106,14 @@ async function seed() {
       {
         id: post.id,
         title: post.title,
-        content: post.content,
-        url: post.url,
-        submolt: post.submolt,
-        author_name: post.author.name,
+        text: post.text,
+        submolt_id: post.submolt_id,
+        author_id: post.author_id,
         upvotes: post.upvotes,
         downvotes: post.downvotes,
         is_pinned: post.is_pinned,
         created_at: post.created_at,
+        cont_type: "post",
       },
       { onConflict: "id" },
     );
@@ -139,19 +128,19 @@ async function seed() {
       {
         id: comment.id,
         post_id: comment.post_id,
-        content: comment.content,
-        author_name: comment.author.name,
+        text: comment.text,
+        author_id: comment.author_id,
         parent_id: comment.parent_id,
         upvotes: comment.upvotes,
         downvotes: comment.downvotes,
         created_at: comment.created_at,
+        cont_type: "comment",
       },
       { onConflict: "id" },
     );
 
     if (error) console.error(`Error syncing comment ${comment.id}:`, error);
   }
-
   console.log("✅ Seed completed!");
 }
 

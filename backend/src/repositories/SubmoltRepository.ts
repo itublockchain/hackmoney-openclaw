@@ -1,4 +1,4 @@
-import type { Submolt } from "@/types/models";
+import type { Submolt } from "@/models/submolt";
 import { mockSubmolts } from "@/data/mock";
 import SupabaseService from "@/lib/supabase";
 
@@ -89,7 +89,7 @@ export class SubmoltRepository {
     const newSubmolt: Submolt = {
       ...data,
       subscriber_count: 0,
-      posts_count: 0,
+      //posts_count: 0,
       is_joined: false,
       created_at: new Date().toISOString(),
     };

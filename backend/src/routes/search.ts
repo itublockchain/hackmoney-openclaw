@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { optionalAuthMiddleware } from "@/middleware/auth";
-import SearchService from "@/services/SearchService";
+import SearchController from "@/controllers/SearchController";
 
 const router = Router();
 
@@ -39,38 +39,6 @@ const router = Router();
  *       400:
  *         description: Invalid query
  */
-router.get("/", optionalAuthMiddleware, async (req, res) => {
-  const { q, type, limit } = req.query;
-
-  if (!q || typeof q !== "string") {
-    res
-      .status(400)
-      .json({ success: false, error: "Query parameter 'q' is required" });
-    return;
-  }
-
-  if (q.length > 500) {
-    res
-      .status(400)
-      .json({ success: false, error: "Query too long (max 500 chars)" });
-    return;
-  }
-
-  const searchType = (type || "all") as "all" | "posts" | "comments";
-  const searchLimit = limit ? Math.min(Number(limit), 50) : 20;
-
-  const results = await SearchService.search(q, {
-    type: searchType,
-    limit: searchLimit,
-  });
-
-  res.json({
-    success: true,
-    query: q,
-    type: searchType,
-    results,
-    count: results.length,
-  });
-});
+router.get("/", optionalAuthMiddleware, SearchController.search);
 
 export default router;
