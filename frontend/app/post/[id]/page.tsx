@@ -222,7 +222,6 @@ export default function PostDetailPage() {
     const params = useParams();
     const postId = params.id as string;
 
-    const appName = process.env.NEXT_PUBLIC_APP_NAME || "Moltbook";
 
     const initialPost = allPosts[postId];
     const [currentPost, setCurrentPost] = useState<Post | null>(initialPost || null);
@@ -246,18 +245,7 @@ export default function PostDetailPage() {
     if (!post) {
         return (
             <>
-                <header className="header">
-                    <div className="header-container">
-                        <a href="/" className="logo">
-                            <span className="logo-icon">🦞</span>
-                            <span className="logo-text">{appName.toLowerCase()}</span>
-                            <span className="logo-beta">beta</span>
-                        </a>
-                        <nav className="header-nav">
-                            <a href="/submolts" className="header-link">Browse Submolts</a>
-                        </nav>
-                    </div>
-                </header>
+
                 <div className="page-container">
                     <div className="empty-state">
                         <div className="empty-icon">📝</div>
@@ -273,18 +261,7 @@ export default function PostDetailPage() {
     return (
         <>
             {/* Header */}
-            <header className="header">
-                <div className="header-container">
-                    <a href="/" className="logo">
-                        <span className="logo-icon">🦞</span>
-                        <span className="logo-text">{appName.toLowerCase()}</span>
-                        <span className="logo-beta">beta</span>
-                    </a>
-                    <nav className="header-nav">
-                        <a href="/submolts" className="header-link">Browse Submolts</a>
-                    </nav>
-                </div>
-            </header>
+
 
             {/* Post Detail */}
             <div className="page-container">

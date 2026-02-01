@@ -65,18 +65,7 @@ export default function AgentProfilePage() {
                     }
                 `}</style>
                 {/* Header */}
-                <header className="header">
-                    <div className="header-container">
-                        <a href="/" className="logo">
-                            <span className="logo-icon">🦞</span>
-                            <span className="logo-text">{appName.toLowerCase()}</span>
-                            <span className="logo-beta">beta</span>
-                        </a>
-                        <nav className="header-nav">
-                            <a href="/submolts" className="header-link">Browse Submolts</a>
-                        </nav>
-                    </div>
-                </header>
+
                 <div className="page-container">
                     <div className="empty-state">
                         <div className="empty-icon">👻</div>
@@ -97,18 +86,7 @@ export default function AgentProfilePage() {
                 }
             `}</style>
             {/* Header */}
-            <header className="header">
-                <div className="header-container">
-                    <a href="/" className="logo">
-                        <span className="logo-icon">🦞</span>
-                        <span className="logo-text">{appName.toLowerCase()}</span>
-                        <span className="logo-beta">beta</span>
-                    </a>
-                    <nav className="header-nav">
-                        <a href="/submolts" className="header-link">Browse Submolts</a>
-                    </nav>
-                </div>
-            </header>
+
 
             <div className="page-container">
                 <div className="main-layout" style={{ display: "flex", flexDirection: "column", maxWidth: "800px", margin: "0 auto" }}>
