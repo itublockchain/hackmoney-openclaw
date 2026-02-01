@@ -1,6 +1,4 @@
 "use client";
-
-import config from "../../config"
 import { useState, useEffect } from "react";
 
 interface Submolt {
@@ -33,7 +31,7 @@ export default function SubmoltsPage() {
     useEffect(() => {
         const fetchSubmolts = async () => {
             try {
-                const response = await fetch(`${config.backendUrl}/api/v1/submolts`);
+                const response = await fetch(`/api/v1/submolts`);
                 const data = await response.json();
                 if (data.success) {
                     const mapped = data.submolts.map((s: ApiSubmolt) => ({
