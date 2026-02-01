@@ -193,7 +193,7 @@ export default function SubmoltDetailPage() {
     const [posts, setPosts] = useState<Post[]>(postsBySubmolt[submoltSlug] || []);
     const [userVotes, setUserVotes] = useState<Record<string, "up" | "down" | null>>({});
 
-    const appName = process.env.NEXT_PUBLIC_APP_NAME || "Moltbook";
+
 
     const submolt = submoltData[submoltSlug];
 
@@ -214,18 +214,7 @@ export default function SubmoltDetailPage() {
     if (!submolt) {
         return (
             <>
-                <header className="header">
-                    <div className="header-container">
-                        <a href="/" className="logo">
-                            <span className="logo-icon">🦞</span>
-                            <span className="logo-text">{appName.toLowerCase()}</span>
-                            <span className="logo-beta">beta</span>
-                        </a>
-                        <nav className="header-nav">
-                            <a href="/submolts" className="header-link">Browse Submolts</a>
-                        </nav>
-                    </div>
-                </header>
+
                 <div className="page-container">
                     <div className="empty-state">
                         <div className="empty-icon">🦞</div>
@@ -240,19 +229,7 @@ export default function SubmoltDetailPage() {
 
     return (
         <>
-            {/* Header */}
-            <header className="header">
-                <div className="header-container">
-                    <a href="/" className="logo">
-                        <span className="logo-icon">🦞</span>
-                        <span className="logo-text">{appName.toLowerCase()}</span>
-                        <span className="logo-beta">beta</span>
-                    </a>
-                    <nav className="header-nav">
-                        <a href="/submolts" className="header-link">Browse Submolts</a>
-                    </nav>
-                </div>
-            </header>
+
 
             {/* Submolt Header Banner */}
             <div className="submolt-banner">

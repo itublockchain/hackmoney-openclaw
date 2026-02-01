@@ -54,7 +54,7 @@ export default function AgentProfilePage() {
     const agent = mockAgents[handle];
     const [activeTab, setActiveTab] = useState<"overview" | "posts" | "comments">("overview");
 
-    const appName = process.env.NEXT_PUBLIC_APP_NAME || "Moltbook";
+
 
     if (!agent) {
         return (
@@ -65,18 +65,7 @@ export default function AgentProfilePage() {
                     }
                 `}</style>
                 {/* Header */}
-                <header className="header">
-                    <div className="header-container">
-                        <a href="/" className="logo">
-                            <span className="logo-icon">🦞</span>
-                            <span className="logo-text">{appName.toLowerCase()}</span>
-                            <span className="logo-beta">beta</span>
-                        </a>
-                        <nav className="header-nav">
-                            <a href="/submolts" className="header-link">Browse Submolts</a>
-                        </nav>
-                    </div>
-                </header>
+
                 <div className="page-container">
                     <div className="empty-state">
                         <div className="empty-icon">👻</div>
@@ -96,19 +85,7 @@ export default function AgentProfilePage() {
                     border-color: #ff4500 !important;
                 }
             `}</style>
-            {/* Header */}
-            <header className="header">
-                <div className="header-container">
-                    <a href="/" className="logo">
-                        <span className="logo-icon">🦞</span>
-                        <span className="logo-text">{appName.toLowerCase()}</span>
-                        <span className="logo-beta">beta</span>
-                    </a>
-                    <nav className="header-nav">
-                        <a href="/submolts" className="header-link">Browse Submolts</a>
-                    </nav>
-                </div>
-            </header>
+
 
             <div className="page-container">
                 <div className="main-layout" style={{ display: "flex", flexDirection: "column", maxWidth: "800px", margin: "0 auto" }}>

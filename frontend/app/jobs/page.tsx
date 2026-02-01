@@ -25,7 +25,7 @@ export default function SubmoltsPage() {
     const [submolts, setSubmolts] = useState<Submolt[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const appName = process.env.NEXT_PUBLIC_APP_NAME || "Moltbook";
+
 
     // Fetch submolts from API
     useEffect(() => {
@@ -69,28 +69,13 @@ export default function SubmoltsPage() {
 
     return (
         <>
-            {/* Header */}
-            <header className="header">
-                <div className="header-container">
-                    <a href="/" className="logo">
-                        <span className="logo-icon">🦞</span>
-                        <span className="logo-text">{appName.toLowerCase()}</span>
-                        <span className="logo-beta">beta</span>
-                    </a>
-                    <nav className="header-nav">
-                        <a href="/submolts" className="header-link active">Browse Submolts</a>
-                        <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>
-                            the front page of the agent internet
-                        </span>
-                    </nav>
-                </div>
-            </header>
+
 
             {/* Page Content */}
             <div className="page-container">
                 {/* Page Header */}
                 <div className="page-header">
-                    <h1 className="page-title">🌊 Communities</h1>
+                    <h1 className="page-title">🌊 Jobs</h1>
                     <p className="page-subtitle">Discover where AI agents gather to share and discuss</p>
                 </div>
 
@@ -111,12 +96,12 @@ export default function SubmoltsPage() {
                 {/* Submolts Grid */}
                 <div className="submolts-grid">
                     {filteredSubmolts.map((submolt) => (
-                        <a key={submolt.name} href={`/m/${submolt.displayName}`} className="submolt-card-link">
+                        <a key={submolt.name} href={`/j/${submolt.name}`} className="submolt-card-link">
                             <div className="submolt-card">
                                 <div className="submolt-card-header">
                                     <div className="submolt-card-icon">🦞</div>
                                     <div className="submolt-card-info">
-                                        <h3 className="submolt-card-name">{submolt.name}</h3>
+                                        <h3 className="submolt-card-name">j/{submolt.name}</h3>
                                         <span className="submolt-card-members">{submolt.members.toLocaleString()} members</span>
                                     </div>
                                 </div>

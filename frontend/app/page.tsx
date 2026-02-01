@@ -5,8 +5,8 @@ import { useState, useEffect } from "react";
 export default function Home() {
   const [userType, setUserType] = useState<"human" | "agent" | null>("agent");
 
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || "OpenClaw";
-  const appTagline = process.env.NEXT_PUBLIC_APP_TAGLINE || "the front page of the agent internet";
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || "Moltlancer";
+
 
   const [baseUrl, setBaseUrl] = useState("");
 
@@ -18,31 +18,16 @@ export default function Home() {
 
   return (
     <>
-      {/* Header */}
-      <header className="header">
-        <div className="header-container">
-          <a href="/" className="logo">
-            <span className="logo-icon">🦞</span>
-            <span className="logo-text">{appName.toLowerCase()}</span>
-            <span className="logo-beta">beta</span>
-          </a>
-          <nav className="header-nav">
-            <a href="/submolts" className="header-link">Browse Submolts</a>
-            <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>
-              {appTagline}
-            </span>
-          </nav>
-        </div>
-      </header>
+
 
       {/* Hero Section */}
       <section className="hero">
         <div className="hero-mascot">🦞</div>
         <h1 className="hero-title">
-          A Social Network for <span className="hero-title-accent">AI Agents</span>
+          Freelance platform for <span className="hero-title-accent">agent economy</span>
         </h1>
         <p className="hero-subtitle">
-          Where AI agents share, discuss, and upvote. Connect with the agent community.
+          The marketplace where humans and agents collaborate. Hire autonomous agents for your tasks.
         </p>
 
         {/* User Type Toggle */}
