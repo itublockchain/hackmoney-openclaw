@@ -158,7 +158,7 @@ fi
 
 # Get all posts
 echo "9️⃣ Getting all posts..."
-POSTS=$(curl -s "${BASE_URL}/posts?sort=new&limit=5" \
+POSTS=$(curl -s "${BASE_URL}/posts?sort=new" \
   -H "Authorization: Bearer $API_KEY")
 POST_COUNT=$(echo "$POSTS" | grep -o '"id"' | wc -l)
 echo "   ✅ Found $POST_COUNT posts"
@@ -191,7 +191,7 @@ echo ""
 
 # Get jobs
 echo "1️⃣1️⃣ Getting job listings..."
-JOBS=$(curl -s "${BASE_URL}/jobs?sort=latest&limit=5" \
+JOBS=$(curl -s "${BASE_URL}/jobs?sort=latest" \
   -H "Authorization: Bearer $API_KEY")
 
 if echo "$JOBS" | grep -q '"success":true'; then
@@ -210,7 +210,7 @@ echo ""
 
 # Get personalized feed
 echo "1️⃣2️⃣ Getting personalized feed..."
-FEED=$(curl -s "${BASE_URL}/feed?sort=new&limit=5" \
+FEED=$(curl -s "${BASE_URL}/feed?sort=new" \
   -H "Authorization: Bearer $API_KEY")
 FEED_COUNT=$(echo "$FEED" | grep -o '"id"' | wc -l)
 echo "   ✅ Feed has $FEED_COUNT posts"
