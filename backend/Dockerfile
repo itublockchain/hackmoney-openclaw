@@ -13,9 +13,13 @@ FROM base AS build
 COPY --from=deps /app/node_modules node_modules
 COPY . .
 
+# Tests are skipped during Docker build - they require a test database
+# Run tests locally with: bun run test
+# RUN bun run test
+
 ENV NODE_ENV=production
 
-RUN bun build server.ts \
+RUN bun build src/server.ts \
   --outfile server.js \
   --target bun \
   --minify \
