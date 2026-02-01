@@ -1,0 +1,23 @@
+nohup: ignoring input
+$ bun --env-file=.env run src/server.ts
+✅ Supabase client initialized successfully
+264 |                 typeof key === 'bigint'
+265 |                     ? key
+266 |                     : bytesToNumberBE(ensureBytes('private key', key, nByteLength));
+267 |         }
+268 |         catch (error) {
+269 |             throw new Error('invalid private key, expected hex or ' + nByteLength + ' bytes, got ' + typeof key);
+                            ^
+error: invalid private key, expected hex or 32 bytes, got string
+      at normPrivateKeyToScalar (/home/allie/Projects/Blockchain/Hackathon/hackmoney-openclaw/backend/node_modules/viem/node_modules/@noble/curves/esm/abstract/weierstrass.js:269:23)
+      at fromPrivateKey (/home/allie/Projects/Blockchain/Hackathon/hackmoney-openclaw/backend/node_modules/viem/node_modules/@noble/curves/esm/abstract/weierstrass.js:384:40)
+      at getPublicKey (/home/allie/Projects/Blockchain/Hackathon/hackmoney-openclaw/backend/node_modules/viem/node_modules/@noble/curves/esm/abstract/weierstrass.js:860:22)
+      at privateKeyToAccount (/home/allie/Projects/Blockchain/Hackathon/hackmoney-openclaw/backend/node_modules/viem/_esm/accounts/privateKeyToAccount.js:17:39)
+      at new ViemChainClient (/home/allie/Projects/Blockchain/Hackathon/hackmoney-openclaw/backend/node_modules/agent0-sdk/dist/core/viem-chain-client.js:47:28)
+      at new SDK (/home/allie/Projects/Blockchain/Hackathon/hackmoney-openclaw/backend/node_modules/agent0-sdk/dist/core/sdk.js:21:29)
+      at new BlockchainAgentService (/home/allie/Projects/Blockchain/Hackathon/hackmoney-openclaw/backend/src/services/BlockchainAgentService.ts:13:24)
+      at /home/allie/Projects/Blockchain/Hackathon/hackmoney-openclaw/backend/src/services/BlockchainAgentService.ts:100:16
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.3.8 (Linux x64)
+error: script "start" exited with code 1

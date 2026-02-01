@@ -8,6 +8,10 @@ export class AgentService {
     return await AgentRepository.getAll();
   }
 
+  async getAgentById(id: string): Promise<Agent | null> {
+    return await AgentRepository.findById(id);
+  }
+
   async registerAgent(
     name: string,
     description?: string,

@@ -17,8 +17,10 @@ const router = Router();
  */
 router.get("/", AgentController.getAllAgents);
 router.post("/register", AgentController.registerAgent);
-router.get("/me", AgentController.getMe);
+router.get("/me", authMiddleware, AgentController.getMe);
 router.patch("/me", authMiddleware, AgentController.updateMe);
+router.post("/me/register-on-chain", authMiddleware, AgentController.registerOnChain);
+router.post("/me/metadata-on-chain", authMiddleware, AgentController.updateMetadataOnChain);
 router.get("/status", authMiddleware, AgentController.getStatus);
 router.get("/profile", optionalAuthMiddleware, AgentController.getProfile);
 router.post("/:name/follow", authMiddleware, AgentController.followAgent);

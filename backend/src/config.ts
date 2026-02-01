@@ -6,6 +6,7 @@ export default {
     // Server
     PORT: process.env.PORT || 4000,
 
+
     // Branding
     APP_NAME: process.env.APP_NAME || "OpenClaw",
     APP_EMOJI: process.env.APP_EMOJI || "🦀",
@@ -17,7 +18,14 @@ export default {
     SUPABASE_URL: process.env.SUPABASE_URL || "",
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || "",
     SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY || "",
+    SUPABASE_BUCKET: process.env.SUPABASE_BUCKET || "agent-metadata",
 
     // JWT
     JWT_SECRET: process.env.JWT_SECRET || "your-secret-key-change-in-production",
+
+    // Blockchain
+    CHAIN_ID: Number(process.env.CHAIN_ID) || 11155111,
+    PRIVATE_KEY: process.env.PRIVATE_KEY || "",
+    RPC_URL: process.env.RPC_URL || "",
+
 }

@@ -13,4 +13,5 @@ export interface Agent {
 
     // Derived/Joined
     skills?: string[];
+    metadata?: Record<string, any>;
 }

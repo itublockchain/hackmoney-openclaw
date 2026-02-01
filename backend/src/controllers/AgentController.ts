@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import AgentService from "@/services/AgentService";
+import BlockchainAgentService from "@/services/BlockchainAgentService";
 import jwt from "jsonwebtoken";
 import config from "@/config";
 import { SiweMessage } from "siwe";
@@ -162,7 +163,7 @@ export default class AgentController {
             success: true,
             challenge: token,
             nonce,
-            message: `Sign this message to authenticate with OpenClaw:\n\nNonce: ${nonce}\nAddress: ${address}`,
+            message: `Sign this message to authenticate with OpenClaw: \n\nNonce: ${nonce} \nAddress: ${address} `,
         });
     }
 
@@ -237,5 +238,96 @@ export default class AgentController {
             });
             return;
         }
+    }
+
+    static async registerOnChain(req: Request, res: Response) {
+        const agent = req.agent;
+        if (!agent) {
+            res.status(404).json({ success: false, error: "Agent not found" });
+            return;
+        }
+
+        try {
+            const result = await BlockchainAgentService.registerAgentOnChain(agent);
+
+            // Update agent metadata with blockchain info
+            await AgentService.updateAgent(agent.api_key, {
+                metadata: {
+                    ...(agent.metadata || {}),
+                    blockchainId: result.agentId,
+                    metadataUrl: result.metadataUrl
+                }
+            });
+
+            res.json({ success: true, ...result });
+        } catch (error: any) {
+            console.error("Blockchain registration error:", error);
+            res.status(500).json({ success: false, error: "Failed to register on chain: " + error.message });
+        }
+    }
+
+    static async updateMetadataOnChain(req: Request, res: Response) {
+        const agent = req.agent;
+        if (!agent) {
+            res.status(404).json({ success: false, error: "Agent not found" });
+            return;
+        }
+
+        const blockchainId = agent.metadata?.blockchainId;
+        if (!blockchainId) {
+            res.status(400).json({ success: false, error: "Agent not registered on chain" });
+            return;
+        }
+
+        try {
+            const result = await BlockchainAgentService.updateMetadataOnChain(agent, blockchainId);
+
+            await AgentService.updateAgent(agent.api_key, {
+                metadata: {
+                    ...(agent.metadata || {}),
+                    metadataUrl: result.metadataUrl
+                }
+            });
+
+            res.json({ success: true, ...result });
+        } catch (error: any) {
+            console.error("Blockchain update error:", error);
+            res.status(500).json({ success: false, error: "Failed to update metadata on chain: " + error.message });
+        }
+    }
+    static async getAgentMetadata(req: Request, res: Response) {
+        const id = req.params.id as string;
+        if (!id) {
+            res.status(400).json({ success: false, error: "Agent ID is required" });
+            return;
+        }
+
+
+        const agent = await AgentService.getAgentById(id);
+        if (!agent) {
+            res.status(404).json({ success: false, error: "Agent not found" });
+            return;
+        }
+
+        const updatedAt = Math.floor(Date.now() / 1000);
+        const numericId = agent.metadata?.numericId || "0";
+
+        const metadata = {
+            type: 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1',
+            name: agent.name,
+            description: agent.description,
+            image: "https://robohash.org/" + agent.name,
+            active: agent.is_active,
+            trustModels: ['reputation'],
+            metadata: {
+                appId: agent.id || "",
+                agentId: agent.metadata?.blockchainId || "",
+                numericId: numericId,
+            },
+            services: [],
+            updatedAt: updatedAt,
+        };
+
+        res.json(metadata);
     }
 }
