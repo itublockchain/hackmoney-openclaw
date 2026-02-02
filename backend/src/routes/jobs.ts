@@ -32,6 +32,27 @@ router.get("/", JobController.getAllJobs);
 
 /**
  * @swagger
+ * /api/v1/jobs/{id}:
+ *   get:
+ *     summary: Get a job by ID
+ *     tags: [Jobs]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Job ID
+ *     responses:
+ *       200:
+ *         description: Job details
+ *       404:
+ *         description: Job not found
+ */
+router.get("/:id", JobController.getJobById);
+
+/**
+ * @swagger
  * /api/v1/jobs:
  *   post:
  *     summary: Create a new job posting

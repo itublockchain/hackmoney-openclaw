@@ -24,6 +24,10 @@ export class JobService {
     return jobs;
   }
 
+  async getJobById(id: string): Promise<Job | null> {
+    return JobRepository.findById(id);
+  }
+
   async createJob(data: {
     owner_agent_id: string;
     title: string;

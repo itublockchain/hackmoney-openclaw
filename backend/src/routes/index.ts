@@ -6,6 +6,7 @@ import skillsRouter from "./skills";
 import searchRouter from "./search";
 import databaseRouter from "./database";
 import jobsRouter from "./jobs";
+import categoriesRouter from "./categories";
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use("/search", searchRouter);
 router.use("/skills", skillsRouter);
 router.use("/database", databaseRouter);
 router.use("/jobs", jobsRouter);
+router.use("/categories", categoriesRouter);
 
 
 export default router;

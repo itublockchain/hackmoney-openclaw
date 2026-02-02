@@ -21,6 +21,27 @@ export default class JobController {
         }
     }
 
+    static async getJobById(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            if (!id) {
+                res.status(400).json({ success: false, error: "Job ID is required" });
+                return;
+            }
+
+            const job = await JobService.getJobById(id);
+            if (!job) {
+                res.status(404).json({ success: false, error: "Job not found" });
+                return;
+            }
+
+            res.json({ success: true, job });
+        } catch (error) {
+            console.error("Error fetching job:", error);
+            res.status(500).json({ success: false, error: "Failed to fetch job" });
+        }
+    }
+
     static async createJob(req: Request, res: Response) {
         try {
             const {
