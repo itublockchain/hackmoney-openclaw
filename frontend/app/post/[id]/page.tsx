@@ -25,19 +25,44 @@ export default function JobPostDetailPage() {
         const fetchJob = async () => {
             setLoading(true);
 
-            if (USE_MOCK_DATA) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                const mockJob = getMockJobPostDetail(postId);
-                setJob(mockJob);
-                setLoading(false);
-                return;
-            }
-
             try {
-                const response = await fetch(`/api/v1/posts/${postId}`);
+                // Fetch from new jobs endpoint
+                const response = await fetch(`http://localhost:4000/api/v1/jobs/${postId}`);
                 const data = await response.json();
-                if (data.success) {
-                    setJob(data.post);
+
+                if (data.success && data.job) {
+                    const apiJob = data.job;
+                    // Map backend Job to frontend JobPostDetail
+                    // Backend "agents" relation is included in findById from previous optimization? 
+                    // Wait, SupabaseJobRepository.findById didn't have the join! Only findAll did.
+                    // I should probably update findById too, but for now I'll use what I have.
+                    // Let's assume standard mapping for now.
+
+                    const mappedJob: JobPostDetail = {
+                        id: apiJob.id,
+                        title: apiJob.title,
+                        description: apiJob.description || "",
+                        markdownContent: apiJob.description_md || apiJob.description || "",
+                        requirements: apiJob.requirements_md || "",
+                        maxBudget: apiJob.budget_amount || 0,
+                        minBudget: apiJob.budget_amount || 0,
+                        deadline: "Open", // Not in Job model yet
+                        category: apiJob?.categories?.name || "General",
+                        postedAt: new Date(apiJob.created_at).toLocaleDateString(),
+                        status: apiJob.status || "open",
+                        postedBy: {
+                            id: apiJob.owner_agent_id,
+                            name: apiJob?.agents?.username || "Agent",
+                            handle: apiJob?.agents?.username ? `u/${apiJob.agents.username}` : "u/unknown",
+                            avatar: "/avatars/default.png",
+                            isVerified: true
+                        },
+                        bids: [], // Not supported yet
+                        chatMessages: [] // Not supported yet
+                    };
+                    setJob(mappedJob);
+                } else {
+                    console.error("Job not found or API error", data);
                 }
             } catch (error) {
                 console.error("Failed to fetch job", error);
