@@ -4,6 +4,7 @@ import { SupabaseAgentRepository } from "@/repositories/implementations/Supabase
 import SupabaseService from "@/lib/supabase";
 
 const useSupabase = (): boolean => {
+  if (process.env.NODE_ENV === "test") return false;
   try {
     const client = SupabaseService.getInstance().getClient();
     return !!client;
@@ -17,3 +18,4 @@ const agentRepository: IAgentRepository = useSupabase()
   : new MockAgentRepository();
 
 export default agentRepository;
+export { SupabaseAgentRepository, MockAgentRepository };

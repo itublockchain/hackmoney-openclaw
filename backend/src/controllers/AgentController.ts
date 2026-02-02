@@ -13,139 +13,97 @@ interface ChallengeTokenPayload extends jwt.JwtPayload {
 
 export default class AgentController {
     static async getAllAgents(_req: Request, res: Response) {
-        const agents = await AgentService.getAllAgents();
-        res.json({ success: true, agents });
+        try {
+            const agents = await AgentService.getAllAgents();
+            res.json({ success: true, agents });
+        } catch (error) {
+            console.error("Error fetching agents:", error);
+            res.status(500).json({ success: false, error: "Failed to fetch agents" });
+        }
+    }
+
+    static async getAgentById(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            if (!id) {
+                res.status(400).json({ success: false, error: "Agent ID is required" });
+                return;
+            }
+            const agent = await AgentService.getAgentById(id as string);
+            if (!agent) {
+                res.status(404).json({ success: false, error: "Agent not found" });
+                return;
+            }
+            res.json({ success: true, agent });
+        } catch (error) {
+            console.error("Error fetching agent:", error);
+            res.status(500).json({ success: false, error: "Failed to fetch agent" });
+        }
     }
 
     static async registerAgent(req: Request, res: Response) {
-        const { name, description } = req.body;
-        if (!name) {
-            res.status(400).json({ success: false, error: "Name is required" });
-            return;
-        }
+        try {
+            const { username, name, title, description, wallet_address, erc8004_address, metadata } = req.body;
 
-        const result = await AgentService.registerAgent(name, description);
-        res.json(result);
+            const finalUsername = username || name;
+
+            if (!finalUsername) {
+                res.status(400).json({ success: false, error: "Username or Name is required" });
+                return;
+            }
+
+
+            const agent = await AgentService.registerAgent({
+                username: finalUsername,
+                title,
+                description,
+                wallet_address,
+                erc8004_address,
+                metadata: metadata || {}
+            });
+
+            res.status(201).json({ success: true, agent: { ...agent, name: agent.username }, api_key: agent.id });
+        } catch (error) {
+            console.error("Error registering agent:", error);
+            res.status(500).json({ success: false, error: "Failed to register agent" });
+        }
     }
 
     static async getMe(req: Request, res: Response) {
-        const agent = req.agent;
+        const agent = (req as any).agent;
         if (!agent) {
             res.status(404).json({ success: false, error: "Agent not found" });
             return;
         }
-        res.json({ success: true, agent });
+        res.json({ success: true, agent: { ...agent, name: agent.username || agent.title } });
     }
 
     static async updateMe(req: Request, res: Response) {
-        const agent = req.agent;
+        const agent = (req as any).agent;
         if (!agent) {
             res.status(404).json({ success: false, error: "Agent not found" });
             return;
         }
 
-        const { description, metadata } = req.body;
-        const updatedAgent = AgentService.updateAgent(agent.api_key, {
-            description,
-            metadata,
-        });
-
-        res.json({ success: true, agent: updatedAgent });
-    }
-
-    static async getStatus(req: Request, res: Response) {
-        const agent = req.agent;
-        if (!agent) {
-            res.status(404).json({ success: false, error: "Agent not found" });
-            return;
+        try {
+            const updates = req.body;
+            const updatedAgent = await AgentService.updateAgent(agent.id, updates);
+            res.json({ success: true, agent: updatedAgent });
+        } catch (error) {
+            console.error("Error updating agent:", error);
+            res.status(500).json({ success: false, error: "Failed to update agent" });
         }
-        res.json({ status: agent.is_claimed ? "claimed" : "pending_claim" });
-    }
-
-    static async getProfile(req: Request, res: Response) {
-        const { name } = req.query;
-        if (!name || typeof name !== "string") {
-            res
-                .status(400)
-                .json({ success: false, error: "name parameter is required" });
-            return;
-        }
-
-        const profile = await AgentService.getAgentProfile(name);
-        if (!profile) {
-            res.status(404).json({ success: false, error: "Agent not found" });
-            return;
-        }
-
-        res.json({
-            success: true,
-            agent: profile.agent,
-            recentPosts: profile.recentPosts,
-        });
-    }
-
-    static async followAgent(req: Request, res: Response) {
-        const { name } = req.params;
-        if (!name || typeof name !== "string") {
-            res.status(400).json({ success: false, error: "Invalid agent name" });
-            return;
-        }
-
-        const result = AgentService.followAgent(name);
-        res.json(result);
-    }
-
-    static async unfollowAgent(req: Request, res: Response) {
-        const { name } = req.params;
-        if (!name || typeof name !== "string") {
-            res.status(400).json({ success: false, error: "Invalid agent name" });
-            return;
-        }
-
-        const result = AgentService.unfollowAgent(name);
-        res.json(result);
-    }
-
-    static async uploadAvatar(req: Request, res: Response) {
-        if (!req.file) {
-            res.status(400).json({ success: false, error: "No file provided" });
-            return;
-        }
-
-        const agent = req.agent;
-        if (!agent) {
-            res.status(404).json({ success: false, error: "Agent not found" });
-            return;
-        }
-
-        const result = await AgentService.uploadAvatar(agent.api_key, req.file.path);
-        res.json(result);
-    }
-
-    static async deleteAvatar(req: Request, res: Response) {
-        const agent = req.agent;
-        if (!agent) {
-            res.status(404).json({ success: false, error: "Agent not found" });
-            return;
-        }
-
-        const result = await AgentService.deleteAvatar(agent.api_key);
-        res.json(result);
     }
 
     static async generateWalletChallenge(req: Request, res: Response) {
         const { address } = req.body;
 
         if (!address) {
-            res
-                .status(400)
-                .json({ success: false, error: "Wallet address is required" });
+            res.status(400).json({ success: false, error: "Wallet address is required" });
             return;
         }
 
-        const nonce =
-            Math.random().toString(36).substring(2, 15) +
-            Math.random().toString(36).substring(2, 15);
+        const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
         const token = jwt.sign(
             {
@@ -154,9 +112,7 @@ export default class AgentController {
                 type: "challenge",
             },
             config.JWT_SECRET,
-            {
-                expiresIn: "15m",
-            },
+            { expiresIn: "15m" },
         );
 
         res.json({
@@ -170,44 +126,23 @@ export default class AgentController {
     static async verifySiwe(req: Request, res: Response) {
         const { message, signature, challenge } = req.body;
 
-        if (!signature) {
-            res.status(400).json({ success: false, error: "No signature provided" });
-            return;
-        }
-
-        if (!message) {
-            res.status(400).json({ success: false, error: "No message provided" });
-            return;
-        }
-
-        if (!challenge) {
-            res.status(400).json({ success: false, error: "No challenge provided" });
+        if (!signature || !message || !challenge) {
+            res.status(400).json({ success: false, error: "Missing required verification data" });
             return;
         }
 
         try {
-            const decoded = jwt.verify(
-                challenge,
-                config.JWT_SECRET,
-            ) as ChallengeTokenPayload;
+            const decoded = jwt.verify(challenge, config.JWT_SECRET) as ChallengeTokenPayload;
             if (decoded.type !== "challenge") {
-                res
-                    .status(400)
-                    .json({ success: false, error: "Invalid challenge token" });
+                res.status(400).json({ success: false, error: "Invalid challenge token" });
                 return;
             }
 
-            const siweMessage = new SiweMessage(message);
+            const siweMessage = new SiweMessage(message as string);
             await siweMessage.verify({ signature });
 
-            if (siweMessage.nonce !== decoded.nonce) {
-                res.status(400).json({ success: false, error: "Nonce mismatch" });
-                return;
-            }
-
-            // Verify the address matches
-            if (siweMessage.address.toLowerCase() !== decoded.address) {
-                res.status(400).json({ success: false, error: "Address mismatch" });
+            if (siweMessage.nonce !== decoded.nonce || siweMessage.address.toLowerCase() !== decoded.address.toLowerCase()) {
+                res.status(400).json({ success: false, error: "Verification failed: mismatch" });
                 return;
             }
 
@@ -217,9 +152,7 @@ export default class AgentController {
                     type: "auth",
                 },
                 config.JWT_SECRET,
-                {
-                    expiresIn: "7d",
-                },
+                { expiresIn: "7d" },
             );
 
             res.json({
@@ -229,32 +162,27 @@ export default class AgentController {
             });
         } catch (error) {
             console.error("SIWE verification error:", error);
-            const errorMessage =
-                error instanceof Error ? error.message : "Unknown error";
-            res.status(400).json({
-                success: false,
-                error: "Signature verification failed",
-                details: errorMessage,
-            });
-            return;
+            res.status(400).json({ success: false, error: "Signature verification failed" });
         }
     }
 
     static async registerOnChain(req: Request, res: Response) {
-        const agent = req.agent;
+        const agent = (req as any).agent;
         if (!agent) {
             res.status(404).json({ success: false, error: "Agent not found" });
             return;
         }
 
         try {
+            // 2. Register on chain
             const result = await BlockchainAgentService.registerAgentOnChain(agent);
 
-            // Update agent metadata with blockchain info
-            await AgentService.updateAgent(agent.api_key, {
+            // 3. Update agent with blockchain info
+            await AgentService.updateAgent(agent.id, {
                 metadata: {
-                    ...(agent.metadata || {}),
+                    ...agent.metadata,
                     blockchainId: result.agentId,
+                    onChainTx: result.txHash,
                     metadataUrl: result.metadataUrl
                 }
             });
@@ -266,68 +194,58 @@ export default class AgentController {
         }
     }
 
-    static async updateMetadataOnChain(req: Request, res: Response) {
-        const agent = req.agent;
-        if (!agent) {
-            res.status(404).json({ success: false, error: "Agent not found" });
-            return;
-        }
-
-        const blockchainId = agent.metadata?.blockchainId;
-        if (!blockchainId) {
-            res.status(400).json({ success: false, error: "Agent not registered on chain" });
-            return;
-        }
-
-        try {
-            const result = await BlockchainAgentService.updateMetadataOnChain(agent, blockchainId);
-
-            await AgentService.updateAgent(agent.api_key, {
-                metadata: {
-                    ...(agent.metadata || {}),
-                    metadataUrl: result.metadataUrl
-                }
-            });
-
-            res.json({ success: true, ...result });
-        } catch (error: any) {
-            console.error("Blockchain update error:", error);
-            res.status(500).json({ success: false, error: "Failed to update metadata on chain: " + error.message });
-        }
-    }
     static async getAgentMetadata(req: Request, res: Response) {
-        const id = req.params.id as string;
-        if (!id) {
-            res.status(400).json({ success: false, error: "Agent ID is required" });
-            return;
+        try {
+            const { id } = req.params;
+            if (!id) {
+                res.status(400).json({ success: false, error: "Agent ID is required" });
+                return;
+            }
+            const agent = await AgentService.getAgentById(id as string);
+            if (!agent) {
+                res.status(404).json({ success: false, error: "Agent not found" });
+                return;
+            }
+
+            const metadata = {
+                type: 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1',
+                name: agent.title || agent.username,
+                description: agent.description || "An autonomous AI agent on the OpenClaw network.",
+                image: `https://robohash.org/${agent.title || agent.username}?set=set4`,
+                active: true,
+                supportedTrust: ['reputation'],
+                capabilities: ["social-interaction", "job-listing", "autonomous-messaging"],
+                endpoints: [
+                    {
+                        name: "OpenClaw Agent API",
+                        endpoint: `${config.APP_URL}/api/v1/agents/${agent.id}`,
+                        version: "1.0.0"
+                    },
+                    {
+                        name: "Agent Metadata",
+                        endpoint: `${config.APP_URL}/api/v1/agents/${agent.id}/metadata`,
+                        version: "1.0.0"
+                    }
+                ],
+                registrations: agent.metadata?.blockchainId ? [
+                    {
+                        agentId: agent.metadata.blockchainId,
+                        agentRegistry: "eip155:" + config.CHAIN_ID + ":registry" // Placeholder or actual registry retrieved from SDK
+                    }
+                ] : [],
+                metadata: {
+                    appId: agent.id,
+                    username: agent.username,
+                    wallet: agent.wallet_address || "",
+                    erc8004Address: agent.erc8004_address || ""
+                },
+                updatedAt: Math.floor(Date.now() / 1000),
+            };
+
+            res.json(metadata);
+        } catch (error) {
+            console.error("Error fetching agent metadata:", error);
+            res.status(500).json({ success: false, error: "Failed to fetch agent metadata" });
         }
-
-
-        const agent = await AgentService.getAgentById(id);
-        if (!agent) {
-            res.status(404).json({ success: false, error: "Agent not found" });
-            return;
-        }
-
-        const updatedAt = Math.floor(Date.now() / 1000);
-        const numericId = agent.metadata?.numericId || "0";
-
-        const metadata = {
-            type: 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1',
-            name: agent.name,
-            description: agent.description,
-            image: "https://robohash.org/" + agent.name,
-            active: agent.is_active,
-            trustModels: ['reputation'],
-            metadata: {
-                appId: agent.id || "",
-                agentId: agent.metadata?.blockchainId || "",
-                numericId: numericId,
-            },
-            services: [],
-            updatedAt: updatedAt,
-        };
-
-        res.json(metadata);
     }
 }

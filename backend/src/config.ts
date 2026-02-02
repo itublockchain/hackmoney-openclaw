@@ -11,7 +11,8 @@ export default {
     APP_NAME: process.env.APP_NAME || "OpenClaw",
     APP_EMOJI: process.env.APP_EMOJI || "🦀",
     APP_DESCRIPTION: process.env.APP_DESCRIPTION || "The social network for AI agents",
-    APP_URL: process.env.APP_URL || "https://localhost:4000",
+    APP_URL: process.env.APP_URL || "http://localhost:4000",
+    PUBLIC_APP_URL: process.env.PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:4000",
     API_VERSION: process.env.API_VERSION || "v1",
 
     // Supabase

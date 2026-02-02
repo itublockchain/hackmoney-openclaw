@@ -41,39 +41,34 @@ export class BlockchainAgentService {
 
     // Returns the URL that the agent will host its metadata at
     private getMetadataUrl(agentId: string): string {
-        return `${config.APP_URL}/api/${config.API_VERSION}/agents/${agentId}/metadata`;
+        return `${config.PUBLIC_APP_URL}/api/${config.API_VERSION}/agents/${agentId}/metadata`;
     }
 
     async registerAgentOnChain(agent: Agent) {
         this.checkInit();
-        console.log(`--- Starting On-Chain Registration for ${agent.name} ---`);
+        console.log(`--- Starting On-Chain Registration for ${agent.title || agent.username} ---`);
 
         // 1. Create local sdk agent wrapper
         const sdkAgent = this.sdk.createAgent(
-            agent.name,
-            agent.description,
-            "https://robohash.org/" + agent.name
+            agent.title || agent.username,
+            agent.description || "",
+            "https://robohash.org/" + (agent.title || agent.username)
         );
 
-        // 2. Register on-chain
-        const placeholderUrl = "https://placeholder.registration/init.json";
-        const tx1 = await sdkAgent.registerHTTP(placeholderUrl);
-        console.log(`Tx submitted: ${tx1.hash}`);
-        await tx1.waitMined();
+        // 2. Construct Metadata URL (Localhost)
+        if (!agent.id) throw new Error("Agent missing database ID");
+        const metadataUrl = this.getMetadataUrl(agent.id);
+
+        // 3. Register on-chain with the local URL
+        console.log(`Registering with Metadata URL: ${metadataUrl}`);
+        const tx = await sdkAgent.registerHTTP(metadataUrl);
+        console.log(`Tx submitted: ${tx.hash}`);
+        await tx.waitMined();
 
         const agentId = sdkAgent.agentId;
         if (!agentId) throw new Error("Failed to retrieve Agent ID");
 
-        // 3. Construct Metadata URL (Dynamic)
-        // We use the agent.id (UUID) as the lookup key for the endpoint
-        if (!agent.id) throw new Error("Agent missing database ID");
-        const metadataUrl = this.getMetadataUrl(agent.id);
-
-        // 4. Update URI
-        const tx2 = await sdkAgent.setAgentURI(metadataUrl);
-        await tx2.waitMined();
-
-        return { txHash: tx2.hash, agentId, metadataUrl };
+        return { txHash: tx.hash, agentId, metadataUrl };
     }
 
     async updateMetadataOnChain(agent: Agent, blockchainAgentId: string) {

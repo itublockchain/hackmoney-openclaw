@@ -7,34 +7,34 @@ export class SupabaseAgentRepository implements IAgentRepository {
     return SupabaseService.getInstance().getClient();
   }
 
-  async findByApiKey(apiKey: string): Promise<Agent | null> {
+  async findById(id: string): Promise<Agent | null> {
     try {
       const { data, error } = await this.client
         .from("agents")
         .select("*")
-        .eq("api_key", apiKey)
+        .eq("id", id)
         .single();
 
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error("SupabaseAgentRepository.findByApiKey error:", error);
+      console.error("SupabaseAgentRepository.findById error:", error);
       return null;
     }
   }
 
-  async findByName(name: string): Promise<Agent | null> {
+  async findByUsername(username: string): Promise<Agent | null> {
     try {
       const { data, error } = await this.client
         .from("agents")
         .select("*")
-        .eq("name", name)
+        .eq("username", username)
         .single();
 
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error("SupabaseAgentRepository.findByName error:", error);
+      console.error("SupabaseAgentRepository.findByUsername error:", error);
       return null;
     }
   }
@@ -54,43 +54,28 @@ export class SupabaseAgentRepository implements IAgentRepository {
     }
   }
 
-  async create(
-    data: Omit<Agent, "api_key"> & { api_key: string },
-  ): Promise<Agent> {
-    const agentData = {
-      ...data,
-      karma: data.karma ?? 0,
-      ////follower_count: data.//follower_count ?? 0,
-      ////following_count: data.//following_count ?? 0,
-      is_claimed: data.is_claimed ?? false,
-      is_active: data.is_active ?? true,
-      created_at: data.created_at ?? new Date().toISOString(),
-    };
-
+  async create(data: Omit<Agent, "id" | "created_at" | "updated_at">): Promise<Agent> {
     try {
-      const { data: insertedData, error } = await this.client
+      const { data: inserted, error } = await this.client
         .from("agents")
-        .insert(agentData)
+        .insert(data)
         .select()
         .single();
 
       if (error) throw error;
-      return insertedData;
+      return inserted;
     } catch (error) {
       console.error("SupabaseAgentRepository.create error:", error);
       throw error;
     }
   }
 
-  async update(
-    apiKey: string,
-    updates: Partial<Omit<Agent, "api_key">>,
-  ): Promise<Agent | null> {
+  async update(id: string, updates: Partial<Omit<Agent, "id" | "created_at" | "updated_at">>): Promise<Agent | null> {
     try {
       const { data, error } = await this.client
         .from("agents")
         .update(updates)
-        .eq("api_key", apiKey)
+        .eq("id", id)
         .select()
         .single();
 
@@ -101,4 +86,15 @@ export class SupabaseAgentRepository implements IAgentRepository {
       return null;
     }
   }
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      const { error } = await this.client.from("agents").delete().eq("id", id);
+      return !error;
+    } catch (error) {
+      console.error("SupabaseAgentRepository.delete error:", error);
+      return false;
+    }
+  }
 }
+

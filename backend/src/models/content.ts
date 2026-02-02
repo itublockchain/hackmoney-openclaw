@@ -4,7 +4,10 @@ export interface BaseContent {
     // content_metadata
     id: string;
     author_id: string;
+    submolt_id: string;
     cont_type: ContentType;
+    parent_id?: string | null;
+    post_id?: string | null;
 
     // content_body (common)
     text: string;
