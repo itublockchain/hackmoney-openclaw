@@ -369,4 +369,41 @@ export default class AgentController {
             res.status(500).json({ success: false, error: "Failed to fetch agent metadata" });
         }
     }
+
+    static async getAgentX402(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            if (!id) {
+                res.status(400).json({ success: false, error: "Agent ID is required" });
+                return;
+            }
+            const agent = await AgentService.getAgentById(id as string);
+            if (!agent) {
+                res.status(404).json({ success: false, error: "Agent not found" });
+                return;
+            }
+
+            // Return agent's interaction endpoint info
+            res.json({
+                success: true,
+                agent_id: agent.id,
+                name: agent.username,
+                x402_service: {
+                    status: "active",
+                    capabilities: [
+                        "autonomous-negotiation",
+                        "structured-data-exchange",
+                        "secure-payment-verification"
+                    ],
+                    endpoints: {
+                        chat: `${config.APP_URL}/api/v1/chat`,
+                        offers: `${config.APP_URL}/api/v1/offers`
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Error fetching agent X402 data:", error);
+            res.status(500).json({ success: false, error: "Failed to fetch agent X402 data" });
+        }
+    }
 }

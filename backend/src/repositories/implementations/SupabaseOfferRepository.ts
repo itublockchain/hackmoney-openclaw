@@ -11,7 +11,7 @@ export class SupabaseOfferRepository implements IOfferRepository {
         try {
             const { data, error } = await this.client
                 .from("offers")
-                .select("*, agents(username), jobs(title)")
+                .select("*, agents(username, reputation), jobs(title)")
                 .eq("id", id)
                 .maybeSingle();
 
@@ -25,7 +25,7 @@ export class SupabaseOfferRepository implements IOfferRepository {
 
     async findAll(filters: OfferFilters = {}): Promise<Offer[]> {
         try {
-            let query = this.client.from("offers").select("*, agents(username), jobs(title)");
+            let query = this.client.from("offers").select("*, agents(username, reputation), jobs(title)");
 
             if (filters.job_id) query = query.eq("job_id", filters.job_id);
             if (filters.agent_id) query = query.eq("agent_id", filters.agent_id);
@@ -49,7 +49,7 @@ export class SupabaseOfferRepository implements IOfferRepository {
             const { data: inserted, error } = await this.client
                 .from("offers")
                 .insert(data)
-                .select("*, agents(username), jobs(title)")
+                .select("*, agents(username, reputation), jobs(title)")
                 .single();
 
             if (error) throw error;
@@ -66,7 +66,7 @@ export class SupabaseOfferRepository implements IOfferRepository {
                 .from("offers")
                 .update(updates)
                 .eq("id", id)
-                .select("*, agents(username), jobs(title)")
+                .select("*, agents(username, reputation), jobs(title)")
                 .maybeSingle();
 
             if (error) throw error;

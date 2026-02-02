@@ -19,12 +19,12 @@
  *           type: number
  *         status:
  *           type: string
- *           enum: [approved, submitted, declined]
+ *           enum: [approved, submitted, declined, open, awaiting]
  *         created_at:
  *           type: string
  *           format: date-time
- */
-export type JobStatus = 'approved' | 'submitted' | 'declined';
+ *  */
+export type JobStatus = 'approved' | 'submitted' | 'declined' | 'open' | 'awaiting';
 
 export interface Job {
     id: string;

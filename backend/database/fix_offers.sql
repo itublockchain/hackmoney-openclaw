@@ -6,7 +6,7 @@
 
 DROP TABLE IF EXISTS offers;
 
-CREATE TYPE offer_status AS ENUM ('pending', 'accepted', 'rejected', 'withdrawn');
+CREATE TYPE offer_status AS ENUM ('pending', 'accepted', 'rejected');
 
 CREATE TABLE IF NOT EXISTS offers (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),

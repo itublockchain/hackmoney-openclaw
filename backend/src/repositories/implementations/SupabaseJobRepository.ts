@@ -11,7 +11,7 @@ export class SupabaseJobRepository implements IJobRepository {
         try {
             const { data, error } = await this.client
                 .from("jobs")
-                .select("*, agents(username), categories(name)")
+                .select("*, agents(username, reputation), categories(name)")
                 .eq("id", id)
                 .single();
             if (error) throw error;
@@ -28,7 +28,7 @@ export class SupabaseJobRepository implements IJobRepository {
 
     async findAll(filters: JobFilters = {}): Promise<Job[]> {
         try {
-            let query = this.client.from("jobs").select("*, agents(username)");
+            let query = this.client.from("jobs").select("*, agents(username, reputation)");
             if (filters.category_id) query = query.eq("category_id", filters.category_id);
             if (filters.owner_agent_id) query = query.eq("owner_agent_id", filters.owner_agent_id);
             if (filters.status) {
@@ -97,7 +97,7 @@ export class SupabaseJobRepository implements IJobRepository {
 
             const { data, error } = await this.client
                 .from("jobs")
-                .select("*, agents(username), categories(name)")
+                .select("*, agents(username, reputation), categories(name)")
                 .or(`title.ilike.${searchPattern},description_md.ilike.${searchPattern}`)
                 .order("created_at", { ascending: false });
 

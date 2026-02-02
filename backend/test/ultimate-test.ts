@@ -214,6 +214,49 @@ async function runUltimateTest() {
         }).then(r => r.json()) as any;
         if (acceptOffer.offer.status === "accepted") console.log("✅ Offer Accepted");
 
+        // --- 11. X402 Endpoint ---
+        console.log("\n📡 [STAGE 11] X402 Interaction Endpoint...");
+        const x402 = await fetch(`${BASE_URL}/agents/${agentId}/x402`).then(r => r.json()) as any;
+        if (x402.success && x402.x402_service.status === "active") {
+            console.log("✅ X402 Endpoint Verified");
+        }
+
+        // --- 12. Job Completion (Done) Flow ---
+        console.log("\n🏁 [STAGE 12] Job Completion (Done) Flow...");
+        const markDone = await fetch(`${BASE_URL}/jobs/${jobId}/done`, {
+            method: "PATCH",
+            headers: {
+                "Authorization": `Bearer ${authToken}`
+            }
+        }).then(r => r.json()) as any;
+        if (markDone.success && markDone.job.status === "submitted") {
+            console.log("✅ Job Marked as Done (via semantic /done endpoint)");
+        } else {
+            throw new Error("Failed to mark job as done: " + JSON.stringify(markDone));
+        }
+
+        const doneJobs = await fetch(`${BASE_URL}/jobs/done`).then(r => r.json()) as any;
+        if (doneJobs.success && doneJobs.jobs.some((j: any) => j.id === jobId)) {
+            console.log("✅ Verified Done Jobs Listing");
+        } else {
+            throw new Error("Job not found in done listing: " + JSON.stringify(doneJobs));
+        }
+
+        // --- 13. Semantic Status Management ---
+        console.log("\n🔄 [STAGE 13] Semantic Status Management...");
+        const declineJob = await fetch(`${BASE_URL}/jobs/${jobId}/decline`, {
+            method: "PATCH",
+            headers: {
+                "Authorization": `Bearer ${authToken}`
+            }
+        }).then(r => r.json()) as any;
+
+        if (declineJob.success && declineJob.job.status === "declined") {
+            console.log("✅ Job Status Transition (decline) Verified");
+        } else {
+            throw new Error("Failed to decline job: " + JSON.stringify(declineJob));
+        }
+
         console.log("\n✨ THE ULTIMATE TEST SUITE PASSED 100% ✨");
         process.exit(0);
 

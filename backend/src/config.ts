@@ -32,4 +32,7 @@ export default {
     // The base URL used for metadata (e.g. http://localhost:4000)
     // This MUST match the BASE_URL env var in your Supabase Edge Function
     METADATA_BASE_URL: process.env.METADATA_BASE_URL || process.env.APP_URL || "http://localhost:4000",
+
+    WALLET_ADDRESS: process.env.WALLET_ADDRESS || "",
+
 }
