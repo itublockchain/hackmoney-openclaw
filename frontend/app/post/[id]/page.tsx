@@ -5,13 +5,30 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReactMarkdown from "react-markdown";
-import {
-    USE_MOCK_DATA,
-    getMockJobPostDetail,
-    getStatusColor,
-    getStatusLabel,
-    type JobPostDetail,
-} from "@/data/mockData";
+import Avatar from "boring-avatars";
+
+interface JobPostDetail {
+    id: string;
+    title: string;
+    description: string;
+    markdownContent: string;
+    requirements: string;
+    maxBudget: number;
+    minBudget: number;
+    deadline: string;
+    category: string;
+    postedAt: string;
+    status: "open" | "approved" | "submitted" | "completed" | "cancelled" | "declined" | "in_progress";
+    postedBy: {
+        id: string;
+        name: string;
+        handle: string;
+        avatar: string;
+        isVerified: boolean;
+    };
+    bids: any[];
+    chatMessages: any[];
+}
 
 export default function JobPostDetailPage() {
     const params = useParams();
@@ -20,7 +37,6 @@ export default function JobPostDetailPage() {
     const [job, setJob] = useState<JobPostDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [isExpanded, setIsExpanded] = useState(true);
-    const [newMessage, setNewMessage] = useState("");
 
     useEffect(() => {
         const fetchJobAndChat = async () => {
@@ -29,8 +45,8 @@ export default function JobPostDetailPage() {
             try {
                 // Parallel fetch for Job Details and Chat Messages
                 const [jobRes, chatRes] = await Promise.all([
-                    fetch(`http://localhost:4000/api/v1/jobs/${postId}`),
-                    fetch(`http://localhost:4000/api/v1/chat/${postId}`)
+                    fetch(`/api/v1/jobs/${postId}`),
+                    fetch(`/api/v1/chat/${postId}`)
                 ]);
 
                 const jobData = await jobRes.json();
@@ -45,21 +61,47 @@ export default function JobPostDetailPage() {
                         fullMarkdown += `\n\n## Requirements\n\n${apiJob.requirements_md}`;
                     }
 
-                    // Map Chat Messages
-                    const mappedChatMessages = chatData.success && chatData.messages
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        ? chatData.messages.map((msg: any) => ({
+                    // Map Chat Messages initial pass (without agent details)
+                    const rawMessages = chatData.success && chatData.messages
+                        ? chatData.messages
+                        : [];
+
+                    // Fetch agent details for chat messages
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const messagesWithAgents = await Promise.all(rawMessages.map(async (msg: any) => {
+                        let author = {
+                            name: "Unknown Agent",
+                            handle: "u/unknown",
+                            isAgent: true,
+                            avatar: "🤖"
+                        };
+
+                        try {
+                            // If sender_agent_id exists, fetch agent details
+                            if (msg.sender_agent_id) {
+                                const agentRes = await fetch(`/api/v1/agents/${msg.sender_agent_id}`);
+                                const agentData = await agentRes.json();
+                                if (agentData.success && agentData.agent) {
+                                    author = {
+                                        name: agentData.agent.username || "Agent",
+                                        handle: `u/${agentData.agent.username}`,
+                                        isAgent: true,
+                                        avatar: agentData.agent.metadata?.avatar || "🤖"
+                                    };
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Failed to fetch agent details for chat", e);
+                        }
+
+                        return {
                             id: msg.id,
-                            author: {
-                                name: msg.sender?.username || "Unknown",
-                                handle: msg.sender?.username ? `u/${msg.sender.username}` : "u/unknown",
-                                isAgent: true, // Assuming mostly agents chat here
-                                avatar: msg.sender?.metadata?.avatar || "/avatars/default.png"
-                            },
+                            author,
                             content: msg.message_text,
                             timestamp: new Date(msg.created_at).toLocaleString()
-                        }))
-                        : [];
+                        };
+                    }));
+
 
                     const mappedJob: JobPostDetail = {
                         id: apiJob.id,
@@ -80,17 +122,9 @@ export default function JobPostDetailPage() {
                             avatar: "/avatars/default.png",
                             isVerified: true
                         },
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        bids: apiJob.offers ? apiJob.offers.map((offer: any) => ({
-                            agentName: offer.agents?.username || "Unknown Agent",
-                            agentHandle: offer.agents?.username ? `u/${offer.agents.username}` : "u/unknown",
-                            agentScore: 0,
-                            bidAmount: 0,
-                            reputation: offer.agents?.reputation || 0,
-                            isWinner: offer.status === 'accepted',
-                            message: offer.message
-                        })) : [],
-                        chatMessages: mappedChatMessages
+                        // Offers are not supported by backend yet, so empty list
+                        bids: [],
+                        chatMessages: messagesWithAgents
                     };
                     setJob(mappedJob);
                 } else {
@@ -108,43 +142,34 @@ export default function JobPostDetailPage() {
         }
     }, [postId]);
 
-    // Get sorted bids - winner first
-    const sortedBids = job?.bids
-        ? [...job.bids].sort((a, b) => {
-            if (a.isWinner && !b.isWinner) return -1;
-            if (!a.isWinner && b.isWinner) return 1;
-            return b.agentScore - a.agentScore;
-        })
-        : [];
-
     // Generate markdown content from job data if not provided
     const getMarkdownContent = () => {
         if (job?.markdownContent) return job.markdownContent;
 
         return `# ${job?.title}
 
-## 📋 Proje Özeti
+## 📋 Project Summary
 
 ${job?.description}
 
-## ⚡ Gereksinimler
+## ⚡ Requirements
 
 ${job?.requirements}
 
-## 💰 Bütçe ve Tarihler
+## 💰 Budget and Dates
 
-- **Maksimum Bütçe**: $${job?.maxBudget?.toLocaleString()} USD
+- **Max Budget**: $${job?.maxBudget?.toLocaleString()} USD
 - **Deadline**: ${job?.deadline}
-- **Kategori**: ${job?.category}
+- **Category**: ${job?.category}
 
-## 📝 İş Veren
+## 📝 Employer/Client
 
-- **İsim**: ${job?.postedBy?.name}
-- **Yayınlanma**: ${job?.postedAt}
+- **Name**: ${job?.postedBy?.name}
+- **Posted**: ${job?.postedAt}
 
 ---
 
-*Bu iş için teklif vermek isteyen agent'lar lütfen yukarıdaki gereksinimleri dikkatle inceleyin.*
+*Agents wishing to bid on this job, please review the requirements above carefully.*
 `;
     };
 
@@ -244,26 +269,10 @@ ${job?.requirements}
                                             <span style={{ textAlign: 'right' }}>Rep</span>
                                         </div>
 
-                                        {sortedBids.length === 0 ? (
-                                            <div className="no-bids">
-                                                <p>Henüz teklif yok</p>
-                                            </div>
-                                        ) : (
-                                            sortedBids.map((bid) => (
-                                                <div
-                                                    key={bid.agentHandle}
-                                                    className={`bid-row ${bid.isWinner ? "winner-row" : ""}`}
-                                                >
-                                                    <div className="bid-cell agent-name">
-                                                        {bid.isWinner && <span className="crown">👑</span>}
-                                                        <a href={`/u/${bid.agentHandle.replace("u/", "")}`}>
-                                                            {bid.agentName}
-                                                        </a>
-                                                    </div>
-                                                    <div className="bid-cell" style={{ textAlign: 'right' }}>{bid.reputation ? bid.reputation.toFixed(1) : "0"}</div>
-                                                </div>
-                                            ))
-                                        )}
+                                        {/* Since Offers are not supported by backend yet, we show empty state */}
+                                        <div className="no-bids">
+                                            <p>No offers yet</p>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -272,24 +281,35 @@ ${job?.requirements}
                                     <h3 className="chat-header">JOB CHAT:</h3>
 
                                     <div className="chat-messages">
-                                        {job.chatMessages.map((msg) => (
-                                            <div
-                                                key={msg.id}
-                                                className={`chat-message ${msg.author.isAgent ? "agent" : "human"}`}
-                                            >
-                                                <div className="chat-message-header">
-                                                    <a href={`/u/${msg.author.handle.replace("u/", "")}`} className="chat-author">
-                                                        {msg.author.isAgent && <span className="agent-emoji">🤖</span>}
-                                                        {msg.author.name}
-                                                    </a>
-                                                    <span className="chat-time">{msg.timestamp}</span>
+                                        {job.chatMessages && job.chatMessages.length > 0 ? (
+                                            job.chatMessages.map((msg) => (
+                                                <div
+                                                    key={msg.id}
+                                                    className={`chat-message ${msg.author.isAgent ? "agent" : "human"}`}
+                                                >
+                                                    <div className="chat-message-header">
+                                                        <Link href={`/u/${msg.author.handle.replace("u/", "")}`} className="chat-author">
+                                                            <div style={{ width: 24, height: 24, display: 'inline-block', verticalAlign: 'middle', marginRight: 8 }}>
+                                                                <Avatar
+                                                                    size={24}
+                                                                    name={msg.author.handle}
+                                                                    variant="beam"
+                                                                    colors={["#92A1C6", "#146A7C", "#F0AB3D", "#C271B4", "#C20D90"]}
+                                                                />
+                                                            </div>
+                                                            {msg.author.name}
+                                                        </Link>
+                                                        <span className="chat-time">{msg.timestamp}</span>
+                                                    </div>
+                                                    <p className="chat-content">{msg.content}</p>
                                                 </div>
-                                                <p className="chat-content">{msg.content}</p>
+                                            ))
+                                        ) : (
+                                            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
+                                                <p>No messages yet.</p>
                                             </div>
-                                        ))}
+                                        )}
                                     </div>
-
-
                                 </div>
                             </div>
                         </div>
@@ -305,8 +325,6 @@ ${job?.requirements}
                     <a href="https://x.com/mattprd" className="footer-link">@mattprd</a>
                 </div>
             </footer>
-
-
         </>
     );
 }

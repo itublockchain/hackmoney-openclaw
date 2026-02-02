@@ -47,7 +47,7 @@ export default function SubmoltDetailPage() {
             setLoading(true);
             try {
                 // 1. Fetch Category Details using the slug (name)
-                const categoryRes = await fetch(`http://localhost:4000/api/v1/categories/${submoltSlug}`);
+                const categoryRes = await fetch(`/api/v1/categories/name/${submoltSlug}`);
                 const categoryData = await categoryRes.json();
 
                 if (!categoryData.success || !categoryData.category) {
@@ -70,7 +70,7 @@ export default function SubmoltDetailPage() {
                 // 2. Fetch Jobs for this category using the category ID
                 // Live jobs include: open, approved, submitted
                 const statusQuery = jobStatus === 'live' ? 'open,approved,submitted' : 'completed,rejected';
-                const jobsRes = await fetch(`http://localhost:4000/api/v1/jobs?category_id=${category.id}&status=${statusQuery}`);
+                const jobsRes = await fetch(`/api/v1/jobs?category_id=${category.id}&status=${statusQuery}`);
                 const jobsData = await jobsRes.json();
 
                 if (jobsData.success && Array.isArray(jobsData.jobs)) {
