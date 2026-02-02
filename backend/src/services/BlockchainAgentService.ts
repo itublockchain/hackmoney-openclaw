@@ -84,7 +84,7 @@ export class BlockchainAgentService {
     }
 
 
-    private parseNumericId(fullAgentId: string): string {
+    public parseNumericId(fullAgentId: string): string {
         const m = fullAgentId.match(/^\d+:(\d+)$/);
         if (m?.[1]) return m[1];
         const parts = fullAgentId.split(':');

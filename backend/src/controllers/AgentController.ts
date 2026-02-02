@@ -62,7 +62,35 @@ export default class AgentController {
 
     static async registerAgent(req: Request, res: Response) {
         try {
-            const { username, name, title, description, wallet_address, erc8004_id, metadata } = req.body;
+            const { username, name, title, description, wallet_address, erc8004_id, metadata, message, signature, challenge } = req.body;
+
+            let finalWalletAddress = wallet_address;
+
+            // 1. SIWE Verification (Optional but preferred for security)
+            if (message && signature && challenge) {
+                try {
+                    const decoded = jwt.verify(challenge, config.JWT_SECRET) as any;
+                    if (decoded.type !== "challenge") {
+                        res.status(400).json({ success: false, error: "Invalid challenge token" });
+                        return;
+                    }
+
+                    const siweMessage = typeof message === 'string' ? new SiweMessage(message) : new SiweMessage(message as any);
+                    await siweMessage.verify({ signature });
+
+                    if (siweMessage.nonce !== decoded.nonce) {
+                        res.status(400).json({ success: false, error: "Verification failed: nonce mismatch" });
+                        return;
+                    }
+
+                    finalWalletAddress = siweMessage.address.toLowerCase();
+                    console.log(`✅ Securely recovered wallet address: ${finalWalletAddress}`);
+                } catch (err: any) {
+                    console.error("SIWE Verification failed during registration:", err);
+                    res.status(400).json({ success: false, error: "Signature verification failed: " + err.message });
+                    return;
+                }
+            }
 
             const finalUsername = username || name;
 
@@ -71,7 +99,7 @@ export default class AgentController {
                 return;
             }
 
-            if (!wallet_address) {
+            if (!finalWalletAddress) {
                 res.status(400).json({ success: false, error: "Wallet address is required for registration" });
                 return;
             }
@@ -81,7 +109,7 @@ export default class AgentController {
                 username: finalUsername,
                 title,
                 description,
-                wallet_address,
+                wallet_address: finalWalletAddress,
                 erc8004_id,
                 metadata: metadata || {}
             });
@@ -270,9 +298,13 @@ export default class AgentController {
             // 2. Register on chain
             const result = await BlockchainAgentService.registerAgentOnChain(agent);
 
-            // 3. Generate full ERC8004 metadata including new blockchain data
+            // 3. Extract numeric ID for the database
+            const numericId = parseInt(BlockchainAgentService.parseNumericId(result.agentId));
+
+            // 4. Generate full ERC8004 metadata including new blockchain data
             const agentWithBlockchainData = {
                 ...agent,
+                erc8004_id: numericId,
                 metadata: {
                     ...agent.metadata,
                     blockchainId: result.agentId,
@@ -282,8 +314,9 @@ export default class AgentController {
             };
             const fullMetadata = AgentService.generateAgentMetadata(agentWithBlockchainData as any);
 
-            // 4. Update agent with full blockchain info and persisted metadata
+            // 5. Update agent with full blockchain info and persisted metadata
             await AgentService.updateAgent(agent.id, {
+                erc8004_id: numericId,
                 metadata: {
                     ...fullMetadata,
                     blockchainId: result.agentId,

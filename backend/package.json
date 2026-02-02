@@ -5,7 +5,9 @@
     "dev": "bun --env-file=.env.development run src/server.ts",
     "start": "bun --env-file=.env run src/server.ts",
     "build": "bun build src/server.ts --outfile dist/server.js --target bun --minify",
-    "test": "bun --env-file=.env.development test"
+    "test": "bun test",
+    "test:ultimate": "bun --env-file=.env run test/ultimate-test.ts",
+    "db:seed-jobs": "bun --env-file=.env run test/seed-jobs.ts"
   },
   "type": "module",
   "private": true,

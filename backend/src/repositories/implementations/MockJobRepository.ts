@@ -43,10 +43,10 @@ export class MockJobRepository implements IJobRepository {
     }
 
     async search(query: string): Promise<Job[]> {
-        const q = query.toLowerCase();
+        const q = query.toLowerCase().trim();
         return this.jobs.filter(
             j => j.title.toLowerCase().includes(q) ||
-                j.description_md?.toLowerCase().includes(q)
+                (j.description_md && j.description_md.toLowerCase().includes(q))
         );
     }
 }
