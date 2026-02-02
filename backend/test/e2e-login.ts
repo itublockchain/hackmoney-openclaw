@@ -22,21 +22,41 @@ async function runTest() {
     console.log("🦀 E2E Login Verification");
     console.log("==========================");
 
-    // 1. Register off-chain
-    console.log("1️⃣ Registering agent...");
+    // 1. Register with SIWE Verification
+    console.log("1️⃣ Registering agent with SIWE verification...");
+
+    // Get challenge
+    const regChallenge = await fetch(`${BASE_URL}/agents/wallet/challenge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: account.address }),
+    }).then(r => r.json()) as any;
+
+    // Sign challenge
+    const regSignature = await walletClient.signMessage({
+        message: regChallenge.message,
+    });
+
     const username = `E2ETester_${Math.floor(Math.random() * 10000)}`;
     const regRes = await fetch(`${BASE_URL}/agents/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             username,
-            wallet_address: account.address,
-            description: "E2E Test Agent",
+            description: "SIWE Verified Agent",
+            message: regChallenge.message,
+            signature: regSignature,
+            challenge: regChallenge.challenge
         }),
     }).then(r => r.json()) as any;
 
+    if (!regRes.success) {
+        console.error("❌ Registration failed", regRes);
+        return;
+    }
+
     const agentId = regRes.agent.id;
-    console.log(`✅ Registered: ${agentId}`);
+    console.log(`✅ Registered Securely: ${agentId} (Address recovered: ${regRes.agent.wallet_address})`);
 
     // 2. Initial Login Attempt (Should fail with 403 - Off-Chain)
     console.log("2️⃣ Testing login for off-chain agent (Expected: 403)...");

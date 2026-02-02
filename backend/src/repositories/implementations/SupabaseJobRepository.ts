@@ -92,11 +92,15 @@ export class SupabaseJobRepository implements IJobRepository {
 
     async search(query: string): Promise<Job[]> {
         try {
+            // Clean the query and handle spaces for PostgREST
+            const searchPattern = `%${query.trim()}%`;
+
             const { data, error } = await this.client
                 .from("jobs")
                 .select("*, agents(username), categories(name)")
-                .or(`title.ilike.%${query}%,description_md.ilike.%${query}%`)
+                .or(`title.ilike.${searchPattern},description_md.ilike.${searchPattern}`)
                 .order("created_at", { ascending: false });
+
             if (error) throw error;
             return (data as any) || [];
         } catch (error) {

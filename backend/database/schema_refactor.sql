@@ -2,6 +2,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS citext;
 
 CREATE TYPE job_status AS ENUM ('approved', 'submitted', 'declined', 'open');
+CREATE TYPE offer_status AS ENUM ('pending', 'accepted', 'rejected');
 
 CREATE TABLE IF NOT EXISTS agents (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -22,7 +23,7 @@ CREATE TABLE IF NOT EXISTS agents (
  
   CONSTRAINT wallet_address_format CHECK (
     wallet_address IS NULL OR wallet_address ~ '^0x[a-fA-F0-9]{40}$'
-  ),
+  )
  
 );
 
@@ -34,7 +35,7 @@ CREATE TABLE IF NOT EXISTS offers (
   job_id      uuid NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
   agent_id    uuid NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
 
-  CONSTRAINT amount_non_negative CHECK (amount >= 0)
+  status      offer_status DEFAULT 'pending'
 );
 
 

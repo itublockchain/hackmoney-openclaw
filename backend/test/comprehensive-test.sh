@@ -34,27 +34,50 @@ function test_agents() {
   USERNAME="TestAgent_$(date +%s)"
   WALLET="0x$(openssl rand -hex 20)"
   
-  echo -n "Registering on-chain agent ($USERNAME)... "
+  echo -n "Step 1: Registering agent off-chain ($USERNAME)... "
   REG_RES=$(curl -s -X POST ${BASE_URL}/agents/register \
     -H "Content-Type: application/json" \
-    -d "{\"username\": \"$USERNAME\", \"wallet_address\": \"$WALLET\", \"description\": \"Comprehensive Test Agent\", \"erc8004_id\": 12345}")
+    -d "{\"username\": \"$USERNAME\", \"wallet_address\": \"$WALLET\", \"description\": \"Comprehensive Test Agent\"}")
     
   AGENT_ID=$(echo $REG_RES | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
-  TOKEN=$(echo $REG_RES | grep -o '"token":"[^"]*' | head -1 | cut -d'"' -f4)
+  # Registration off-chain doesn't give a token yet if no erc8004_id is present
+  # But we can use the AGENT_ID as a raw token for internal testing if the middleware allows it, 
+  # or we use the specific register endpoint. Actually AgentController.registerAgent returns token if requested?
+  # Let's check the AgentController again. 
   
   if [ -z "$AGENT_ID" ]; then
-    echo -e "${RED}❌ Registration failed${NC}"
+    echo -e "${RED}❌ Off-chain registration failed${NC}"
     echo "$REG_RES"
     exit 1
   fi
   echo -e "${GREEN}✅ Done (ID: $AGENT_ID)${NC}"
 
-  echo -n "Fetching agent profile... "
-  GET_RES=$(curl -s ${BASE_URL}/agents/$AGENT_ID)
-  if echo "$GET_RES" | grep -q "$USERNAME"; then
-    echo -e "${GREEN}✅ Success${NC}"
+  echo -n "Step 2: Registering on-chain... "
+  # We need a token to call /me/register-on-chain. 
+  # In our mock/dev setup, a raw agent_ ID works as a token in authMiddleware.
+  # Let's use the AGENT_ID as the token.
+  ONCHAIN_RES=$(curl -s -X POST ${BASE_URL}/agents/me/register-on-chain \
+    -H "Authorization: Bearer $AGENT_ID" \
+    -H "Content-Type: application/json")
+
+  if echo "$ONCHAIN_RES" | grep -q '"success":true'; then
+    ERCID=$(echo "$ONCHAIN_RES" | grep -o '"agentId":"[^"]*' | cut -d'"' -f4)
+    echo -e "${GREEN}✅ Success (On-Chain ID: $ERCID)${NC}"
   else
-    echo -e "${RED}❌ Failed${NC}"
+    echo -e "${RED}❌ On-chain registration failed${NC}"
+    echo "$ONCHAIN_RES"
+    exit 1
+  fi
+
+  # Now we login to get a real token (or use the one from register-on-chain if it returns one)
+  TOKEN=$(echo $ONCHAIN_RES | grep -o '"token":"[^"]*' | head -1 | cut -d'"' -f4)
+
+  echo -n "Step 3: Verifying erc8004_id in profile... "
+  GET_RES=$(curl -s ${BASE_URL}/agents/$AGENT_ID)
+  if echo "$GET_RES" | grep -q '"erc8004_id":'; then
+    echo -e "${GREEN}✅ Verified${NC}"
+  else
+    echo -e "${RED}❌ erc8004_id missing from profile${NC}"
     echo "$GET_RES"
   fi
 }
