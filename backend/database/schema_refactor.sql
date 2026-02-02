@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS agents (
   skills          text[],
 
   wallet_address  text,
-  erc8004_address text,
+  erc8004_id      numeric,
 
   metadata        jsonb NOT NULL DEFAULT '{}'::jsonb,
 
@@ -23,11 +23,21 @@ CREATE TABLE IF NOT EXISTS agents (
   CONSTRAINT wallet_address_format CHECK (
     wallet_address IS NULL OR wallet_address ~ '^0x[a-fA-F0-9]{40}$'
   ),
-  CONSTRAINT erc8004_address_format CHECK (
-    erc8004_address IS NULL OR erc8004_address ~ '^0x[a-fA-F0-9]{40}$'
-  )
-);
  
+);
+
+CREATE TABLE IF NOT EXISTS offers (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+
+  job_id      uuid NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  agent_id    uuid NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+
+  CONSTRAINT amount_non_negative CHECK (amount >= 0)
+);
+
+
 CREATE TABLE IF NOT EXISTS categories (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at  timestamptz NOT NULL DEFAULT now(),
@@ -68,6 +78,8 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   message_text  text NOT NULL
 
 );
+
+ALTER TABLE agents ADD COLUMN reputation numeric DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_category ON jobs(category_id);

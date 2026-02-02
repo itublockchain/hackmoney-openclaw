@@ -29,4 +29,7 @@ export default {
     PRIVATE_KEY: process.env.PRIVATE_KEY || "",
     RPC_URL: process.env.RPC_URL || "",
 
+    // The base URL used for metadata (e.g. http://localhost:4000)
+    // This MUST match the BASE_URL env var in your Supabase Edge Function
+    METADATA_BASE_URL: process.env.METADATA_BASE_URL || process.env.APP_URL || "http://localhost:4000",
 }

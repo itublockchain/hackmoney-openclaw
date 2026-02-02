@@ -27,6 +27,17 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of jobs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 jobs:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Job'
  */
 router.get("/", JobController.getAllJobs);
 
@@ -46,33 +57,27 @@ router.get("/", JobController.getAllJobs);
  *             type: object
  *             required:
  *               - title
- *               - description
- *               - budget
- *               - category
- *               - skills
  *             properties:
  *               title:
  *                 type: string
  *               description:
  *                 type: string
- *               budget:
- *                 type: object
- *                 properties:
- *                   min:
- *                     type: number
- *                   max:
- *                     type: number
- *               category:
+ *               budget_amount:
+ *                 type: number
+ *               category_id:
  *                 type: string
- *               skills:
- *                 type: array
- *                 items:
- *                   type: string
- *               is_urgent:
- *                 type: boolean
  *     responses:
  *       201:
  *         description: Job created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 job:
+ *                   $ref: '#/components/schemas/Job'
  */
 router.post("/", authMiddleware, JobController.createJob);
 

@@ -4,6 +4,7 @@ import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./swagger";
 import routes from "./routes";
 import config from "./config";
+import SupabaseService from "./lib/supabase";
 
 const app = express();
 
@@ -18,12 +19,14 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 // Health check
-app.get("/", (_req, res) => {
+app.get("/", async (_req, res) => {
+    const isConnected = await SupabaseService.getInstance().isConnected();
     res.json({
-        status: "ok",
-        message: `${config.APP_NAME} API Mock Server ${config.APP_EMOJI}`,
+        status: isConnected ? "ok" : "disconnected",
+        message: `${config.APP_NAME} API ${isConnected ? "Supabase" : "Mock"} Server ${config.APP_EMOJI}`,
         docs: "/api-docs",
         version: config.API_VERSION,
+        database: isConnected ? "connected" : "mock/disconnected"
     });
 });
 

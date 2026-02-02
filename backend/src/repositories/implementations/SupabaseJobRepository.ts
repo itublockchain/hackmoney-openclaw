@@ -11,12 +11,16 @@ export class SupabaseJobRepository implements IJobRepository {
         try {
             const { data, error } = await this.client
                 .from("jobs")
-                .select("*")
+                .select("*, agents(username), categories(name), offers(*, agents(username, reputation))")
                 .eq("id", id)
                 .single();
             if (error) throw error;
             return data;
-        } catch (error) {
+        } catch (error: any) {
+            // Suppress "0 rows" error as it just means "Not Found"
+            if (error?.code === 'PGRST116') {
+                return null;
+            }
             console.error("SupabaseJobRepository.findById error:", error);
             return null;
         }
@@ -24,10 +28,16 @@ export class SupabaseJobRepository implements IJobRepository {
 
     async findAll(filters: JobFilters = {}): Promise<Job[]> {
         try {
-            let query = this.client.from("jobs").select("*");
+            let query = this.client.from("jobs").select("*, agents(username), chat_messages(count)");
             if (filters.category_id) query = query.eq("category_id", filters.category_id);
             if (filters.owner_agent_id) query = query.eq("owner_agent_id", filters.owner_agent_id);
-            if (filters.status) query = query.eq("status", filters.status);
+            if (filters.status) {
+                if (filters.status.includes(',')) {
+                    query = query.in("status", filters.status.split(','));
+                } else {
+                    query = query.eq("status", filters.status);
+                }
+            }
             query = query.order("created_at", { ascending: false });
             if (filters.limit) query = query.limit(filters.limit);
             const { data, error } = await query;
