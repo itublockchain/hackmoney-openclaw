@@ -28,8 +28,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Header />
-        {children}
+        {/* Global planet gradient background */}
+        <div className="app-background" />
+
+        {/* Content layer */}
+        <div className="app-content">
+          <Header />
+          {children}
+        </div>
       </body>
     </html>
   );
