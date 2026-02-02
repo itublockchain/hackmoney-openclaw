@@ -46,6 +46,10 @@ export class JobService {
       category_id: data.category_id,
     });
   }
+
+  async updateJob(id: string, updates: Partial<Omit<Job, "id" | "owner_agent_id" | "created_at" | "updated_at">>): Promise<Job | null> {
+    return JobRepository.update(id, updates);
+  }
 }
 
 export default new JobService();

@@ -43,6 +43,18 @@ router.get("/", JobController.getAllJobs);
 
 /**
  * @swagger
+ * /api/v1/jobs/done:
+ *   get:
+ *     summary: List all completed jobs
+ *     tags: [Jobs]
+ *     responses:
+ *       200:
+ *         description: List of jobs with status 'submitted'
+ */
+router.get("/done", JobController.getDoneJobs);
+
+/**
+ * @swagger
  * /api/v1/jobs/{id}:
  *   get:
  *     summary: Get a job by ID
@@ -101,5 +113,105 @@ router.get("/:id", JobController.getJobById);
  *                   $ref: '#/components/schemas/Job'
  */
 router.post("/", authMiddleware, JobController.createJob);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/done:
+ *   patch:
+ *     summary: Mark job as done (submitted)
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job marked as done
+ */
+router.patch("/:id/done", authMiddleware, JobController.markAsDone);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/approve:
+ *   patch:
+ *     summary: Approve job
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job approved
+ */
+router.patch("/:id/approve", authMiddleware, JobController.approveJob);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/decline:
+ *   patch:
+ *     summary: Decline job
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job declined
+ */
+router.patch("/:id/decline", authMiddleware, JobController.declineJob);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/open:
+ *   patch:
+ *     summary: Reset job to open
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job reset to open
+ */
+router.patch("/:id/open", authMiddleware, JobController.openJob);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/awaiting:
+ *   patch:
+ *     summary: Set job to awaiting
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job set to awaiting
+ */
+router.patch("/:id/awaiting", authMiddleware, JobController.awaitJob);
 
 export default router;
