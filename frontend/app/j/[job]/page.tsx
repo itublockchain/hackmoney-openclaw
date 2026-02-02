@@ -23,7 +23,6 @@ interface SubmoltInfo {
     name: string;
     displayName: string;
     description: string;
-    members: number;
     createdAt: string;
     rules: string[]; // API doesn't seem to return rules yet based on analysis, but we'll keep the interface for now or make it optional
 }
@@ -46,92 +45,54 @@ export default function SubmoltDetailPage() {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-
-            // ============================================
-            // MOCK DATA MODE - Set USE_MOCK_DATA to false in data/mockData.ts to use real API
-            // ============================================
-            if (USE_MOCK_DATA) {
-                // Simulate loading delay for realistic feel
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                const mockSubmolt = getMockSubmoltInfo(submoltSlug);
-                if (!mockSubmolt) {
-                    setError(true);
-                    setLoading(false);
-                    return;
-                }
-
-                setSubmolt(mockSubmolt);
-                setPosts(getMockPostsForSubmolt(submoltSlug));
-                setLoading(false);
-                return;
-            }
-
-            // ============================================
-            // REAL API MODE - Below code runs when USE_MOCK_DATA is false
-            // ============================================
             try {
-                // Fetch Submolt Info
-                const submoltRes = await fetch(`/api/v1/submolts/${submoltSlug}`);
-                const submoltData = await submoltRes.json();
+                // 1. Fetch Category Details using the slug (name)
+                const categoryRes = await fetch(`http://localhost:4000/api/v1/categories/${submoltSlug}`);
+                const categoryData = await categoryRes.json();
 
-                if (!submoltData.success || !submoltData.submolt) {
+                if (!categoryData.success || !categoryData.category) {
+                    console.error("Category not found:", submoltSlug);
                     setError(true);
                     setLoading(false);
                     return;
                 }
 
-                // Map API response to SubmoltInfo
-                // Note: API response structure might differ slightly, adjusting based on assumption of consistency
-                // If API returns snake_case, we might need to map it.
-                // Based on layout analysis: members -> subscriber_count
-                const s = submoltData.submolt;
+                const category = categoryData.category;
                 setSubmolt({
-                    name: s.name,
-                    displayName: s.display_name || s.name,
-                    description: s.description,
-                    members: s.subscriber_count || 0,
-                    createdAt: new Date(s.created_at || Date.now()).toLocaleDateString(), // Mocking date format if needed
-                    rules: [], // Placeholder as API didn't show rules in route analysis
+                    name: category.name,
+                    displayName: category.name.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                    description: category.description,
+                    createdAt: new Date(category.created_at || Date.now()).toLocaleDateString(),
+                    rules: [],
                 });
 
-                // Fetch Feed
-                // Map activeTab to sort param if needed. API supports 'hot', 'new', 'top'.
-                const sortMap: Record<string, string> = {
-                    "new": "new",
-                    "top": "top",
-                    "discussed": "hot" // Assuming discussed maps to hot or similar
-                };
+                // 2. Fetch Jobs for this category using the category ID
+                // Note: The status filter might need adjustment based on backend support, currently passing it but backend might ignore if not fully implemented
+                const jobsRes = await fetch(`http://localhost:4000/api/v1/jobs?category_id=${category.id}&status=${jobStatus === 'live' ? 'approved' : 'completed'}`);
+                const jobsData = await jobsRes.json();
 
-                const feedRes = await fetch(`/api/v1/submolts/${submoltSlug}/feed?sort=${sortMap[activeTab]}&status=${jobStatus}`);
-                const feedData = await feedRes.json();
-
-                if (feedData.success) {
-                    // Map API posts to Post interface if necessary
-                    // Assuming API returns compatible structure or mapping is needed.
-                    // The API route calls SubmoltService.getSubmoltFeed.
-                    // Let's assume the component handles the raw data or we map it.
-                    // For now, passing data through assuming key compatibility or minor adjustments.
-
-                    const mappedPosts = feedData.posts.map((p: any) => ({
-                        id: p.id,
-                        submolt: p.submolt_name || submoltSlug,
+                if (jobsData.success && Array.isArray(jobsData.jobs)) {
+                    const mappedPosts = jobsData.jobs.map((job: any) => ({
+                        id: job.id,
+                        submolt: submoltSlug,
                         author: {
-                            name: p.author_name || "Unknown Agent",
-                            handle: p.author_handle || "u/unknown"
+                            name: "Agent " + (job.agents?.username || (job.owner_agent_id ? job.owner_agent_id.substring(0, 6) : "Unknown")),
+                            handle: job.agents?.username || job.owner_agent_id || "unknown"
                         },
-                        postedAt: new Date(p.created_at).toLocaleDateString(), // Format date
-                        title: p.title,
-                        content: p.content,
-                        upvotes: p.upvotes || 0,
-                        downvotes: p.downvotes || 0,
-                        comments: p.comments_count || 0,
+                        postedAt: new Date(job.created_at).toLocaleDateString(),
+                        title: job.title,
+                        content: job.description_md || job.description || "",
+                        upvotes: 0, // Not yet in Job model
+                        downvotes: 0,
+                        comments: 0 // Not yet in Job model
                     }));
                     setPosts(mappedPosts);
+                } else {
+                    setPosts([]);
                 }
 
             } catch (err) {
-                console.error("Failed to fetch submolt data", err);
+                console.error("Failed to fetch data", err);
                 setError(true);
             } finally {
                 setLoading(false);
@@ -186,8 +147,6 @@ export default function SubmoltDetailPage() {
                                 <h1 className="submolt-banner-name">{submolt?.name}</h1>
                                 <p className="submolt-banner-description">{submolt?.description}</p>
                                 <div className="submolt-banner-stats">
-                                    <span>{submolt?.members.toLocaleString()} members</span>
-                                    <span>•</span>
                                     <span>Created {submolt?.createdAt}</span>
                                 </div>
                             </div>

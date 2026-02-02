@@ -1,23 +1,20 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { USE_MOCK_DATA, mockJobs } from "@/data/mockData";
 
 interface Job {
     name: string;
     displayName: string;
     description: string;
-    members: number;
     posts: number;
     isJoined: boolean;
 }
 
-interface ApiJob {
+interface ApiCategory {
+    id: string;
     name: string;
-    display_name: string;
     description: string;
-    subscriber_count: number;
-    posts_count: number;
+    job_count: number;
 }
 
 export default function JobsPage() {
@@ -25,46 +22,33 @@ export default function JobsPage() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Fetch submolts from API or use mock data
+    // Fetch categories from backend API
     useEffect(() => {
-        const fetchJobs = async () => {
-            // ============================================
-            // MOCK DATA MODE - Set USE_MOCK_DATA to false in data/mockData.ts to use real API
-            // ============================================
-            if (USE_MOCK_DATA) {
-                // Simulate loading delay for realistic feel
-                await new Promise(resolve => setTimeout(resolve, 500));
-                setJobs(mockJobs);
-                setLoading(false);
-                return;
-            }
-
-            // ============================================
-            // REAL API MODE - Commented out while using mock data
-            // ============================================
+        const fetchCategories = async () => {
             try {
-                const response = await fetch(`/api/v1/submolts`);
+                const response = await fetch("http://localhost:4000/api/v1/categories");
                 const data = await response.json();
-                console.log(data);
+
                 if (data.success) {
-                    const mapped = data.submolts.map((s: ApiJob) => ({
-                        name: s.name,
-                        displayName: s.display_name,
-                        description: s.description,
-                        members: s.subscriber_count,
-                        posts: s.posts_count,
+                    const mapped = data.categories.map((cat: ApiCategory) => ({
+                        name: cat.name,
+                        displayName: cat.name.split('-').map((w: string) =>
+                            w.charAt(0).toUpperCase() + w.slice(1)
+                        ).join(' '),
+                        description: cat.description || "",
+                        posts: cat.job_count || 0,
                         isJoined: false,
                     }));
                     setJobs(mapped);
                 }
             } catch (error) {
-                console.error("Failed to fetch jobs", error);
+                console.error("Failed to fetch categories", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchJobs();
+        fetchCategories();
     }, []);
 
     // Filter jobs
@@ -74,10 +58,10 @@ export default function JobsPage() {
             job.description.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
-    const toggleJoin = (name: string) => {
-        setJobs(prev => prev.map(s =>
-            s.name === name ? { ...s, isJoined: !s.isJoined } : s
-        ));
+    const truncateText = (text: string, maxLength: number) => {
+        if (!text) return "";
+        if (text.length <= maxLength) return text;
+        return text.slice(0, maxLength) + "...";
     };
 
     return (
@@ -117,7 +101,6 @@ export default function JobsPage() {
                                     <Skeleton className="h-[48px] w-[48px] rounded-md shrink-0" />
                                     <div className="submolt-card-info" style={{ width: "100%" }}>
                                         <Skeleton className="h-[20px] w-32" style={{ marginBottom: '4px' }} />
-                                        <Skeleton className="h-[16px] w-20" />
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-[6px]" style={{ marginBottom: '12px' }}>
@@ -137,10 +120,11 @@ export default function JobsPage() {
                                         <div className="submolt-card-icon">🦞</div>
                                         <div className="submolt-card-info">
                                             <h3 className="submolt-card-name">j/{job.name}</h3>
-                                            <span className="submolt-card-members">{job.members.toLocaleString()} members</span>
                                         </div>
                                     </div>
-                                    <p className="submolt-card-description">{job.description}</p>
+                                    <p className="submolt-card-description" style={{ minHeight: '3em' }}>
+                                        {truncateText(job.description, 100)}
+                                    </p>
                                     <div className="submolt-card-stats">
                                         <span>{job.posts} posts</span>
                                     </div>
