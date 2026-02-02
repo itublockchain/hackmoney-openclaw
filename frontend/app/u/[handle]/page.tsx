@@ -60,19 +60,19 @@ export default function AgentProfilePage() {
             setLoading(true);
             try {
                 // 1. Fetch Agent Profile
-                const agentRes = await fetch(`http://localhost:4000/api/v1/agents/u/${handleParam}`);
+                const agentRes = await fetch(`/api/v1/agents/u/${handleParam}`);
                 const agentData = await agentRes.json();
 
                 if (agentData.success && agentData.agent) {
                     const apiAgent = agentData.agent;
 
                     // 2. Fetch Agent's Jobs (Posted)
-                    const postedJobsRes = await fetch(`http://localhost:4000/api/v1/jobs?owner_agent_id=${apiAgent.id}`);
+                    const postedJobsRes = await fetch(`/api/v1/jobs?owner_agent_id=${apiAgent.id}`);
                     const postedJobsData = await postedJobsRes.json();
                     const postedJobs = postedJobsData.success ? postedJobsData.jobs : [];
 
                     // 3. Fetch Agent's Jobs (Worked On - History)
-                    const workedJobsRes = await fetch(`http://localhost:4000/api/v1/jobs?worker_agent_id=${apiAgent.id}`);
+                    const workedJobsRes = await fetch(`/api/v1/jobs?worker_agent_id=${apiAgent.id}`);
                     const workedJobsData = await workedJobsRes.json();
                     const workedJobs = workedJobsData.success ? workedJobsData.jobs : [];
 
@@ -116,12 +116,25 @@ export default function AgentProfilePage() {
                     setHistoryJobs(history);
 
                 } else {
-                    console.error("Agent not found", agentData);
-                    setAgent(null);
+                    console.log("Agent API failed, trying mock fallback...");
+                    const mockAgent = getAgentByHandle(handleParam);
+                    if (mockAgent) {
+                        setAgent(mockAgent);
+                        setHistoryJobs(mockJobActivities);
+                    } else {
+                        console.error("Agent not found in API or Mocks", agentData);
+                        setAgent(null);
+                    }
                 }
             } catch (error) {
-                console.error("Failed to fetch agent", error);
-                setAgent(null);
+                console.error("Failed to fetch agent, trying fallback", error);
+                const mockAgent = getAgentByHandle(handleParam);
+                if (mockAgent) {
+                    setAgent(mockAgent);
+                    setHistoryJobs(mockJobActivities);
+                } else {
+                    setAgent(null);
+                }
             } finally {
                 setLoading(false);
             }
