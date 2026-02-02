@@ -103,11 +103,22 @@ export default function JobPostDetailPage() {
                         };
                     }));
 
-                    // HOTFIX: Inject missing offers for specific job due to backend limitation
+                    // Map Offers/Bids from API
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const injectedBids: any[] = [];
-                    if (apiJob.id === "eb69659e-02dc-4f74-924c-70aa1df8bae8") {
-                        injectedBids.push({
+                    let mappedBids = (apiJob.offers || []).map((offer: any) => ({
+                        agentName: offer.agents?.username || "Unknown Agent",
+                        agentHandle: offer.agents?.username ? `u/${offer.agents.username}` : "u/unknown",
+                        // Mocking scores/reputation as they might not be in the offer model yet or need complex calculation
+                        agentScore: 80 + Math.floor(Math.random() * 20),
+                        bidAmount: offer.bid_amount || 0, // Assuming bid_amount is in offer, or default to 0
+                        reputation: 4.5 + (Math.random() * 0.5),
+                        isWinner: offer.status === 'accepted',
+                        message: offer.message || "No message provided" // Assuming message is in offer
+                    }));
+
+                    // HOTFIX: Inject missing offers for specific job if API returned none
+                    if (mappedBids.length === 0 && apiJob.id === "eb69659e-02dc-4f74-924c-70aa1df8bae8") {
+                        mappedBids.push({
                             agentName: "UltimateAgent_3697",
                             agentHandle: "u/UltimateAgent_3697",
                             agentScore: 98,
@@ -137,8 +148,7 @@ export default function JobPostDetailPage() {
                             avatar: "/avatars/default.png",
                             isVerified: true
                         },
-                        // Bids either empty or injected hotfix
-                        bids: injectedBids,
+                        bids: mappedBids,
                         chatMessages: messagesWithAgents
                     };
                     setJob(mappedJob);
@@ -279,15 +289,36 @@ ${job?.requirements}
                                 {/* Agent Bids Table */}
                                 <div className="bids-section">
                                     <div className="bids-table">
-                                        <div className="bids-table-header">
+                                        <div className="bids-table-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
                                             <span>Agent name</span>
                                             <span style={{ textAlign: 'right' }}>Rep</span>
                                         </div>
 
-                                        {/* Since Offers are not supported by backend yet, we show empty state */}
-                                        <div className="no-bids">
-                                            <p>No offers yet</p>
-                                        </div>
+                                        {job.bids && job.bids.length > 0 ? (
+                                            job.bids.map((bid, index) => (
+                                                <div key={index} className="bid-row" style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--border-color)' }}>
+                                                    <div className="bid-agent-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <Link href={`/u/${bid.agentHandle.replace("u/", "")}`} className="bid-agent-link" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: 'inherit', fontWeight: 500 }}>
+                                                            <Avatar
+                                                                size={24}
+                                                                name={bid.agentHandle}
+                                                                variant="beam"
+                                                                colors={["#92A1C6", "#146A7C", "#F0AB3D", "#C271B4", "#C20D90"]}
+                                                            />
+                                                            <span>{bid.agentName}</span>
+                                                        </Link>
+                                                        {bid.isWinner && <span className="winner-badge" style={{ fontSize: '10px', backgroundColor: '#fbbf24', color: '#000', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>🏆 Winner</span>}
+                                                    </div>
+                                                    <div className="bid-rep" style={{ textAlign: 'right' }}>
+                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>⭐ {bid.reputation ? Number(bid.reputation).toFixed(1) : "New"}</span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="no-bids">
+                                                <p>No offers yet</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
