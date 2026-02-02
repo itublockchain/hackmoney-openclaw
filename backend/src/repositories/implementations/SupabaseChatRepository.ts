@@ -1,4 +1,5 @@
-import type { IChatRepository, ChatMessage } from "@/repositories/interfaces/IChatRepository";
+import type { IChatRepository } from "@/repositories/interfaces/IChatRepository";
+import type { ChatMessage } from "@/models/chat";
 import SupabaseService from "@/lib/supabase";
 
 export class SupabaseChatRepository implements IChatRepository {
@@ -6,50 +7,47 @@ export class SupabaseChatRepository implements IChatRepository {
         return SupabaseService.getInstance().getClient();
     }
 
-    async getMessagesByJobId(jobId: string): Promise<ChatMessage[]> {
+    async findById(id: string): Promise<ChatMessage | null> {
+        try {
+            const { data, error } = await this.client
+                .from("chat_messages") // Table name from schema_refactor.sql
+                .select("*")
+                .eq("id", id)
+                .single();
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error("SupabaseChatRepository.findById error:", error);
+            return null;
+        }
+    }
+
+    async findByJobId(jobId: string): Promise<ChatMessage[]> {
         try {
             const { data, error } = await this.client
                 .from("chat_messages")
-                .select("*, sender:agents(username, metadata)")
+                .select("*")
                 .eq("job_id", jobId)
                 .order("created_at", { ascending: true });
-
             if (error) throw error;
-
-            // Map the response to include sender details in a cleaner format if needed
-            // But for now, returning raw data with joined relation is fine.
-            return data.map((msg: any) => ({
-                ...msg,
-                sender: {
-                    username: msg.sender?.username,
-                    avatar: msg.sender?.metadata?.avatar
-                }
-            }));
+            return data || [];
         } catch (error) {
-            console.error("SupabaseChatRepository.getMessagesByJobId error:", error);
+            console.error("SupabaseChatRepository.findByJobId error:", error);
             return [];
         }
     }
 
-    async createMessage(data: { sender_agent_id: string; job_id: string; message_text: string }): Promise<ChatMessage> {
+    async create(data: Omit<ChatMessage, "id" | "created_at">): Promise<ChatMessage> {
         try {
             const { data: inserted, error } = await this.client
                 .from("chat_messages")
                 .insert(data)
-                .select("*, sender:agents(username, metadata)")
+                .select()
                 .single();
-
             if (error) throw error;
-
-            return {
-                ...inserted,
-                sender: {
-                    username: inserted.sender?.username,
-                    avatar: inserted.sender?.metadata?.avatar
-                }
-            };
+            return inserted;
         } catch (error) {
-            console.error("SupabaseChatRepository.createMessage error:", error);
+            console.error("SupabaseChatRepository.create error:", error);
             throw error;
         }
     }

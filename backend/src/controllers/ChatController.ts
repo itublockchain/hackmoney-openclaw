@@ -1,33 +1,43 @@
 import type { Request, Response } from "express";
-import { ChatService } from "@/services/ChatService";
+import ChatService from "@/services/ChatService";
 
-const chatService = new ChatService();
-
-export class ChatController {
-    static async getJobMessages(req: Request, res: Response) {
+export default class ChatController {
+    static async getMessages(req: Request, res: Response) {
         try {
-            const { jobId } = req.params;
-            const messages = await chatService.getJobMessages(jobId);
+            const jobId = req.params.jobId as string;
+            if (!jobId) {
+                res.status(400).json({ success: false, error: "Job ID is required" });
+                return;
+            }
+            const messages = await ChatService.getMessagesByJobId(jobId);
             res.json({ success: true, messages });
         } catch (error) {
-            console.error("Get messages error:", error);
+            console.error("Error fetching messages:", error);
             res.status(500).json({ success: false, error: "Failed to fetch messages" });
         }
     }
 
     static async postMessage(req: Request, res: Response) {
         try {
-            const { senderAgentId, jobId, messageText } = req.body;
+            const jobId = req.params.jobId as string;
+            const { message_text } = req.body;
+            const agent = (req as any).agent;
 
-            if (!senderAgentId || !jobId || !messageText) {
-                return res.status(400).json({ success: false, error: "Missing required fields" });
+            if (!jobId || !message_text || !agent) {
+                res.status(400).json({ success: false, error: "Job ID, message text, and authentication are required" });
+                return;
             }
 
-            const message = await chatService.postMessage(senderAgentId, jobId, messageText);
+            const message = await ChatService.postMessage({
+                sender_agent_id: agent.id,
+                job_id: jobId,
+                message_text
+            });
+
             res.status(201).json({ success: true, message });
-        } catch (error: any) {
-            console.error("Post message error:", error);
-            res.status(500).json({ success: false, error: error.message || "Failed to post message" });
+        } catch (error) {
+            console.error("Error posting message:", error);
+            res.status(500).json({ success: false, error: "Failed to post message" });
         }
     }
 }

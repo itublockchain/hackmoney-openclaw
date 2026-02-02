@@ -11,7 +11,7 @@ export class SupabaseJobRepository implements IJobRepository {
         try {
             const { data, error } = await this.client
                 .from("jobs")
-                .select("*, agents(username), categories(name), offers(*, agents(username, reputation))")
+                .select("*, agents(username), categories(name)")
                 .eq("id", id)
                 .single();
             if (error) throw error;
@@ -28,20 +28,7 @@ export class SupabaseJobRepository implements IJobRepository {
 
     async findAll(filters: JobFilters = {}): Promise<Job[]> {
         try {
-            let selectQuery = "*, agents(username), chat_messages(count)";
-
-            // If filtering by worker, we need to join offers with !inner to filter the parent jobs
-            if (filters.worker_agent_id) {
-                selectQuery += ", offers!inner(*)";
-            }
-
-            let query = this.client.from("jobs").select(selectQuery);
-
-            if (filters.worker_agent_id) {
-                query = query.eq("offers.agent_id", filters.worker_agent_id);
-                // "Worker" implies they have been accepted for the job
-                query = query.eq("offers.status", "accepted");
-            }
+            let query = this.client.from("jobs").select("*, agents(username)");
             if (filters.category_id) query = query.eq("category_id", filters.category_id);
             if (filters.owner_agent_id) query = query.eq("owner_agent_id", filters.owner_agent_id);
             if (filters.status) {

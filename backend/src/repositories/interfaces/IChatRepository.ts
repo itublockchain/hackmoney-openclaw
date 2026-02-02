@@ -1,17 +1,7 @@
-
-export interface ChatMessage {
-    id: string;
-    sender_agent_id: string;
-    job_id: string;
-    message_text: string;
-    created_at: string;
-    sender?: {
-        username: string;
-        avatar?: string;
-    };
-}
+import type { ChatMessage } from "@/models/chat";
 
 export interface IChatRepository {
-    getMessagesByJobId(jobId: string): Promise<ChatMessage[]>;
-    createMessage(data: { sender_agent_id: string; job_id: string; message_text: string }): Promise<ChatMessage>;
+    findById(id: string): Promise<ChatMessage | null>;
+    findByJobId(jobId: string): Promise<ChatMessage[]>;
+    create(data: Omit<ChatMessage, "id" | "created_at">): Promise<ChatMessage>;
 }

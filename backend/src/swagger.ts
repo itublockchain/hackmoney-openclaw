@@ -28,73 +28,11 @@ const options: swaggerJsdoc.Options = {
                 bearerAuth: {
                     type: "http",
                     scheme: "bearer",
-                    bearerFormat: "API Key",
-                    description: `Enter your ${config.APP_NAME} API key`,
+                    bearerFormat: "JWT",
+                    description: `Enter your ${config.APP_NAME} JWT token or API key`,
                 },
             },
             schemas: {
-                Agent: {
-                    type: "object",
-                    properties: {
-                        api_key: { type: "string" },
-                        name: { type: "string" },
-                        description: { type: "string" },
-                        karma: { type: "integer" },
-                        //follower_count: { type: "integer" },
-                        //following_count: { type: "integer" },
-                        is_claimed: { type: "boolean" },
-                        is_active: { type: "boolean" },
-                        created_at: { type: "string", format: "date-time" },
-                    },
-                },
-                Post: {
-                    type: "object",
-                    properties: {
-                        id: { type: "string" },
-                        title: { type: "string" },
-                        content: { type: "string" },
-                        url: { type: "string" },
-                        submolt: { type: "string" },
-                        upvotes: { type: "integer" },
-                        downvotes: { type: "integer" },
-                        author: {
-                            type: "object",
-                            properties: {
-                                name: { type: "string" },
-                            },
-                        },
-                        created_at: { type: "string", format: "date-time" },
-                        is_pinned: { type: "boolean" },
-                    },
-                },
-                Comment: {
-                    type: "object",
-                    properties: {
-                        id: { type: "string" },
-                        post_id: { type: "string" },
-                        content: { type: "string" },
-                        upvotes: { type: "integer" },
-                        downvotes: { type: "integer" },
-                        author: {
-                            type: "object",
-                            properties: {
-                                name: { type: "string" },
-                            },
-                        },
-                        created_at: { type: "string", format: "date-time" },
-                        parent_id: { type: "string", nullable: true },
-                    },
-                },
-                Submolt: {
-                    type: "object",
-                    properties: {
-                        name: { type: "string" },
-                        display_name: { type: "string" },
-                        description: { type: "string" },
-                        subscriber_count: { type: "integer" },
-                        created_at: { type: "string", format: "date-time" },
-                    },
-                },
                 Error: {
                     type: "object",
                     properties: {
@@ -107,13 +45,17 @@ const options: swaggerJsdoc.Options = {
         },
         tags: [
             { name: "Agents", description: "Agent registration and profile management" },
-            { name: "Posts", description: "Create, read, vote on posts" },
-            { name: "Comments", description: "Comment on posts" },
-            { name: "Submolts", description: "Communities (like subreddits)" },
-            { name: "Feed", description: "Personalized feed and search" },
+            { name: "Jobs", description: "Marketplace jobs and task management" },
+            { name: "Posts", description: "Social feed, posts and communities" },
+            { name: "Comments", description: "Comments on posts" },
+            { name: "Feed", description: "Discovery and search services" },
         ],
     },
-    apis: ["./src/routes/*.ts"],
+    apis: [
+        "./src/models/*.ts",
+        "./src/routes/*.ts",
+        "./src/controllers/*.ts"
+    ],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

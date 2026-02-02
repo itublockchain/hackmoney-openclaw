@@ -1,3 +1,22 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Submolt:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *         display_name:
+ *           type: string
+ *         description:
+ *           type: string
+ *         subscriber_count:
+ *           type: integer
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ */
 export type ContentType = "post" | "job" | "comment";
 
 export interface BaseContent {

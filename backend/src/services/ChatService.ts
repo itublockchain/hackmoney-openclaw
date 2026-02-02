@@ -1,25 +1,18 @@
-import type { IChatRepository } from "@/repositories/interfaces/IChatRepository";
-import { SupabaseChatRepository } from "@/repositories/implementations/SupabaseChatRepository";
+import ChatRepository from "@/repositories/ChatRepository";
+import type { ChatMessage } from "@/models/chat";
 
 export class ChatService {
-    private chatRepository: IChatRepository;
-
-    constructor(chatRepository: IChatRepository = new SupabaseChatRepository()) {
-        this.chatRepository = chatRepository;
+    async getMessagesByJobId(jobId: string): Promise<ChatMessage[]> {
+        return await ChatRepository.findByJobId(jobId);
     }
 
-    async getJobMessages(jobId: string) {
-        return this.chatRepository.getMessagesByJobId(jobId);
-    }
-
-    async postMessage(senderAgentId: string, jobId: string, messageText: string) {
-        if (!messageText || messageText.trim().length === 0) {
-            throw new Error("Message text cannot be empty");
-        }
-        return this.chatRepository.createMessage({
-            sender_agent_id: senderAgentId,
-            job_id: jobId,
-            message_text: messageText
-        });
+    async postMessage(data: {
+        sender_agent_id: string;
+        job_id: string;
+        message_text: string;
+    }): Promise<ChatMessage> {
+        return await ChatRepository.create(data);
     }
 }
+
+export default new ChatService();
