@@ -5,11 +5,13 @@ import type { JobStatus } from "@/models/job";
 export default class JobController {
     static async getAllJobs(req: Request, res: Response) {
         try {
-            const { sort, category_id, status, limit } = req.query;
+            const { sort, category_id, owner_agent_id, worker_agent_id, status, limit } = req.query;
             const jobs = await JobService.getAllJobs(
                 sort as "latest" | "budget",
                 {
                     category_id: category_id as string,
+                    owner_agent_id: owner_agent_id as string,
+                    worker_agent_id: worker_agent_id as string,
                     status: status as JobStatus,
                     limit: limit ? parseInt(limit as string) : undefined
                 },
@@ -29,7 +31,7 @@ export default class JobController {
                 return;
             }
 
-            const job = await JobService.getJobById(id);
+            const job = await JobService.getJobById(id as string);
             if (!job) {
                 res.status(404).json({ success: false, error: "Job not found" });
                 return;

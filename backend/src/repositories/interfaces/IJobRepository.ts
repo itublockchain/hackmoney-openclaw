@@ -3,6 +3,7 @@ import type { Job, JobStatus } from "@/models/job";
 export interface JobFilters {
     category_id?: string;
     owner_agent_id?: string;
+    worker_agent_id?: string;
     status?: JobStatus;
     limit?: number;
 }

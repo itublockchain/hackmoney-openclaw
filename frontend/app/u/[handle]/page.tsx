@@ -1,7 +1,9 @@
 "use client";
 
+
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Avatar from "boring-avatars";
 import { Skeleton } from "@/components/ui/skeleton";
 import { mockAgents, getAgentByHandle, type AgentProfile } from "../../../data/mock-agents";
 
@@ -51,15 +53,83 @@ export default function AgentProfilePage() {
     const handleParam = params.handle as string;
     const [loading, setLoading] = useState(true);
     const [agent, setAgent] = useState<AgentProfile | null>(null);
+    const [historyJobs, setHistoryJobs] = useState<JobActivity[]>([]);
 
     useEffect(() => {
-        // Simulate loading
-        const timer = setTimeout(() => {
-            const foundAgent = getAgentByHandle(handleParam);
-            setAgent(foundAgent);
-            setLoading(false);
-        }, 300);
-        return () => clearTimeout(timer);
+        const fetchAgentData = async () => {
+            setLoading(true);
+            try {
+                // 1. Fetch Agent Profile
+                const agentRes = await fetch(`http://localhost:4000/api/v1/agents/u/${handleParam}`);
+                const agentData = await agentRes.json();
+
+                if (agentData.success && agentData.agent) {
+                    const apiAgent = agentData.agent;
+
+                    // 2. Fetch Agent's Jobs (Posted)
+                    const postedJobsRes = await fetch(`http://localhost:4000/api/v1/jobs?owner_agent_id=${apiAgent.id}`);
+                    const postedJobsData = await postedJobsRes.json();
+                    const postedJobs = postedJobsData.success ? postedJobsData.jobs : [];
+
+                    // 3. Fetch Agent's Jobs (Worked On - History)
+                    const workedJobsRes = await fetch(`http://localhost:4000/api/v1/jobs?worker_agent_id=${apiAgent.id}`);
+                    const workedJobsData = await workedJobsRes.json();
+                    const workedJobs = workedJobsData.success ? workedJobsData.jobs : [];
+
+                    // Map to UI model
+                    const profile: AgentProfile = {
+                        id: apiAgent.id,
+                        handle: apiAgent.username,
+                        formattedHandle: apiAgent.username,
+                        walletAddress: apiAgent.wallet_address || "0x...",
+                        bio: apiAgent.description || "No bio.",
+                        specializations: apiAgent.title ? [apiAgent.title] : [],
+                        skills: apiAgent.skills || [],
+                        reputation: Number(apiAgent.reputation || 0),
+                        totalEarnings: 0,
+                        completedJobs: workedJobs.filter((j: any) => j.status === 'completed').length, // eslint-disable-line @typescript-eslint/no-explicit-any
+                        activeJobs: postedJobs.length,
+                        avatar: apiAgent.metadata?.avatar || "🤖",
+                        isVerified: apiAgent.metadata?.verified || false,
+                        // Filler fields for legacy AgentProfile compatibility
+                        displayName: apiAgent.username,
+                        karma: 0,
+                        accountAge: "New",
+                        stats: { posts: postedJobs.length, comments: 0, submolts: 0 },
+                        agentScore: (apiAgent.reputation || 0) * 20
+                    };
+
+                    setAgent(profile);
+
+                    // Map worked jobs to history display
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const history = workedJobs.map((job: any) => ({
+                        id: job.id,
+                        type: job.status === 'completed' ? 'completed' : 'in_progress',
+                        jobTitle: job.title,
+                        category: job.categories?.name || "General",
+                        amount: job.budget_amount || 0,
+                        timestamp: new Date(job.created_at).toLocaleDateString(),
+                        link: `/post/${job.id}`
+                    }));
+
+                    setHistoryJobs(history);
+
+                } else {
+                    console.error("Agent not found", agentData);
+                    setAgent(null);
+                }
+            } catch (error) {
+                console.error("Failed to fetch agent", error);
+                setAgent(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (handleParam) {
+            fetchAgentData();
+        }
     }, [handleParam]);
 
     if (loading) {
@@ -86,9 +156,9 @@ export default function AgentProfilePage() {
         );
     }
 
-    // Calculate failure rate (mock)
-    const failedJobs = Math.floor(agent.completedJobs * 0.05); // 5% failure rate mock
-    const successfulJobs = agent.completedJobs - failedJobs;
+    // Calculate failure rate (mock for now as we don't strictly track failures)
+    const failedJobs = 0;
+    const successfulJobs = agent.completedJobs;
 
     return (
         <>
@@ -100,10 +170,17 @@ export default function AgentProfilePage() {
 
                     {/* Profile Header Card */}
                     <div className="profile-header-card">
+
+
                         {/* Agent Image */}
                         <div className="agent-image-container">
-                            <div className="agent-image">
-                                {agent.avatar}
+                            <div className="agent-image" style={{ overflow: "hidden", padding: 0, border: "none", width: 120, height: 120 }}>
+                                <Avatar
+                                    size={120}
+                                    name={agent.walletAddress || agent.handle}
+                                    variant="beam"
+                                    colors={["#92A1C6", "#146A7C", "#F0AB3D", "#C271B4", "#C20D90"]}
+                                />
                             </div>
                         </div>
 
@@ -133,15 +210,15 @@ export default function AgentProfilePage() {
                             <div className="stat-item">
                                 <span className="stat-dot green"></span>
                                 <div className="stat-content">
-                                    <span className="stat-number">{agent.activeJobs} jobs offer</span>
-                                    <span className="stat-label">created</span>
+                                    <span className="stat-number">{agent.activeJobs}</span>
+                                    <span className="stat-label">jobs created</span>
                                 </div>
                                 <span className="stat-money">Paid ${agent.totalEarnings > 0 ? Math.floor(agent.totalEarnings * 0.1).toLocaleString() : 0} so far.</span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-dot orange"></span>
                                 <div className="stat-content">
-                                    <span className="stat-number">Took {agent.completedJobs + agent.activeJobs} jobs</span>
+                                    <span className="stat-number">Took {agent.completedJobs} jobs</span>
                                 </div>
                                 <span className="stat-money">${agent.totalEarnings.toLocaleString()} Got paid.</span>
                             </div>
@@ -159,56 +236,35 @@ export default function AgentProfilePage() {
                             </div>
                         </div>
 
-                        {/* Moltbook Link */}
-                        <div className="profile-section">
-                            <span className="section-label">@moltbook hesabı linki</span>
-                            <a href={`https://www.moltbook.com/u/${agent.formattedHandle}`} className="moltbook-link" target="_blank" rel="noopener noreferrer">
-                                https://www.moltbook.com/u/{agent.formattedHandle}
-                            </a>
-                        </div>
 
-                        {/* Human Pet */}
-                        <div className="profile-section">
-                            <span className="section-label">Human Pet:</span>
-                            <p className="section-value">@anonymous_human_123</p>
-                        </div>
-
-                        {/* Agent Tags */}
-                        <div className="profile-section">
-                            <span className="section-label">Agent Tags:</span>
-                            <div className="tags-container">
-                                {agent.specializations.map((tag, i) => (
-                                    <span key={i} className="agent-tag">{tag}</span>
-                                ))}
-                                {agent.skills.slice(0, 3).map((skill, i) => (
-                                    <span key={`skill-${i}`} className="agent-tag skill">{skill}</span>
-                                ))}
-                            </div>
-                        </div>
                     </div>
 
                     {/* Job History / Posts Section */}
                     <div className="profile-posts-section">
-                        <h3 className="posts-header">📋 İş Geçmişi</h3>
+                        <h3 className="posts-header">📋 Job History</h3>
 
                         <div className="jobs-list">
-                            {mockJobActivities.map((job) => (
-                                <a key={job.id} href={job.link} className="job-history-card">
-                                    <div className="job-history-status">
-                                        <span className={`status-indicator ${job.type}`}></span>
-                                    </div>
-                                    <div className="job-history-content">
-                                        <div className="job-history-meta">
-                                            <span className="job-category">{job.category}</span>
-                                            <span className="job-time">{job.timestamp}</span>
+                            {historyJobs.length > 0 ? (
+                                historyJobs.map((job) => (
+                                    <a key={job.id} href={job.link} className="job-history-card">
+                                        <div className="job-history-status">
+                                            <span className={`status-indicator ${job.type}`}></span>
                                         </div>
-                                        <h4 className="job-history-title">{job.jobTitle}</h4>
-                                    </div>
-                                    <div className="job-history-amount">
-                                        ${job.amount.toLocaleString()}
-                                    </div>
-                                </a>
-                            ))}
+                                        <div className="job-history-content">
+                                            <div className="job-history-meta">
+                                                <span className="job-category">{job.category}</span>
+                                                <span className="job-time">{job.timestamp}</span>
+                                            </div>
+                                            <h4 className="job-history-title">{job.jobTitle}</h4>
+                                        </div>
+                                        <div className="job-history-amount">
+                                            ${job.amount.toLocaleString()}
+                                        </div>
+                                    </a>
+                                ))
+                            ) : (
+                                <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>No active or completed jobs yet.</p>
+                            )}
                         </div>
                     </div>
                 </div>

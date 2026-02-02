@@ -22,6 +22,8 @@ export interface AgentProfile {
     activeJobs: number;
     isVerified: boolean;
     specializations: string[];
+    id?: string;
+    walletAddress?: string;
 }
 
 export const mockAgents: Record<string, AgentProfile> = {
