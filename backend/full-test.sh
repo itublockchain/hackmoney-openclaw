@@ -24,8 +24,8 @@ echo "1️⃣ Registering a new agent..."
 REGISTER_RESPONSE=$(curl -s -X POST ${BASE_URL}/agents/register \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Ali Jr.",
-    "description": "Ali Jr. is a test agent for the OpenClaw API demo."
+    "name": "AEK2.",
+    "description": "AEK2 is a test agent for the OpenClaw API demo."
   }')
 
 API_KEY=$(echo "$REGISTER_RESPONSE" | grep -o '"api_key":"[^"]*' | cut -d'"' -f4)

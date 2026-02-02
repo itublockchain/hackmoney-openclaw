@@ -1,6 +1,4 @@
 import AgentRepository from "@/repositories/AgentRepository";
-import PostRepository from "@/repositories/PostRepository";
-import config from "@/config";
 import type { Agent } from "@/models/agent";
 
 export class AgentService {
@@ -8,105 +6,43 @@ export class AgentService {
     return await AgentRepository.getAll();
   }
 
-  async registerAgent(
-    name: string,
-    description?: string,
-  ): Promise<{
-    agent: {
-      api_key: string;
-      claim_url: string;
-      verification_code: string;
-    };
-    important: string;
-  }> {
-    const apiKey = `${config.APP_NAME.toLowerCase()}_${Date.now()}`;
-    const claimCode = `${config.APP_NAME.toLowerCase()}_claim_${Date.now()}`;
-    const verificationCode = `reef-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+  async getAgentById(id: string): Promise<Agent | null> {
+    return await AgentRepository.findById(id);
+  }
 
-    await AgentRepository.create({
-      api_key: apiKey,
-      name,
-      description: description || "",
-      is_claimed: false,
-      is_active: true,
+  async getAgentByUsername(username: string): Promise<Agent | null> {
+    return await AgentRepository.findByUsername(username);
+  }
+
+  async registerAgent(data: {
+    username: string;
+    title?: string;
+    description?: string;
+    wallet_address?: string;
+    erc8004_address?: string;
+    metadata?: Record<string, any>;
+  }): Promise<Agent> {
+    return await AgentRepository.create({
+      username: data.username,
+      title: data.title,
+      description: data.description,
+      wallet_address: data.wallet_address,
+      erc8004_address: data.erc8004_address,
+      metadata: data.metadata || {},
     });
-
-    return {
-      agent: {
-        api_key: apiKey,
-        claim_url: `${config.APP_URL}/claim/${claimCode}`,
-        verification_code: verificationCode,
-      },
-      important: "⚠️ SAVE YOUR API KEY!",
-    };
-  }
-
-  async getAgentByApiKey(apiKey: string): Promise<Agent | null> {
-    return await AgentRepository.findByApiKey(apiKey);
-  }
-
-  async getAgentByName(name: string): Promise<Agent | null> {
-    return await AgentRepository.findByName(name);
-  }
-
-  async getAgentProfile(name: string) {
-    const agent = await AgentRepository.findByName(name);
-    if (!agent) return null;
-
-    const recentPosts = PostRepository.findByAuthor(agent.name);
-    return {
-      agent,
-      recentPosts,
-    };
   }
 
   async updateAgent(
-    apiKey: string,
-    updates: { description?: string; metadata?: any },
+    id: string,
+    updates: Partial<Omit<Agent, "id" | "owner_user_id" | "created_at" | "updated_at">>,
   ): Promise<Agent | null> {
-    return await AgentRepository.update(apiKey, updates);
+    return await AgentRepository.update(id, updates);
   }
 
-  followAgent(targetName: string): { success: boolean; message: string } {
-    // In a real implementation, this would track followers
-    return { success: true, message: `Now following ${targetName}` };
-  }
-
-  unfollowAgent(targetName: string): { success: boolean; message: string } {
-    // In a real implementation, this would untrack followers
-    return { success: true, message: `Unfollowed ${targetName}` };
-  }
-
-  async uploadAvatar(apiKey: string, filePath: string) {
-    const agent = await AgentRepository.findByApiKey(apiKey);
-    if (!agent) {
-      return { success: false, error: "Agent not found" };
-    }
-
-    // Update agent with avatar path
-    const updatedAgent = await AgentRepository.update(apiKey, {
-    });
-    return {
-      success: true,
-      message: "Avatar uploaded successfully",
-      agent: updatedAgent,
-    };
-  }
-
-  async deleteAvatar(apiKey: string) {
-    const agent = await AgentRepository.findByApiKey(apiKey);
-    if (!agent) {
-      return { success: false, error: "Agent not found" };
-    }
-
-    // Remove avatar path
-    const updatedAgent = await AgentRepository.update(apiKey, {});
-    return {
-      success: true,
-      message: "Avatar deleted successfully",
-      agent: updatedAgent,
-    };
+  async deleteAgent(id: string): Promise<boolean> {
+    return await AgentRepository.delete(id);
   }
 }
 
 export default new AgentService();
+

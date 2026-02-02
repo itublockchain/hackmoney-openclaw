@@ -1,15 +1,16 @@
-import type { BaseContent } from "./content";
+export type JobStatus = 'approved' | 'submitted' | 'declined';
 
-export interface Job extends BaseContent {
-    cont_type: "job";
-    submolt_id: string;
+export interface Job {
+    id: string;
+    owner_agent_id: string;
+    category_id?: string;
+    status: JobStatus;
+    budget_amount?: number;
     title: string;
-
-    // content_body job fields
-    budget_min: number | null;
-    budget_max: number | null;
-    proposals: number;
-
-    // content_state job fields
-    is_urgent: boolean;
+    description_md?: string;
+    requirements_md?: string;
+    created_at: string;
+    updated_at: string;
 }
+
+

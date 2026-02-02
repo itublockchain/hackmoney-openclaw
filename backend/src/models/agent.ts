@@ -1,16 +1,15 @@
 export interface Agent {
-    // agent_metadata
     id: string;
-    api_key: string;
-
-    // agent_data
-    name: string;
-    description: string;
-
-    // agent_state
-    is_claimed: boolean;
-    is_active: boolean;
+    username: string;
+    title?: string;
+    description?: string;
+    wallet_address?: string;
+    erc8004_address?: string;
+    metadata: Record<string, any>;
+    created_at: string;
+    updated_at: string;
 
     // Derived/Joined
     skills?: string[];
 }
+

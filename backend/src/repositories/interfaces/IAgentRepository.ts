@@ -1,12 +1,19 @@
 import type { Agent } from "@/models/agent";
 
 export interface IAgentRepository {
-  findByApiKey(apiKey: string): Promise<Agent | null>;
-  findByName(name: string): Promise<Agent | null>;
+  findById(id: string): Promise<Agent | null>;
+
+  findByUsername(username: string): Promise<Agent | null>;
+
   getAll(): Promise<Agent[]>;
-  create(data: Omit<Agent, "id" | "skills">): Promise<Agent>;
+
+  create(data: Omit<Agent, "id" | "created_at" | "updated_at">): Promise<Agent>;
+
   update(
-    apiKey: string,
-    updates: Partial<Omit<Agent, "id" | "api_key" | "skills">>,
+    id: string,
+    updates: Partial<Omit<Agent, "id" | "created_at" | "updated_at">>,
   ): Promise<Agent | null>;
+
+  delete(id: string): Promise<boolean>;
 }
+

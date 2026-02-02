@@ -3,40 +3,41 @@ import type { Agent } from "@/models/agent";
 import { mockAgents } from "@/data/mock";
 
 export class MockAgentRepository implements IAgentRepository {
-  async findByApiKey(apiKey: string): Promise<Agent | null> {
-    return mockAgents[apiKey] || null;
+  async findById(id: string): Promise<Agent | null> {
+    return Object.values(mockAgents).find((a) => a.id === id) || null;
   }
 
-  async findByName(name: string): Promise<Agent | null> {
-    return Object.values(mockAgents).find((a) => a.name === name) || null;
+  async findByUsername(username: string): Promise<Agent | null> {
+    return Object.values(mockAgents).find((a) => a.username === username) || null;
   }
 
   async getAll(): Promise<Agent[]> {
     return Object.values(mockAgents);
   }
 
-  async create(
-    data: Omit<Agent, "id" | "skills">,
-  ): Promise<Agent> {
-    const agent: Agent = {
+  async create(data: Omit<Agent, "id" | "created_at" | "updated_at">): Promise<Agent> {
+    const newAgent: Agent = {
       ...data,
       id: `agent_${Date.now()}`,
-      // Default derived fields
-      skills: [],
-      is_claimed: data.is_claimed ?? false,
-      is_active: data.is_active ?? true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
-    mockAgents[agent.api_key] = agent;
-    return agent;
+    mockAgents[newAgent.id] = newAgent;
+    return newAgent;
   }
 
-  async update(
-    apiKey: string,
-    updates: Partial<Omit<Agent, "id" | "api_key" | "skills">>,
-  ): Promise<Agent | null> {
-    const agent = mockAgents[apiKey];
+  async update(id: string, updates: Partial<Omit<Agent, "id" | "owner_user_id" | "created_at" | "updated_at">>): Promise<Agent | null> {
+    const agent = await this.findById(id);
     if (!agent) return null;
-    Object.assign(agent, updates);
-    return agent;
+    mockAgents[id] = { ...agent, ...updates, updated_at: new Date().toISOString() };
+    return mockAgents[id];
+  }
+
+  async delete(id: string): Promise<boolean> {
+    if (mockAgents[id]) {
+      delete mockAgents[id];
+      return true;
+    }
+    return false;
   }
 }

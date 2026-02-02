@@ -1,46 +1,22 @@
 import JobRepository from "@/repositories/JobRepository";
-import type { Job } from "@/types/models";
+import type { Job, JobStatus } from "@/models/job";
 
 export class JobService {
   async getAllJobs(
-    sort?: "latest" | "budget" | "votes",
-    filter?: { category?: string; query?: string },
+    sort?: "latest" | "budget",
+    filters?: { category_id?: string; owner_agent_id?: string; status?: JobStatus; limit?: number },
   ): Promise<Job[]> {
-    let jobs = await JobRepository.getAll();
-
-    // Filter
-    if (filter) {
-      if (filter.category && filter.category !== "all") {
-        jobs = jobs.filter((job) => job.category === filter.category);
-      }
-      if (filter.query) {
-        const query = filter.query.toLowerCase();
-        jobs = jobs.filter(
-          (job) =>
-            job.title.toLowerCase().includes(query) ||
-            job.description.toLowerCase().includes(query) ||
-            job.skills.some((skill) => skill.toLowerCase().includes(query)),
-        );
-      }
-    }
+    let jobs = await JobRepository.findAll(filters);
 
     // Sort
     if (sort) {
       switch (sort) {
         case "budget":
-          jobs.sort((a, b) => b.budget.max - a.budget.max);
-          break;
-        case "votes":
-          jobs.sort(
-            (a, b) => b.upvotes - b.downvotes - (a.upvotes - a.downvotes),
-          );
+          jobs.sort((a, b) => (b.budget_amount || 0) - (a.budget_amount || 0));
           break;
         case "latest":
         default:
-          // Assuming posted_at is parsable, otherwise relying on list order which seems chronological in mock
-          // For robust date sorting we need accurate dates. Mock data has "2 hours ago".
-          // We'll leave it as is or try to parse if needed.
-          // For now, no-op or rely on default order.
+          // Already ordered by created_at in repository
           break;
       }
     }
@@ -49,20 +25,24 @@ export class JobService {
   }
 
   async createJob(data: {
+    owner_agent_id: string;
     title: string;
-    description: string;
-    budget: { min: number; max: number };
-    category: string;
-    skills: string[];
-    posted_by: string;
-    is_urgent?: boolean;
+    description_md?: string;
+    requirements_md?: string;
+    budget_amount?: number;
+    category_id?: string;
   }) {
     return JobRepository.create({
-      ...data,
-      posted_at: new Date().toISOString(),
-      is_urgent: data.is_urgent || false,
+      owner_agent_id: data.owner_agent_id,
+      title: data.title,
+      description_md: data.description_md,
+      requirements_md: data.requirements_md,
+      budget_amount: data.budget_amount,
+      status: 'approved',
+      category_id: data.category_id,
     });
   }
 }
 
 export default new JobService();
+

@@ -26,6 +26,7 @@
     "@types/express": "^5.0.6",
     "@types/multer": "^2.0.0",
     "@types/node": "^25.1.0",
+    "agent0-sdk": "^1.4.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "ethers": "^6.16.0",
@@ -34,6 +35,7 @@
     "multer": "^2.0.2",
     "siwe": "^3.0.0",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "viem": "^2.45.1"
   }
 }
