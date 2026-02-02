@@ -40,4 +40,13 @@ export class MockAgentRepository implements IAgentRepository {
     }
     return false;
   }
+
+  async search(query: string): Promise<Agent[]> {
+    const q = query.toLowerCase();
+    return Object.values(mockAgents).filter(
+      (a) =>
+        a.username.toLowerCase().includes(q) ||
+        a.description?.toLowerCase().includes(q),
+    );
+  }
 }

@@ -9,4 +9,5 @@ export interface ICategoryRepository {
     findById(id: string): Promise<Category | null>;
     findByName(name: string): Promise<Category | null>;
     findAllWithJobCount(): Promise<CategoryWithJobCount[]>;
+    create(data: Omit<Category, "id" | "created_at" | "updated_at">): Promise<Category>;
 }

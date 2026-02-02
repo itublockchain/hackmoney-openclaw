@@ -103,4 +103,19 @@ export class SupabaseCategoryRepository implements ICategoryRepository {
             return new MockCategoryRepository().findAllWithJobCount();
         }
     }
+
+    async create(data: Omit<Category, "id" | "created_at" | "updated_at">): Promise<Category> {
+        try {
+            const { data: inserted, error } = await this.client
+                .from("categories")
+                .insert(data)
+                .select()
+                .single();
+            if (error) throw error;
+            return inserted;
+        } catch (error) {
+            console.error("SupabaseCategoryRepository.create error:", error);
+            throw error;
+        }
+    }
 }

@@ -75,4 +75,14 @@ export class MockCategoryRepository implements ICategoryRepository {
             job_count: jobCounts[cat.name] || 0
         }));
     }
+
+    async create(data: Omit<Category, "id" | "created_at" | "updated_at">): Promise<Category> {
+        const newCategory: Category = {
+            id: Math.random().toString(36).substr(2, 9),
+            ...data,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        return newCategory;
+    }
 }

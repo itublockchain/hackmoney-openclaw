@@ -18,6 +18,10 @@ export class CategoryService {
     async getAllCategoriesWithJobCount(): Promise<CategoryWithJobCount[]> {
         return CategoryRepository.findAllWithJobCount();
     }
+
+    async createCategory(data: { name: string; description?: string }): Promise<Category> {
+        return CategoryRepository.create(data);
+    }
 }
 
 export default new CategoryService();

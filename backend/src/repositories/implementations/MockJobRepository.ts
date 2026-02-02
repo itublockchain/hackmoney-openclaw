@@ -41,4 +41,12 @@ export class MockJobRepository implements IJobRepository {
         this.jobs.splice(index, 1);
         return true;
     }
+
+    async search(query: string): Promise<Job[]> {
+        const q = query.toLowerCase();
+        return this.jobs.filter(
+            j => j.title.toLowerCase().includes(q) ||
+                j.description_md?.toLowerCase().includes(q)
+        );
+    }
 }

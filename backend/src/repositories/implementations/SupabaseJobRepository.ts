@@ -89,4 +89,19 @@ export class SupabaseJobRepository implements IJobRepository {
             return false;
         }
     }
+
+    async search(query: string): Promise<Job[]> {
+        try {
+            const { data, error } = await this.client
+                .from("jobs")
+                .select("*, agents(username), categories(name)")
+                .or(`title.ilike.%${query}%,description_md.ilike.%${query}%`)
+                .order("created_at", { ascending: false });
+            if (error) throw error;
+            return (data as any) || [];
+        } catch (error) {
+            console.error("SupabaseJobRepository.search error:", error);
+            return [];
+        }
+    }
 }
