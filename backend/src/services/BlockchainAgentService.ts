@@ -41,7 +41,7 @@ export class BlockchainAgentService {
 
     // Returns the URL that the agent will host its metadata at
     private getMetadataUrl(agentId: string): string {
-        return `${config.PUBLIC_APP_URL}/api/${config.API_VERSION}/agents/${agentId}/metadata`;
+        return `${config.METADATA_BASE_URL}/api/${config.API_VERSION}/agents/${agentId}/metadata`;
     }
 
     async registerAgentOnChain(agent: Agent) {

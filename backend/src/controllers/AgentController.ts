@@ -43,12 +43,17 @@ export default class AgentController {
 
     static async registerAgent(req: Request, res: Response) {
         try {
-            const { username, name, title, description, wallet_address, erc8004_address, metadata } = req.body;
+            const { username, name, title, description, wallet_address, erc8004_id, metadata } = req.body;
 
             const finalUsername = username || name;
 
             if (!finalUsername) {
                 res.status(400).json({ success: false, error: "Username or Name is required" });
+                return;
+            }
+
+            if (!wallet_address) {
+                res.status(400).json({ success: false, error: "Wallet address is required for registration" });
                 return;
             }
 
@@ -58,11 +63,41 @@ export default class AgentController {
                 title,
                 description,
                 wallet_address,
-                erc8004_address,
+                erc8004_id,
                 metadata: metadata || {}
             });
 
-            res.status(201).json({ success: true, agent: { ...agent, name: agent.username }, api_key: agent.id });
+            // Calculate full ERC8004 metadata and persist it as the main metadata object
+            const fullMetadata = AgentService.generateAgentMetadata(agent);
+            const updatedAgent = await AgentService.updateAgent(agent.id, {
+                metadata: fullMetadata
+            });
+
+            const finalAgent = updatedAgent || agent;
+
+            let token: string | undefined;
+            if (finalAgent.erc8004_id) {
+                token = jwt.sign(
+                    {
+                        agentId: finalAgent.id,
+                        username: finalAgent.username,
+                        type: "auth",
+                    },
+                    config.JWT_SECRET,
+                    { expiresIn: "7d" },
+                );
+            }
+
+            res.status(201).json({
+                success: true,
+                agent: {
+                    ...finalAgent,
+                    name: finalAgent.username
+                },
+                token,
+                metadata_url: `${config.APP_URL}/api/v1/agents/${finalAgent.id}/metadata`,
+                api_key: finalAgent.id
+            });
         } catch (error) {
             console.error("Error registering agent:", error);
             res.status(500).json({ success: false, error: "Failed to register agent" });
@@ -105,6 +140,18 @@ export default class AgentController {
 
         const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
+        const siweMessage = new SiweMessage({
+            domain: new URL(config.APP_URL).hostname,
+            address: address,
+            statement: `Login to ${config.APP_NAME}`,
+            uri: config.APP_URL,
+            version: '1',
+            chainId: config.CHAIN_ID,
+            nonce: nonce,
+        });
+
+        const message = siweMessage.prepareMessage();
+
         const token = jwt.sign(
             {
                 address: address.toLowerCase(),
@@ -119,11 +166,11 @@ export default class AgentController {
             success: true,
             challenge: token,
             nonce,
-            message: `Sign this message to authenticate with OpenClaw: \n\nNonce: ${nonce} \nAddress: ${address} `,
+            message,
         });
     }
 
-    static async verifySiwe(req: Request, res: Response) {
+    static async login(req: Request, res: Response) {
         const { message, signature, challenge } = req.body;
 
         if (!signature || !message || !challenge) {
@@ -138,7 +185,31 @@ export default class AgentController {
                 return;
             }
 
-            const siweMessage = new SiweMessage(message as string);
+            // Parse message to get address
+            let address: string;
+            try {
+                const siweMessage = typeof message === 'string' ? new SiweMessage(message) : new SiweMessage(message as any);
+                address = siweMessage.address;
+            } catch (e) {
+                res.status(400).json({ success: false, error: "Invalid SIWE message format" });
+                return;
+            }
+
+            // 1. Strict On-Chain Gate (Check before signature to provide 403)
+            const agents = await AgentService.getAllAgents();
+            const agent = agents.find(a => a.wallet_address?.toLowerCase() === address.toLowerCase());
+
+            if (!agent || !agent.erc8004_id) {
+                res.status(403).json({
+                    success: false,
+                    error: "Authentication restricted to on-chain registered agents",
+                    hint: "Please register your agent on-chain first."
+                });
+                return;
+            }
+
+            // 2. Signature Verification
+            const siweMessage = typeof message === 'string' ? new SiweMessage(message) : new SiweMessage(message as any);
             await siweMessage.verify({ signature });
 
             if (siweMessage.nonce !== decoded.nonce || siweMessage.address.toLowerCase() !== decoded.address.toLowerCase()) {
@@ -148,6 +219,8 @@ export default class AgentController {
 
             const authToken = jwt.sign(
                 {
+                    agentId: agent.id,
+                    username: agent.username,
                     address: siweMessage.address.toLowerCase(),
                     type: "auth",
                 },
@@ -159,9 +232,10 @@ export default class AgentController {
                 success: true,
                 token: authToken,
                 address: siweMessage.address.toLowerCase(),
+                agentId: agent.id
             });
         } catch (error) {
-            console.error("SIWE verification error:", error);
+            console.error("Login verification error:", error);
             res.status(400).json({ success: false, error: "Signature verification failed" });
         }
     }
@@ -177,17 +251,44 @@ export default class AgentController {
             // 2. Register on chain
             const result = await BlockchainAgentService.registerAgentOnChain(agent);
 
-            // 3. Update agent with blockchain info
-            await AgentService.updateAgent(agent.id, {
+            // 3. Generate full ERC8004 metadata including new blockchain data
+            const agentWithBlockchainData = {
+                ...agent,
                 metadata: {
                     ...agent.metadata,
                     blockchainId: result.agentId,
                     onChainTx: result.txHash,
                     metadataUrl: result.metadataUrl
                 }
+            };
+            const fullMetadata = AgentService.generateAgentMetadata(agentWithBlockchainData as any);
+
+            // 4. Update agent with full blockchain info and persisted metadata
+            await AgentService.updateAgent(agent.id, {
+                metadata: {
+                    ...fullMetadata,
+                    blockchainId: result.agentId,
+                    onChainTx: result.txHash,
+                    metadataUrl: result.metadataUrl
+                }
             });
 
-            res.json({ success: true, ...result });
+            const token = jwt.sign(
+                {
+                    agentId: agent.id,
+                    username: agent.username,
+                    type: "auth",
+                },
+                config.JWT_SECRET,
+                { expiresIn: "7d" },
+            );
+
+            res.json({
+                success: true,
+                ...result,
+                token,
+                metadata_url: result.metadataUrl
+            });
         } catch (error: any) {
             console.error("Blockchain registration error:", error);
             res.status(500).json({ success: false, error: "Failed to register on chain: " + error.message });
@@ -207,40 +308,8 @@ export default class AgentController {
                 return;
             }
 
-            const metadata = {
-                type: 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1',
-                name: agent.title || agent.username,
-                description: agent.description || "An autonomous AI agent on the OpenClaw network.",
-                image: `https://robohash.org/${agent.title || agent.username}?set=set4`,
-                active: true,
-                supportedTrust: ['reputation'],
-                capabilities: ["social-interaction", "job-listing", "autonomous-messaging"],
-                endpoints: [
-                    {
-                        name: "OpenClaw Agent API",
-                        endpoint: `${config.APP_URL}/api/v1/agents/${agent.id}`,
-                        version: "1.0.0"
-                    },
-                    {
-                        name: "Agent Metadata",
-                        endpoint: `${config.APP_URL}/api/v1/agents/${agent.id}/metadata`,
-                        version: "1.0.0"
-                    }
-                ],
-                registrations: agent.metadata?.blockchainId ? [
-                    {
-                        agentId: agent.metadata.blockchainId,
-                        agentRegistry: "eip155:" + config.CHAIN_ID + ":registry" // Placeholder or actual registry retrieved from SDK
-                    }
-                ] : [],
-                metadata: {
-                    appId: agent.id,
-                    username: agent.username,
-                    wallet: agent.wallet_address || "",
-                    erc8004Address: agent.erc8004_address || ""
-                },
-                updatedAt: Math.floor(Date.now() / 1000),
-            };
+            // Return persisted metadata if it exists, otherwise generate on the fly
+            const metadata = (Object.keys(agent.metadata || {}).length > 3) ? agent.metadata : AgentService.generateAgentMetadata(agent);
 
             res.json(metadata);
         } catch (error) {

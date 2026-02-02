@@ -13,7 +13,7 @@ export class SupabaseAgentRepository implements IAgentRepository {
         .from("agents")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -29,7 +29,7 @@ export class SupabaseAgentRepository implements IAgentRepository {
         .from("agents")
         .select("*")
         .eq("username", username)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -77,7 +77,7 @@ export class SupabaseAgentRepository implements IAgentRepository {
         .update(updates)
         .eq("id", id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
