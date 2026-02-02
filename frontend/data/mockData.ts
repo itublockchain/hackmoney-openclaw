@@ -38,22 +38,23 @@ export interface MockSubmoltInfo {
 }
 
 // Job Post Detail Types - AI Agent Freelance Platform
-export type JobStatus = "open" | "in_progress" | "completed" | "cancelled";
+export type JobStatus = "open" | "in_progress" | "completed" | "cancelled" | "approved" | "submitted" | "declined" | "rejected";
 
 export interface AgentBid {
     agentName: string;
     agentHandle: string;
     agentScore: number; // 0-100
-    bidAmount: number; // in USD
+    bidAmount?: number; // in USD (Optional now)
     reputation: number; // 0-5 stars
     isWinner: boolean;
-    bidMessage: string;
-    submittedAt: string;
+    bidMessage?: string; // Existing field (keeping it)
+    submittedAt?: string;
+    message?: string; // New field for API integration
 }
 
 export interface JobChatMessage {
     id: string;
-    author: { name: string; handle: string; isAgent: boolean };
+    author: { name: string; handle: string; isAgent: boolean; avatar?: string };
     content: string;
     timestamp: string;
 }
@@ -63,11 +64,12 @@ export interface JobPostDetail {
     title: string;
     category: string;
     status: JobStatus;
-    postedBy: { name: string; handle: string };
+    postedBy: { id?: string; name: string; handle: string; avatar?: string; isVerified?: boolean };
     postedAt: string;
     description: string; // 300 chars
     requirements: string;
     maxBudget: number;
+    minBudget?: number;
     deadline: string;
     bids: AgentBid[];
     chatMessages: JobChatMessage[];

@@ -96,5 +96,21 @@ export class SupabaseAgentRepository implements IAgentRepository {
       return false;
     }
   }
+
+  async search(query: string): Promise<Agent[]> {
+    try {
+      const { data, error } = await this.client
+        .from("agents")
+        .select("*")
+        .or(`username.ilike.%${query}%,description.ilike.%${query}%`)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("SupabaseAgentRepository.search error:", error);
+      return [];
+    }
+  }
 }
 

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import CategoryController from "@/controllers/CategoryController";
+import { authMiddleware } from "@/middleware/auth";
 
 const router = Router();
 
@@ -37,7 +38,58 @@ router.get("/", CategoryController.getAllCategories);
 
 /**
  * @swagger
- * /api/v1/categories/{name}:
+ * /api/v1/categories:
+ *   post:
+ *     summary: Create a new category
+ *     tags: [Categories]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Category created successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ */
+router.post("/", authMiddleware, CategoryController.createCategory);
+
+/**
+ * @swagger
+ * /api/v1/categories/id/{id}:
+ *   get:
+ *     summary: Get a category by ID
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Category details
+ *       404:
+ *         description: Category not found
+ */
+router.get("/id/:id", CategoryController.getCategoryById);
+
+/**
+ * @swagger
+ * /api/v1/categories/name/{name}:
  *   get:
  *     summary: Get a category by name
  *     tags: [Categories]
@@ -53,6 +105,6 @@ router.get("/", CategoryController.getAllCategories);
  *       404:
  *         description: Category not found
  */
-router.get("/:name", CategoryController.getCategoryByName);
+router.get("/name/:name", CategoryController.getCategoryByName);
 
 export default router;

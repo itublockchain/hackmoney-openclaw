@@ -5,6 +5,14 @@ import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AgentHoverCard from "../../../components/AgentHoverCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious
+} from "@/components/ui/pagination";
 import { USE_MOCK_DATA, getMockSubmoltInfo, getMockPostsForSubmolt } from "@/data/mockData";
 
 interface Post {
@@ -27,6 +35,8 @@ interface SubmoltInfo {
     rules: string[]; // API doesn't seem to return rules yet based on analysis, but we'll keep the interface for now or make it optional
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export default function SubmoltDetailPage() {
     const params = useParams();
     const searchParams = useSearchParams();
@@ -42,12 +52,25 @@ export default function SubmoltDetailPage() {
     const [error, setError] = useState(false);
     const [userVotes, setUserVotes] = useState<Record<string, "up" | "down" | null>>({});
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // Calculate pagination
+    const totalPages = Math.ceil(posts.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const currentPosts = posts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    // Reset pagination when dependencies change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [submoltSlug, jobStatus, activeTab]);
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
                 // 1. Fetch Category Details using the slug (name)
-                const categoryRes = await fetch(`http://localhost:4000/api/v1/categories/${submoltSlug}`);
+                const categoryRes = await fetch(`/api/v1/categories/name/${submoltSlug}`);
                 const categoryData = await categoryRes.json();
 
                 if (!categoryData.success || !categoryData.category) {
@@ -67,8 +90,10 @@ export default function SubmoltDetailPage() {
                 });
 
                 // 2. Fetch Jobs for this category using the category ID
-                // Note: The status filter might need adjustment based on backend support, currently passing it but backend might ignore if not fully implemented
-                const jobsRes = await fetch(`http://localhost:4000/api/v1/jobs?category_id=${category.id}&status=${jobStatus === 'live' ? 'approved' : 'completed'}`);
+                // Live jobs include: open, approved, submitted
+                // Fetching up to 100 jobs to support client-side pagination
+                const statusQuery = jobStatus === 'live' ? 'open,approved,submitted' : 'completed,rejected';
+                const jobsRes = await fetch(`/api/v1/jobs?category_id=${category.id}&status=${statusQuery}&limit=100`);
                 const jobsData = await jobsRes.json();
 
                 if (jobsData.success && Array.isArray(jobsData.jobs)) {
@@ -84,7 +109,7 @@ export default function SubmoltDetailPage() {
                         content: job.description_md || job.description || "",
                         upvotes: 0, // Not yet in Job model
                         downvotes: 0,
-                        comments: 0 // Not yet in Job model
+                        comments: job.chat_messages?.[0]?.count || 0
                     }));
                     setPosts(mappedPosts);
                 } else {
@@ -200,7 +225,7 @@ export default function SubmoltDetailPage() {
                         </div>
 
                         {loading ? (
-                            // Post Skeletons - fixed height container to prevent layout shift
+                            // Post Skeletons
                             <div style={{ minHeight: '500px' }}>
                                 {Array.from({ length: 3 }).map((_, i) => (
                                     <div key={i} className="post-card" style={{ display: 'flex', gap: '12px', padding: '16px', alignItems: 'flex-start' }}>
@@ -210,22 +235,16 @@ export default function SubmoltDetailPage() {
                                             <Skeleton className="rounded-sm" style={{ height: '28px', width: '28px' }} />
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            {/* Meta info line */}
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                                                 <Skeleton style={{ height: '12px', width: '80px' }} />
                                                 <Skeleton style={{ height: '12px', width: '120px' }} />
                                                 <Skeleton style={{ height: '12px', width: '60px' }} />
                                             </div>
-                                            {/* Title */}
                                             <Skeleton style={{ height: '17px', width: '70%', marginBottom: '8px' }} />
-
-                                            {/* Content Paragraph */}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
                                                 <Skeleton style={{ height: '14px', width: '100%' }} />
                                                 <Skeleton style={{ height: '14px', width: '92%' }} />
                                             </div>
-
-                                            {/* Action Buttons - skeleton */}
                                             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                                                 <Skeleton className="rounded-sm" style={{ height: '16px', width: '40px' }} />
                                             </div>
@@ -233,50 +252,97 @@ export default function SubmoltDetailPage() {
                                     </div>
                                 ))}
                             </div>
-                        ) : posts.length === 0 ? (
+                        ) : currentPosts.length === 0 ? (
                             <div className="empty-state" style={{ margin: "20px 0" }}>
                                 <div className="empty-icon">📝</div>
                                 <h3>No posts yet</h3>
                                 <p>Be the first to post in {submolt?.name}!</p>
                             </div>
                         ) : (
-                            posts.map((post) => (
-                                <a key={post.id} href={`/post/${post.id}`} className="post-card-link">
-                                    <article className="post-card">
-                                        <div className="vote-column">
-                                            <button
-                                                className={`vote-btn upvote ${userVotes[post.id] === "up" ? "active" : ""}`}
-                                                aria-label="Upvote"
-                                                onClick={(e) => handleVote(e, post.id, "up")}
-                                            >▲</button>
-                                            <span className="vote-count">{post.upvotes - post.downvotes}</span>
-                                            <button
-                                                className={`vote-btn downvote ${userVotes[post.id] === "down" ? "active" : ""}`}
-                                                aria-label="Downvote"
-                                                onClick={(e) => handleVote(e, post.id, "down")}
-                                            >▼</button>
-                                        </div>
-                                        <div className="post-content" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                            <div className="post-meta">
-                                                <span className="post-submolt">{post.submolt}</span>
-                                                <span className="post-separator">•</span>
-                                                <span>Posted by <AgentHoverCard handle={post.author.handle} /></span>
-                                                <span className="post-separator">•</span>
-                                                <span>{post.postedAt}</span>
+                            <>
+                                {currentPosts.map((post) => (
+                                    <a key={post.id} href={`/post/${post.id}`} className="post-card-link">
+                                        <article className="post-card">
+                                            <div className="vote-column">
+                                                <button
+                                                    className={`vote-btn upvote ${userVotes[post.id] === "up" ? "active" : ""}`}
+                                                    aria-label="Upvote"
+                                                    onClick={(e) => handleVote(e, post.id, "up")}
+                                                >▲</button>
+                                                <span className="vote-count">{post.upvotes - post.downvotes}</span>
+                                                <button
+                                                    className={`vote-btn downvote ${userVotes[post.id] === "down" ? "active" : ""}`}
+                                                    aria-label="Downvote"
+                                                    onClick={(e) => handleVote(e, post.id, "down")}
+                                                >▼</button>
                                             </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                <div style={{ flex: 1 }}>
-                                                    <h3 className="post-title">{post.title}</h3>
-                                                    <p className="post-excerpt">{post.content}</p>
+                                            <div className="post-content" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                                <div className="post-meta">
+                                                    <span className="post-submolt">{post.submolt}</span>
+                                                    <span className="post-separator">•</span>
+                                                    <span>Posted by <AgentHoverCard handle={post.author.handle} /></span>
+                                                    <span className="post-separator">•</span>
+                                                    <span>{post.postedAt}</span>
                                                 </div>
-                                                <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '16px', whiteSpace: 'nowrap' }}>
-                                                    � {post.comments}
-                                                </span>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                    <div style={{ flex: 1 }}>
+                                                        <h3 className="post-title">{post.title}</h3>
+                                                        <p className="post-excerpt">{post.content}</p>
+                                                    </div>
+                                                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '16px', whiteSpace: 'nowrap' }}>
+                                                        {post.comments}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </article>
-                                </a>
-                            ))
+                                        </article>
+                                    </a>
+                                ))}
+
+                                {totalPages > 1 && (
+                                    <div className="mt-8">
+                                        <Pagination>
+                                            <PaginationContent>
+                                                <PaginationItem>
+                                                    <PaginationPrevious
+                                                        href="#"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            if (currentPage > 1) setCurrentPage(p => p - 1);
+                                                        }}
+                                                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                                                    />
+                                                </PaginationItem>
+
+                                                {Array.from({ length: totalPages }).map((_, i) => (
+                                                    <PaginationItem key={i}>
+                                                        <PaginationLink
+                                                            href="#"
+                                                            isActive={currentPage === i + 1}
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                setCurrentPage(i + 1);
+                                                            }}
+                                                        >
+                                                            {i + 1}
+                                                        </PaginationLink>
+                                                    </PaginationItem>
+                                                ))}
+
+                                                <PaginationItem>
+                                                    <PaginationNext
+                                                        href="#"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            if (currentPage < totalPages) setCurrentPage(p => p + 1);
+                                                        }}
+                                                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                                                    />
+                                                </PaginationItem>
+                                            </PaginationContent>
+                                        </Pagination>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

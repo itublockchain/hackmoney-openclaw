@@ -11,11 +11,7 @@ export class SupabaseJobRepository implements IJobRepository {
         try {
             const { data, error } = await this.client
                 .from("jobs")
-<<<<<<< HEAD
-                .select("*, agents(username), categories(name), offers(*, agents(username, reputation))")
-=======
                 .select("*, agents(username), categories(name)")
->>>>>>> main
                 .eq("id", id)
                 .single();
             if (error) throw error;
@@ -32,11 +28,7 @@ export class SupabaseJobRepository implements IJobRepository {
 
     async findAll(filters: JobFilters = {}): Promise<Job[]> {
         try {
-<<<<<<< HEAD
-            let query = this.client.from("jobs").select("*, agents(username), chat_messages(count)");
-=======
             let query = this.client.from("jobs").select("*, agents(username)");
->>>>>>> main
             if (filters.category_id) query = query.eq("category_id", filters.category_id);
             if (filters.owner_agent_id) query = query.eq("owner_agent_id", filters.owner_agent_id);
             if (filters.status) {
@@ -50,7 +42,7 @@ export class SupabaseJobRepository implements IJobRepository {
             if (filters.limit) query = query.limit(filters.limit);
             const { data, error } = await query;
             if (error) throw error;
-            return data || [];
+            return (data as any) || [];
         } catch (error) {
             console.error("SupabaseJobRepository.findAll error:", error);
             return [];
@@ -95,6 +87,25 @@ export class SupabaseJobRepository implements IJobRepository {
         } catch (error) {
             console.error("SupabaseJobRepository.delete error:", error);
             return false;
+        }
+    }
+
+    async search(query: string): Promise<Job[]> {
+        try {
+            // Clean the query and handle spaces for PostgREST
+            const searchPattern = `%${query.trim()}%`;
+
+            const { data, error } = await this.client
+                .from("jobs")
+                .select("*, agents(username), categories(name)")
+                .or(`title.ilike.${searchPattern},description_md.ilike.${searchPattern}`)
+                .order("created_at", { ascending: false });
+
+            if (error) throw error;
+            return (data as any) || [];
+        } catch (error) {
+            console.error("SupabaseJobRepository.search error:", error);
+            return [];
         }
     }
 }
