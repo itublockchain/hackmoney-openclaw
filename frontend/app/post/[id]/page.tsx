@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReactMarkdown from "react-markdown";
 import {
@@ -22,31 +23,53 @@ export default function JobPostDetailPage() {
     const [newMessage, setNewMessage] = useState("");
 
     useEffect(() => {
-        const fetchJob = async () => {
+        const fetchJobAndChat = async () => {
             setLoading(true);
 
             try {
-                // Fetch from new jobs endpoint
-                const response = await fetch(`http://localhost:4000/api/v1/jobs/${postId}`);
-                const data = await response.json();
+                // Parallel fetch for Job Details and Chat Messages
+                const [jobRes, chatRes] = await Promise.all([
+                    fetch(`http://localhost:4000/api/v1/jobs/${postId}`),
+                    fetch(`http://localhost:4000/api/v1/chat/${postId}`)
+                ]);
 
-                if (data.success && data.job) {
-                    const apiJob = data.job;
-                    // Map backend Job to frontend JobPostDetail
-                    // Backend "agents" relation is included in findById from previous optimization? 
-                    // Wait, SupabaseJobRepository.findById didn't have the join! Only findAll did.
-                    // I should probably update findById too, but for now I'll use what I have.
-                    // Let's assume standard mapping for now.
+                const jobData = await jobRes.json();
+                const chatData = await chatRes.json();
+
+                if (jobData.success && jobData.job) {
+                    const apiJob = jobData.job;
+
+                    // Combine description and requirements
+                    let fullMarkdown = apiJob.description_md || apiJob.description || "";
+                    if (apiJob.requirements_md) {
+                        fullMarkdown += `\n\n## Requirements\n\n${apiJob.requirements_md}`;
+                    }
+
+                    // Map Chat Messages
+                    const mappedChatMessages = chatData.success && chatData.messages
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        ? chatData.messages.map((msg: any) => ({
+                            id: msg.id,
+                            author: {
+                                name: msg.sender?.username || "Unknown",
+                                handle: msg.sender?.username ? `u/${msg.sender.username}` : "u/unknown",
+                                isAgent: true, // Assuming mostly agents chat here
+                                avatar: msg.sender?.metadata?.avatar || "/avatars/default.png"
+                            },
+                            content: msg.message_text,
+                            timestamp: new Date(msg.created_at).toLocaleString()
+                        }))
+                        : [];
 
                     const mappedJob: JobPostDetail = {
                         id: apiJob.id,
                         title: apiJob.title,
                         description: apiJob.description || "",
-                        markdownContent: apiJob.description_md || apiJob.description || "",
+                        markdownContent: fullMarkdown,
                         requirements: apiJob.requirements_md || "",
                         maxBudget: apiJob.budget_amount || 0,
                         minBudget: apiJob.budget_amount || 0,
-                        deadline: "Open", // Not in Job model yet
+                        deadline: "Open",
                         category: apiJob?.categories?.name || "General",
                         postedAt: new Date(apiJob.created_at).toLocaleDateString(),
                         status: apiJob.status || "open",
@@ -57,22 +80,31 @@ export default function JobPostDetailPage() {
                             avatar: "/avatars/default.png",
                             isVerified: true
                         },
-                        bids: [], // Not supported yet
-                        chatMessages: [] // Not supported yet
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        bids: apiJob.offers ? apiJob.offers.map((offer: any) => ({
+                            agentName: offer.agents?.username || "Unknown Agent",
+                            agentHandle: offer.agents?.username ? `u/${offer.agents.username}` : "u/unknown",
+                            agentScore: 0,
+                            bidAmount: 0,
+                            reputation: offer.agents?.reputation || 0,
+                            isWinner: offer.status === 'accepted',
+                            message: offer.message
+                        })) : [],
+                        chatMessages: mappedChatMessages
                     };
                     setJob(mappedJob);
                 } else {
-                    console.error("Job not found or API error", data);
+                    console.error("Job not found or API error", jobData);
                 }
             } catch (error) {
-                console.error("Failed to fetch job", error);
+                console.error("Failed to fetch data", error);
             } finally {
                 setLoading(false);
             }
         };
 
         if (postId) {
-            fetchJob();
+            fetchJobAndChat();
         }
     }, [postId]);
 
@@ -136,8 +168,8 @@ ${job?.requirements}
                 <div className="empty-state">
                     <div className="empty-icon">📋</div>
                     <h3>Job not found</h3>
-                    <p>This job post may have been deleted or doesn't exist.</p>
-                    <a href="/jobs" className="btn btn-primary" style={{ marginTop: "16px" }}>Browse Jobs</a>
+                    <p>This job post may have been deleted or doesn&apos;t exist.</p>
+                    <Link href="/jobs" className="btn btn-primary" style={{ marginTop: "16px" }}>Browse Jobs</Link>
                 </div>
             </div>
         );
@@ -152,22 +184,22 @@ ${job?.requirements}
                     <div className="status-section-header">
                         <div className="status-section-title">
                             <h2>STATUS SECTION</h2>
-                            <div className="status-indicators">
-                                <span className={`status-dot ${job.status === "open" ? "active" : ""}`} style={{ backgroundColor: "#22c55e" }}></span>
-                                <span className="status-label">approved</span>
-                                <span className={`status-dot ${job.status === "in_progress" ? "active" : ""}`} style={{ backgroundColor: "#f59e0b" }}></span>
-                                <span className="status-label">submitted</span>
-                                <span className={`status-dot ${job.status === "completed" || job.status === "cancelled" ? "active" : ""}`} style={{ backgroundColor: "#ef4444" }}></span>
-                                <span className="status-label">declined</span>
-                            </div>
+                            <span className={`status-dot ${job.status === "open" ? "active" : ""}`} style={{ backgroundColor: "#22c55e" }}></span>
+                            <span className="status-label">open</span>
+                            <span className={`status-dot ${job.status === "approved" ? "active" : ""}`} style={{ backgroundColor: "#3b82f6" }}></span>
+                            <span className="status-label">approved</span>
+                            <span className={`status-dot ${job.status === "submitted" || job.status === "in_progress" ? "active" : ""}`} style={{ backgroundColor: "#f59e0b" }}></span>
+                            <span className="status-label">submitted</span>
+                            <span className={`status-dot ${job.status === "completed" || job.status === "cancelled" || job.status === "declined" ? "active" : ""}`} style={{ backgroundColor: "#ef4444" }}></span>
+                            <span className="status-label">declined</span>
                         </div>
-                        <button className="status-toggle-btn" onClick={() => setIsExpanded(!isExpanded)}>
-                            {isExpanded ? "Kapat ↑" : "Aç →"}
-                        </button>
                     </div>
 
-                    {/* Collapsible Two Column Layout */}
-                    <div className={`detail-panel-wrapper ${isExpanded ? "expanded" : "collapsed"}`}>
+                </div>
+
+                {/* Collapsible Two Column Layout */}
+                <div className={`detail-panel-wrapper ${isExpanded ? "expanded" : "collapsed"}`}>
+                    <div style={{ maxWidth: "1100px", margin: "0 auto" }}> {/* Added container for alignment */}
                         <div className="two-column-layout">
 
                             {/* LEFT COLUMN - Markdown Job Details */}
@@ -209,9 +241,7 @@ ${job?.requirements}
                                     <div className="bids-table">
                                         <div className="bids-table-header">
                                             <span>Agent name</span>
-                                            <span>Score</span>
-                                            <span>Bid</span>
-                                            <span>Rep</span>
+                                            <span style={{ textAlign: 'right' }}>Rep</span>
                                         </div>
 
                                         {sortedBids.length === 0 ? (
@@ -230,9 +260,7 @@ ${job?.requirements}
                                                             {bid.agentName}
                                                         </a>
                                                     </div>
-                                                    <div className="bid-cell">{bid.agentScore}</div>
-                                                    <div className="bid-cell">${bid.bidAmount}</div>
-                                                    <div className="bid-cell">{bid.reputation.toFixed(1)}</div>
+                                                    <div className="bid-cell" style={{ textAlign: 'right' }}>{bid.reputation ? bid.reputation.toFixed(1) : "0"}</div>
                                                 </div>
                                             ))
                                         )}
@@ -242,7 +270,6 @@ ${job?.requirements}
                                 {/* Job Chat Section */}
                                 <div className="chat-section">
                                     <h3 className="chat-header">JOB CHAT:</h3>
-                                    <p className="chat-subtitle">Agentlar burada konuşur</p>
 
                                     <div className="chat-messages">
                                         {job.chatMessages.map((msg) => (
@@ -262,22 +289,14 @@ ${job?.requirements}
                                         ))}
                                     </div>
 
-                                    <div className="chat-input-area">
-                                        <input
-                                            type="text"
-                                            placeholder="Sadece AI Agent'lar mesaj gönderebilir..."
-                                            value={newMessage}
-                                            onChange={(e) => setNewMessage(e.target.value)}
-                                            disabled
-                                        />
-                                        <button disabled>Gönder</button>
-                                    </div>
+
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             <footer className="footer">
                 <div className="footer-links">

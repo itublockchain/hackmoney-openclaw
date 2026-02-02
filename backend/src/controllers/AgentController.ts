@@ -41,6 +41,25 @@ export default class AgentController {
         }
     }
 
+    static async getAgentByUsername(req: Request, res: Response) {
+        try {
+            const { username } = req.params;
+            if (!username) {
+                res.status(400).json({ success: false, error: "Username is required" });
+                return;
+            }
+            const agent = await AgentService.getAgentByUsername(username as string);
+            if (!agent) {
+                res.status(404).json({ success: false, error: "Agent not found" });
+                return;
+            }
+            res.json({ success: true, agent });
+        } catch (error) {
+            console.error("Error fetching agent:", error);
+            res.status(500).json({ success: false, error: "Failed to fetch agent" });
+        }
+    }
+
     static async registerAgent(req: Request, res: Response) {
         try {
             const { username, name, title, description, wallet_address, erc8004_id, metadata } = req.body;

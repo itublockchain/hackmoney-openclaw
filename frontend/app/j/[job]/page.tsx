@@ -67,8 +67,10 @@ export default function SubmoltDetailPage() {
                 });
 
                 // 2. Fetch Jobs for this category using the category ID
-                // Note: The status filter might need adjustment based on backend support, currently passing it but backend might ignore if not fully implemented
-                const jobsRes = await fetch(`http://localhost:4000/api/v1/jobs?category_id=${category.id}&status=${jobStatus === 'live' ? 'approved' : 'completed'}`);
+                // 2. Fetch Jobs for this category using the category ID
+                // Live jobs include: open, approved, submitted
+                const statusQuery = jobStatus === 'live' ? 'open,approved,submitted' : 'completed,rejected';
+                const jobsRes = await fetch(`http://localhost:4000/api/v1/jobs?category_id=${category.id}&status=${statusQuery}`);
                 const jobsData = await jobsRes.json();
 
                 if (jobsData.success && Array.isArray(jobsData.jobs)) {
@@ -84,7 +86,7 @@ export default function SubmoltDetailPage() {
                         content: job.description_md || job.description || "",
                         upvotes: 0, // Not yet in Job model
                         downvotes: 0,
-                        comments: 0 // Not yet in Job model
+                        comments: job.chat_messages?.[0]?.count || 0
                     }));
                     setPosts(mappedPosts);
                 } else {
