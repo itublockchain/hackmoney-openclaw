@@ -1,6 +1,6 @@
 import { createWalletClient, http, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { sepolia } from "viem/chains";
+import { base } from "viem/chains";
 
 const BASE_URL = "http://localhost:4000/api/v1";
 const rawKey = process.env.PRIVATE_KEY || "";
@@ -14,7 +14,7 @@ if (!PRIVATE_KEY || PRIVATE_KEY.length < 64) {
 const account = privateKeyToAccount(PRIVATE_KEY);
 const walletClient = createWalletClient({
     account,
-    chain: sepolia,
+    chain: base,
     transport: http(),
 });
 

@@ -3,42 +3,42 @@
 // - start: loads .env (Supabase Mode)
 
 type ConfigTYPE = {
-    // Server
-    PORT: number;
+  // Server
+  PORT: number;
 
-    // Branding
-    APP_NAME: string;
-    APP_EMOJI: string;
-    APP_DESCRIPTION: string;
-    APP_URL: string;
-    PUBLIC_APP_URL: string;
-    API_VERSION: string;
+  // Branding
+  APP_NAME: string;
+  APP_EMOJI: string;
+  APP_DESCRIPTION: string;
+  APP_URL: string;
+  PUBLIC_APP_URL: string;
+  API_VERSION: string;
 
-    // Supabase
-    SUPABASE_URL: string;
-    SUPABASE_ANON_KEY: string;
-    SUPABASE_SERVICE_KEY: string;
-    SUPABASE_BUCKET: string;
+  // Supabase
+  SUPABASE_URL: string;
+  SUPABASE_ANON_KEY: string;
+  SUPABASE_SERVICE_KEY: string;
+  SUPABASE_BUCKET: string;
 
-    // JWT
-    JWT_SECRET: string;
+  // JWT
+  JWT_SECRET: string;
 
-    // Blockchain
-    CHAIN_ID: number;
-    PRIVATE_KEY: string;
-    RPC_URL: string;
+  // Blockchain
+  CHAIN_ID: number;
+  PRIVATE_KEY: string;
+  RPC_URL: string;
 
-    // The base URL used for metadata (e.g. http://localhost:4000)
-    // This MUST match the BASE_URL env var in your Supabase Edge Function
-    METADATA_BASE_URL: string;
+  // The base URL used for metadata (e.g. http://localhost:4000)
+  // This MUST match the BASE_URL env var in your Supabase Edge Function
+  METADATA_BASE_URL: string;
 
-    WALLET_ADDRESS: string;
+  WALLET_ADDRESS: string;
 
-    // X402 / Payments
-    FACILITATOR_URL: string;
+  // X402 / Payments
+  FACILITATOR_URL: string;
 
-    ESCROW_CONTRACT_ADDRESS: string;
-    WORKER_ADDRESS: string;
+  ESCROW_CONTRACT_ADDRESS: string;
+  WORKER_ADDRESS: string;
 };
 
 const PORT = Number(process.env.PORT!);
@@ -75,26 +75,26 @@ const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS!;
 const WORKER_ADDRESS = process.env.WORKER_ADDRESS!;
 
 const config = {
-    PORT,
-    APP_NAME,
-    APP_EMOJI,
-    APP_DESCRIPTION,
-    APP_URL,
-    PUBLIC_APP_URL,
-    API_VERSION,
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY,
-    SUPABASE_SERVICE_KEY,
-    SUPABASE_BUCKET,
-    JWT_SECRET,
-    CHAIN_ID,
-    PRIVATE_KEY,
-    RPC_URL,
-    METADATA_BASE_URL,
-    WALLET_ADDRESS,
-    FACILITATOR_URL,
-    ESCROW_CONTRACT_ADDRESS,
-    WORKER_ADDRESS,
+  PORT,
+  APP_NAME,
+  APP_EMOJI,
+  APP_DESCRIPTION,
+  APP_URL,
+  PUBLIC_APP_URL,
+  API_VERSION,
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_KEY,
+  SUPABASE_BUCKET,
+  JWT_SECRET,
+  CHAIN_ID,
+  PRIVATE_KEY,
+  RPC_URL,
+  METADATA_BASE_URL,
+  WALLET_ADDRESS,
+  FACILITATOR_URL,
+  ESCROW_CONTRACT_ADDRESS,
+  WORKER_ADDRESS,
 } as ConfigTYPE;
 
 export default config;

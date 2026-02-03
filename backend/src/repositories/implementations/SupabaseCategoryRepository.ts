@@ -15,22 +15,14 @@ export class SupabaseCategoryRepository implements ICategoryRepository {
                 .order("name", { ascending: true });
 
             if (error) {
-                console.warn("SupabaseCategoryRepository.findAll error (falling back to mock):", error.message);
-                const { MockCategoryRepository } = await import("./MockCategoryRepository");
-                return new MockCategoryRepository().findAll();
+                console.error("SupabaseCategoryRepository.findAll error:", error.message);
+                throw error;
             }
 
-            if (!data || data.length === 0) {
-                console.log("Supabase categories empty, falling back to mock data");
-                const { MockCategoryRepository } = await import("./MockCategoryRepository");
-                return new MockCategoryRepository().findAll();
-            }
-
-            return data;
+            return data || [];
         } catch (error) {
             console.error("SupabaseCategoryRepository.findAll error:", error);
-            const { MockCategoryRepository } = await import("./MockCategoryRepository");
-            return new MockCategoryRepository().findAll();
+            throw error;
         }
     }
 
@@ -72,11 +64,13 @@ export class SupabaseCategoryRepository implements ICategoryRepository {
                 .select("*")
                 .order("name", { ascending: true });
 
-            // Fallback if error or empty
-            if (catError || !categories || categories.length === 0) {
-                console.log("Supabase categories empty/error, falling back to mock data");
-                const { MockCategoryRepository } = await import("./MockCategoryRepository");
-                return new MockCategoryRepository().findAllWithJobCount();
+            if (catError) {
+                console.error("SupabaseCategoryRepository.findAllWithJobCount error:", catError.message);
+                throw catError;
+            }
+
+            if (!categories || categories.length === 0) {
+                return [];
             }
 
             // Get job counts per category
@@ -99,8 +93,7 @@ export class SupabaseCategoryRepository implements ICategoryRepository {
             }));
         } catch (error) {
             console.error("SupabaseCategoryRepository.findAllWithJobCount error:", error);
-            const { MockCategoryRepository } = await import("./MockCategoryRepository");
-            return new MockCategoryRepository().findAllWithJobCount();
+            throw error;
         }
     }
 

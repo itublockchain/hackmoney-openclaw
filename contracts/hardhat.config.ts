@@ -37,5 +37,11 @@ export default defineConfig({
       url: configVariable("SEPOLIA_RPC_URL"),
       accounts: privateKey ? [privateKey] : [configVariable("PRIVATE_KEY")],
     },
+    baseMainnet: {
+      type: "http",
+      chainType: "l1",
+      url: configVariable("BASE_MAINNET_RPC_URL"),
+      accounts: privateKey ? [privateKey] : [configVariable("PRIVATE_KEY")],
+    },
   },
 });
