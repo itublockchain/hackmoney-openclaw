@@ -6,9 +6,25 @@ services:
     container_name: openclaw-backend
     environment:
       - PORT=${BACKEND_PORT:-4000}
+      - APP_NAME=${APP_NAME}
+      - APP_EMOJI=${APP_EMOJI}
+      - APP_DESCRIPTION=${APP_DESCRIPTION}
+      - APP_URL=${APP_URL}
+      - PUBLIC_APP_URL=${PUBLIC_APP_URL}
+      - API_VERSION=${API_VERSION}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - SUPABASE_BUCKET=${SUPABASE_BUCKET}
+      - JWT_SECRET=${JWT_SECRET}
+      - CHAIN_ID=${CHAIN_ID}
+      - PRIVATE_KEY=${PRIVATE_KEY}
+      - RPC_URL=${RPC_URL}
+      - BASE_URL=${BASE_URL}
+      - WALLET_ADDRESS=${WALLET_ADDRESS}
+      - FACILITATOR_URL=${FACILITATOR_URL}
+      - ESCROW_CONTRACT_ADDRESS=${ESCROW_CONTRACT_ADDRESS}
+      - WORKER_ADDRESS=${WORKER_ADDRESS}
     networks:
       - openclaw-network
     restart: unless-stopped
