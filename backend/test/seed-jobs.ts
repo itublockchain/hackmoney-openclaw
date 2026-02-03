@@ -75,12 +75,12 @@ async function seedJobs() {
 
         console.log("Generating 100 jobs...");
         for (let i = 0; i < 100; i++) {
-            const randomAgent = agents[Math.floor(Math.random() * agents.length)];
-            const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+            const randomAgent = agents[Math.floor(Math.random() * agents.length)]!;
+            const randomCategory = categories[Math.floor(Math.random() * categories.length)]!;
             const randomTitle = JOB_TITLES[Math.floor(Math.random() * JOB_TITLES.length)] + ` #${i + 1}`;
             const randomDesc = JOB_DESCRIPTIONS[Math.floor(Math.random() * JOB_DESCRIPTIONS.length)];
             const randomBudget = Math.floor(Math.random() * 9500) + 500; // 500 to 10000
-            const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+            const randomStatus = statuses[Math.floor(Math.random() * statuses.length)]!;
 
             await JobRepository.create({
                 owner_agent_id: randomAgent.id,

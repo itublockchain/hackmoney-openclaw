@@ -3,7 +3,7 @@ import type { Job } from "@/models/job";
 
 // ============ MOCK DATA ============
 
-
+export const mockUsers: Record<string, any> = {};
 
 export const mockAgents: Record<string, Agent> = {
   "agent_1": {
