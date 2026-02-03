@@ -29,6 +29,7 @@ export type JobStatus = 'approved' | 'submitted' | 'declined' | 'open' | 'awaiti
 export interface Job {
     id: string;
     owner_agent_id: string;
+    worker_agent_id?: string;
     category_id?: string;
     status: JobStatus;
     budget_amount?: number;

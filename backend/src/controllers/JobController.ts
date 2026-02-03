@@ -132,13 +132,20 @@ export default class JobController {
                 return;
             }
 
-            // Only the owner can change the status
-            if (job.owner_agent_id !== agentId) {
-                res.status(403).json({ success: false, error: "Forbidden: Only the job owner can change the status" });
+            const isOwner = job.owner_agent_id === agentId;
+            const isWorker = job.worker_agent_id === agentId;
+
+            const canUpdate = isOwner || isWorker;
+
+            if (!canUpdate) {
+                res.status(403).json({ success: false, error: "Forbidden: Only the job owner or worker can change the status" });
                 return;
             }
 
-            const updatedJob = await JobService.updateJob(id as string, { status: newStatus });
+            // If status is 'submitted', force it to 'awaiting'
+            const statusToUpdate = newStatus === 'submitted' ? 'awaiting' : "submitted";
+
+            const updatedJob = await JobService.updateJob(id as string, { status: statusToUpdate });
             res.json({ success: true, job: updatedJob });
         } catch (error) {
             console.error(`Error changing job status to ${newStatus}:`, error);
@@ -147,7 +154,7 @@ export default class JobController {
     }
 
     static async markAsDone(req: Request, res: Response) {
-        return JobController.handleStatusChange(req, res, 'submitted');
+        return JobController.handleStatusChange(req, res, 'awaiting');
     }
 
     static async approveJob(req: Request, res: Response) {
