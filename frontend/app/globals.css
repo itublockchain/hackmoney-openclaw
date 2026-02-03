@@ -1105,29 +1105,32 @@ body::before {
 
 /* ============ ONBOARDING CARD ============ */
 .onboarding-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-lg);
   max-width: 500px;
   margin: 0 auto;
   overflow: hidden;
-  animation: slideIn 0.3s ease-out;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .onboarding-card.agent-theme {
-  border-color: var(--cyan);
-  box-shadow: 0 0 20px rgba(0, 212, 170, 0.15);
+  border-color: rgba(0, 212, 170, 0.3);
+  box-shadow: 0 0 40px rgba(0, 212, 170, 0.1);
 }
 
 .onboarding-card.human-theme {
-  border-color: var(--lobster-red);
-  box-shadow: 0 0 20px rgba(224, 27, 36, 0.15);
+  border-color: rgba(224, 27, 36, 0.3);
+  box-shadow: 0 0 40px rgba(224, 27, 36, 0.1);
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(-15px) scale(0.98);
+    transform: translateY(20px) scale(0.95);
   }
 
   to {
@@ -1137,19 +1140,20 @@ body::before {
 }
 
 .onboarding-card-header {
-  padding: 16px;
+  padding: 20px;
   text-align: center;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .onboarding-card-content {
-  padding: 20px;
+  padding: 24px;
 }
 
 .onboarding-card-content .code-block {
-  margin-bottom: 16px;
-  border: none;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .onboarding-card-content .steps-list {
@@ -1157,320 +1161,84 @@ body::before {
 }
 
 .onboarding-card-content .steps-list li {
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 
 .onboarding-card-content .step-number {
-  background: none;
-  color: var(--lobster-red);
-  width: auto;
-  height: auto;
-  font-size: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  margin-right: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .onboarding-card-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .onboarding-card-footer .cta-link {
   margin-top: 0;
-}
-
-/* ============ FREELANCER PLATFORM STYLES ============ */
-
-/* Logo Icon */
-.logo-icon {
-  font-size: 28px;
-}
-
-/* Categories Grid */
-.categories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
-}
-
-.category-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  text-align: center;
-  text-decoration: none;
-  transition: var(--transition);
-}
-
-.category-card:hover {
-  border-color: var(--cyan);
-  box-shadow: var(--shadow-glow-cyan);
-  transform: translateY(-2px);
-}
-
-.category-icon {
-  font-size: 32px;
-  margin-bottom: 8px;
-}
-
-.category-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.category-count {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-/* Agent Card Enhancements */
-.agent-rating {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-
-.agent-rate {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--cyan);
-  margin-bottom: 8px;
-}
-
-.agent-skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  justify-content: center;
-}
-
-/* Skill Tags */
-.skill-tag {
-  display: inline-block;
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--cyan);
   background: rgba(0, 212, 170, 0.1);
-  border-radius: var(--radius-sm);
   border: 1px solid rgba(0, 212, 170, 0.2);
 }
 
-/* Job Card */
-.job-card {
-  background: var(--bg-card);
-  padding: 20px;
-  transition: var(--transition);
-  display: flex;
-  gap: 16px;
-}
-
-.job-card:hover {
-  background: var(--bg-hover);
-}
-
-/* Vote Column */
-.vote-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  min-width: 40px;
-}
-
-.vote-btn {
-  background: none;
-  border: none;
-  padding: 2px;
-  cursor: pointer;
-  color: var(--text-muted);
-  border-radius: var(--radius-sm);
-  transition: var(--transition);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  line-height: 1;
-}
-
-.vote-btn:hover {
-  background: var(--bg-hover);
-}
-
-.vote-btn.upvote:hover {
-  color: var(--cyan);
-}
-
-.vote-btn.downvote:hover {
-  color: var(--lobster-red);
-}
-
-.vote-btn.upvote.active {
-  color: var(--cyan);
-}
-
-.vote-btn.downvote.active {
-  color: var(--lobster-red);
-}
-
-.vote-count {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-/* Job Content */
-.job-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.job-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-.job-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.4;
-  cursor: pointer;
-  flex: 1;
-}
-
-.job-title:hover {
-  color: var(--cyan);
-}
-
-.urgent-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: 700;
-  color: white;
-  background: var(--lobster-red);
-  border-radius: var(--radius-sm);
-  margin-right: 8px;
-  text-transform: uppercase;
-}
-
-.job-budget {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--cyan);
-  white-space: nowrap;
-}
-
-.job-description {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin-bottom: 12px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.job-skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.job-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.job-posted-by {
-  color: var(--text-secondary);
-}
-
-.job-proposals {
-  color: var(--cyan);
-  font-weight: 500;
-}
-
-.job-actions {
-  display: flex;
-  gap: 8px;
-}
-
-/* Button Variants */
-.btn-sm {
-  padding: 8px 16px;
-  font-size: 13px;
-}
-
-/* Sidebar Stats */
-.sidebar-stat {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.sidebar-stat:last-child {
-  border-bottom: none;
-}
-
-.sidebar-stat span {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.sidebar-stat strong {
-  font-size: 14px;
-  color: var(--cyan);
+.onboarding-card-footer .cta-link:hover {
+  background: rgba(0, 212, 170, 0.2);
+  border-color: rgba(0, 212, 170, 0.4);
+  box-shadow: 0 0 20px rgba(0, 212, 170, 0.15);
 }
 
 /* User Type Toggle */
 .user-type-toggle {
   display: flex;
-  gap: 12px;
-  margin: 32px 0;
-  justify-content: center;
+  margin: 32px auto;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  padding: 4px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: fit-content;
 }
 
 .toggle-btn {
   padding: 10px 24px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;
 }
 
 .toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .toggle-btn.active {
-  background: var(--lobster-red);
-  color: white;
-  border-color: var(--lobster-red);
-  box-shadow: 0 4px 12px rgba(255, 69, 58, 0.3);
+  background: var(--text-primary);
+  color: black;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-btn.active:hover {
+  background: white;
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
+}
+
+/* Specific active states for themes using data attributes or classes could be added here if we want different colors for active buttons */
+.user-type-toggle:has(.toggle-btn.active:first-child) {
+  /* Human active context if needed */
 }
 
 /* ============ PAGE STYLES ============ */
