@@ -7,7 +7,7 @@ import { SiweMessage } from "siwe";
 import { supabase } from "@/lib/supabase";
 
 import { base } from "viem/chains";
-import { createPublicClient, http, verifyMessage, keccak256, toBytes } from "viem";
+import { createPublicClient, http, verifyMessage, keccak256, toBytes, type TransactionReceipt, type Log } from "viem";
 import { ethers } from "ethers";
 
 interface ChallengeTokenPayload extends jwt.JwtPayload {
@@ -69,9 +69,8 @@ export default class AgentController {
         try {
             const { username, name, title, description, wallet_address } = req.body;
 
-            let finalWalletAddress = wallet_address;
-
             const finalUsername = username || name;
+            const finalWalletAddress = wallet_address;
 
             if (!finalUsername) {
                 res.status(400).json({ success: false, error: "Username or Name is required" });
@@ -82,9 +81,6 @@ export default class AgentController {
                 res.status(400).json({ success: false, error: "Wallet address is required for registration" });
                 return;
             }
-
-
-
 
             const agent = await AgentService.registerAgent({
                 username: finalUsername,
@@ -100,8 +96,6 @@ export default class AgentController {
             const updatedAgent = await AgentService.updateAgent(agent.id, {
                 metadata: fullMetadata
             });
-
-
 
             const finalAgent = updatedAgent || agent;
 
@@ -214,8 +208,7 @@ export default class AgentController {
                 return;
             }
 
-            // 1. Strict On-Chain Gate (Check before signature to provide 403)
-            // Efficient lookup
+            // 1. Strict On-Chain Gate
             const agent = await AgentService.getAgentByAddress(address);
 
             if (!agent || !agent.erc8004_id) {
@@ -228,47 +221,10 @@ export default class AgentController {
             }
 
             // 2. Signature Verification
-            let verified = false;
-            try {
-                const siweMessage = typeof message === 'string' ? new SiweMessage(message) : new SiweMessage(message as any);
-                await siweMessage.verify({ signature });
-                verified = true;
-            } catch (e) {
-                // Standard verification failed, try hash verification
-                // This supports agents who sign the hash of the message to avoid newline issues (e.g. cast)
-                try {
-                    const messageHash = keccak256(toBytes(message as string));
-                    const valid = await verifyMessage({
-                        address: address as `0x${string}`,
-                        message: { raw: messageHash },
-                        signature: signature as `0x${string}`
-                    });
-
-                    if (valid) {
-                        verified = true;
-                        // Verify nonces manually since siweMessage.verify didn't run effectively
-                        const siweMessage = typeof message === 'string' ? new SiweMessage(message) : new SiweMessage(message as any);
-                        if (siweMessage.nonce !== decoded.nonce || siweMessage.address.toLowerCase() !== decoded.address.toLowerCase()) {
-                            res.status(400).json({ success: false, error: "Verification failed: mismatch" });
-                            return;
-                        }
-                    }
-                } catch (hashError) {
-                    console.error("Hash verification failed:", hashError);
-                }
-            }
+            const verified = await AgentController.verifySignature(message, signature, address, decoded.nonce, decoded.address);
 
             if (!verified) {
-                res.status(400).json({ success: false, error: "Signature verification failed" });
-                return;
-            }
-
-            // Re-instantiate for final checks if we only did hash verification path (or just to be safe)
-            const siweMessageVerified = typeof message === 'string' ? new SiweMessage(message) : new SiweMessage(message as any);
-
-            // Double check nonce/address if not already checked in standard flow failure
-            if (siweMessageVerified.nonce !== decoded.nonce || siweMessageVerified.address.toLowerCase() !== decoded.address.toLowerCase()) {
-                res.status(400).json({ success: false, error: "Verification failed: mismatch" });
+                res.status(400).json({ success: false, error: "Signature verification failed or mismatch" });
                 return;
             }
 
@@ -276,7 +232,7 @@ export default class AgentController {
                 {
                     agentId: agent.id,
                     username: agent.username,
-                    address: siweMessageVerified.address.toLowerCase(),
+                    address: address.toLowerCase(),
                     type: "auth",
                 },
                 config.JWT_SECRET,
@@ -286,13 +242,55 @@ export default class AgentController {
             res.json({
                 success: true,
                 token: authToken,
-                address: siweMessageVerified.address.toLowerCase(),
+                address: address.toLowerCase(),
                 agentId: agent.id
             });
         } catch (error) {
             console.error("Login verification error:", error);
             res.status(400).json({ success: false, error: "Signature verification failed" });
         }
+    }
+
+    private static async verifySignature(
+        message: string | Partial<SiweMessage>,
+        signature: string,
+        address: string,
+        expectedNonce: string,
+        expectedAddress: string
+    ): Promise<boolean> {
+        try {
+            // Standard SIWE verification
+            const siweMessage = typeof message === 'string' ? new SiweMessage(message) : new SiweMessage(message as any);
+            await siweMessage.verify({ signature });
+            
+            // Nonce and address check
+            if (siweMessage.nonce !== expectedNonce || siweMessage.address.toLowerCase() !== expectedAddress.toLowerCase()) {
+                return false;
+            }
+            return true;
+        } catch (e) {
+            // Hash verification fallback
+            try {
+                const messageHash = keccak256(toBytes(message as string));
+                const valid = await verifyMessage({
+                    address: address as `0x${string}`,
+                    message: { raw: messageHash },
+                    signature: signature as `0x${string}`
+                });
+
+                if (valid) {
+                     // Verify nonces manually
+                     const siweMessage = typeof message === 'string' ? new SiweMessage(message) : new SiweMessage(message as any);
+                     if (siweMessage.nonce !== expectedNonce || siweMessage.address.toLowerCase() !== expectedAddress.toLowerCase()) {
+                         return false;
+                     }
+                     return true;
+                }
+            } catch (hashError) {
+                console.error("Hash verification failed:", hashError);
+            }
+        }
+        return false;
     }
 
     static async getAgentMetadata(req: Request, res: Response) {
@@ -353,11 +351,6 @@ export default class AgentController {
 
     static async handleX402Request(req: Request, res: Response) {
         try {
-            const client = createPublicClient({
-                chain: base,
-                transport: http(config.RPC_URL),
-            });
-
             const { signature, resource } = req.body;
 
             if (!signature || !resource) {
@@ -380,27 +373,12 @@ export default class AgentController {
                 return;
             }
 
-            // 2. Update job status to 'submitted' if resource is a job
-            if (resource.startsWith("job:")) {
-                const jobId = resource.split(":")[1];
-                try {
-                    const { error: dbError } = await supabase()
-                        .from("jobs")
-                        .update({ status: "submitted" })
-                        .eq("id", jobId);
+            // 2. Update job status if needed
+            await AgentController.updateJobStatusAfterPayment(resource);
 
-                    if (dbError) throw dbError;
-                } catch (dbError) {
-                    console.error("Error updating job status after payment:", dbError);
-                }
-            }
-
-            const receipt = await client.waitForTransactionReceipt({
-                hash: txHash,
-            });
-
-            console.log("Transaction receipt:", receipt);
-
+            // 3. Confirm Transaction
+            const receipt = await AgentController.waitForTransaction(txHash);
+            
             if (receipt.status !== "success") {
                 res.status(500).json({
                     success: false,
@@ -426,17 +404,36 @@ export default class AgentController {
         }
     }
 
+    private static async updateJobStatusAfterPayment(resource: string) {
+        if (resource.startsWith("job:")) {
+            const jobId = resource.split(":")[1];
+            try {
+                const { error: dbError } = await supabase()
+                    .from("jobs")
+                    .update({ status: "submitted" })
+                    .eq("id", jobId);
+
+                if (dbError) throw dbError;
+            } catch (dbError) {
+                console.error("Error updating job status after payment:", dbError);
+            }
+        }
+    }
+
+    private static async waitForTransaction(txHash: `0x${string}`): Promise<TransactionReceipt> {
+        const client = createPublicClient({
+            chain: base,
+            transport: http(config.RPC_URL),
+        });
+        return await client.waitForTransactionReceipt({ hash: txHash });
+    }
+
     static async syncAgentIdentity(req: Request, res: Response) {
         try {
             const { txHash, agentId } = req.body;
 
-            if (!txHash) {
-                res.status(400).json({ success: false, error: "Transaction hash is required" });
-                return;
-            }
-
-            if (!agentId) {
-                res.status(400).json({ success: false, error: "Agent ID is required to link the identity." });
+            if (!txHash || !agentId) {
+                res.status(400).json({ success: false, error: "Transaction hash and Agent ID are required" });
                 return;
             }
 
@@ -453,38 +450,11 @@ export default class AgentController {
 
             console.log(`Syncing identity for agent ${agentId} with hash ${txHash}`);
 
-            const client = createPublicClient({
-                chain: base,
-                transport: http(config.RPC_URL),
-            });
-
-            const receipt = await client.getTransactionReceipt({ hash: txHash as `0x${string}` });
-
-            if (receipt.status !== "success") {
-                res.status(400).json({ success: false, error: "Transaction failed on-chain" });
+            const tokenId = await AgentController.fetchTokenIdFromReceipt(txHash);
+            if (tokenId === null) {
+                res.status(400).json({ success: false, error: "Register event not found or transaction failed" });
                 return;
             }
-
-            // Find Register event
-            // Event signature: Register(uint256 indexed tokenId, address indexed agent, string uri)
-            // Topic0: 0xc10ba2b5275825cf5bc963f46f4142340b016259d57a9f43fc1b15132ce3858c
-            const REGISTER_TOPIC = "0xc10ba2b5275825cf5bc963f46f4142340b016259d57a9f43fc1b15132ce3858c";
-
-            const log = receipt.logs.find(l => l.topics[0] === REGISTER_TOPIC);
-
-            if (!log) {
-                res.status(400).json({ success: false, error: "Register event not found in transaction logs" });
-                return;
-            }
-
-            // tokenId is the first indexed param (topics[1])
-            const tokenIdHex = log.topics[1];
-            if (!tokenIdHex) {
-                res.status(500).json({ success: false, error: "Could not parse Token ID from logs" });
-                return;
-            }
-
-            const tokenId = parseInt(tokenIdHex, 16);
 
             // Update Agent
             const updatedAgent = await AgentService.updateAgent(agent.id, {
@@ -501,6 +471,25 @@ export default class AgentController {
             console.error("Sync error:", error);
             res.status(500).json({ success: false, error: error.message || "Failed to sync identity" });
         }
+    }
+
+    private static async fetchTokenIdFromReceipt(txHash: string): Promise<number | null> {
+        const client = createPublicClient({
+            chain: base,
+            transport: http(config.RPC_URL),
+        });
+
+        const receipt = await client.getTransactionReceipt({ hash: txHash as `0x${string}` });
+
+        if (receipt.status !== "success") return null;
+
+        // Register event topic
+        const REGISTER_TOPIC = "0xc10ba2b5275825cf5bc963f46f4142340b016259d57a9f43fc1b15132ce3858c";
+        const log = receipt.logs.find(l => l.topics[0] === REGISTER_TOPIC);
+
+        if (!log || !log.topics[1]) return null;
+
+        return parseInt(log.topics[1], 16);
     }
 
     /**
