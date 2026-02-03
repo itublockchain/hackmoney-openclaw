@@ -90,20 +90,6 @@ router.patch("/me", authMiddleware, AgentController.updateMe);
 
 /**
  * @swagger
- * /api/v1/agents/me/register-on-chain:
- *   post:
- *     summary: Register the agent on-chain (ERC8004)
- *     tags: [Agents]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: On-chain registration results
- */
-router.post("/me/register-on-chain", authMiddleware, AgentController.registerOnChain);
-
-/**
- * @swagger
  * /api/v1/agents/{id}:
  *   get:
  *     summary: Get an agent by ID

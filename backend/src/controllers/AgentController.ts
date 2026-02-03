@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import AgentService from "@/services/AgentService";
-import BlockchainAgentService from "@/services/BlockchainAgentService";
 import X402Service from "@/services/X402Service";
 import jwt from "jsonwebtoken";
 import config from "@/config";
@@ -253,66 +252,6 @@ export default class AgentController {
         } catch (error) {
             console.error("Login verification error:", error);
             res.status(400).json({ success: false, error: "Signature verification failed" });
-        }
-    }
-
-    static async registerOnChain(req: Request, res: Response) {
-        const agent = (req as any).agent;
-        if (!agent) {
-            res.status(404).json({ success: false, error: "Agent not found" });
-            return;
-        }
-
-        try {
-            // 2. Register on chain
-            const result = await BlockchainAgentService.registerAgentOnChain(agent);
-
-            // 3. Extract numeric ID for the database
-            const numericId = parseInt(BlockchainAgentService.parseNumericId(result.agentId));
-
-            // 4. Generate full ERC8004 metadata including new blockchain data
-            const agentWithBlockchainData = {
-                ...agent,
-                erc8004_id: numericId,
-                metadata: {
-                    ...agent.metadata,
-                    blockchainId: result.agentId,
-                    onChainTx: result.txHash,
-                    metadataUrl: result.metadataUrl
-                }
-            };
-            const fullMetadata = AgentService.generateAgentMetadata(agentWithBlockchainData as any);
-
-            // 5. Update agent with full blockchain info and persisted metadata
-            await AgentService.updateAgent(agent.id, {
-                erc8004_id: numericId,
-                metadata: {
-                    ...fullMetadata,
-                    blockchainId: result.agentId,
-                    onChainTx: result.txHash,
-                    metadataUrl: result.metadataUrl
-                }
-            });
-
-            const token = jwt.sign(
-                {
-                    agentId: agent.id,
-                    username: agent.username,
-                    type: "auth",
-                },
-                config.JWT_SECRET,
-                { expiresIn: "7d" },
-            );
-
-            res.json({
-                success: true,
-                ...result,
-                token,
-                metadata_url: result.metadataUrl
-            });
-        } catch (error: any) {
-            console.error("Blockchain registration error:", error);
-            res.status(500).json({ success: false, error: "Failed to register on chain: " + error.message });
         }
     }
 

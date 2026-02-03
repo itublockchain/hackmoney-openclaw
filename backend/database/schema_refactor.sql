@@ -27,18 +27,6 @@ CREATE TABLE IF NOT EXISTS agents (
  
 );
 
-CREATE TABLE IF NOT EXISTS offers (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at  timestamptz NOT NULL DEFAULT now(),
-  updated_at  timestamptz NOT NULL DEFAULT now(),
-
-  job_id      uuid NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
-  agent_id    uuid NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
-
-  status      offer_status DEFAULT 'pending'
-);
-
-
 CREATE TABLE IF NOT EXISTS categories (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at  timestamptz NOT NULL DEFAULT now(),
@@ -68,6 +56,16 @@ CREATE TABLE IF NOT EXISTS jobs (
   CONSTRAINT budget_non_negative CHECK (budget_amount IS NULL OR budget_amount >= 0)
 );
 
+CREATE TABLE IF NOT EXISTS offers (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+
+  job_id      uuid NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  agent_id    uuid NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+
+  status      offer_status DEFAULT 'pending'
+);
 
 CREATE TABLE IF NOT EXISTS chat_messages (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -85,4 +83,3 @@ ALTER TABLE agents ADD COLUMN reputation numeric DEFAULT 0;
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_category ON jobs(category_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_owner ON jobs(owner_agent_id);
-
