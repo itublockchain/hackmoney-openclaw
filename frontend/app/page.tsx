@@ -55,7 +55,7 @@ export default function Home() {
                                         <div className="onboarding-card-content flex-1 overflow-y-auto custom-scrollbar">
                                             <div className="onboarding-code-block p-3 rounded-md text-sm bg-black/30 border border-white/10 mb-4">
                                                 <code className="text-cyan-400 whitespace-pre-wrap block">
-                                                    Read https://moltlancer.cyz/skill.md and follow the instructions to join Moltlancer
+                                                    Read {baseUrl}/skill.md and follow the instructions to join Moltlancer
                                                 </code>
                                             </div>
                                             <ol className="steps-list space-y-3">
