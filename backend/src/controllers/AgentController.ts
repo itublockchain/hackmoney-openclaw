@@ -1,9 +1,15 @@
 import type { Request, Response } from "express";
 import AgentService from "@/services/AgentService";
 import BlockchainAgentService from "@/services/BlockchainAgentService";
+import X402Service from "@/services/X402Service";
 import jwt from "jsonwebtoken";
 import config from "@/config";
 import { SiweMessage } from "siwe";
+import { supabase } from "@/lib/supabase";
+
+import { sepolia } from "viem/chains";
+import { createPublicClient, http } from "viem";
+import { ethers } from "ethers";
 
 interface ChallengeTokenPayload extends jwt.JwtPayload {
     address: string;
@@ -383,27 +389,151 @@ export default class AgentController {
                 return;
             }
 
-            // Return agent's interaction endpoint info
-            res.json({
-                success: true,
-                agent_id: agent.id,
-                name: agent.username,
-                x402_service: {
-                    status: "active",
-                    capabilities: [
-                        "autonomous-negotiation",
-                        "structured-data-exchange",
-                        "secure-payment-verification"
-                    ],
-                    endpoints: {
-                        chat: `${config.APP_URL}/api/v1/chat`,
-                        offers: `${config.APP_URL}/api/v1/offers`
-                    }
-                }
+            // Generate the X402 Discovery Header
+            const header = X402Service.generatePaymentHeader({
+                amount: "0", // Default discovery amount
+                resource: `agent:${agent.id}`,
+                description: `Interaction with agent: ${agent.username}`
+            });
+
+            res.set("PAYMENT-REQUIRED", header);
+            res.status(402).json({
+                success: false,
+                error: "Payment Required",
+                wallet_address: agent.wallet_address,
+                message: "Sign deposit(worker) tx and send signed RLP in POST /agents/:id/x402."
             });
         } catch (error) {
             console.error("Error fetching agent X402 data:", error);
             res.status(500).json({ success: false, error: "Failed to fetch agent X402 data" });
+        }
+    }
+
+    static async handleX402Request(req: Request, res: Response) {
+        try {
+            const client = createPublicClient({
+                chain: sepolia,
+                transport: http(config.RPC_URL),
+            });
+
+            const { signature, resource } = req.body;
+
+            if (!signature || !resource) {
+                res.status(400).json({ success: false, error: "Missing signature or resource" });
+                return;
+            }
+
+            // 1. Broadcast the transaction
+            let txHash: `0x${string}`;
+            try {
+                txHash = await X402Service.broadcastTransaction(signature);
+            } catch (error: any) {
+                console.error("X402 Payment broadcast failed:", error.message);
+                res.status(error.status || 500).json({
+                    success: false,
+                    error: error.message || "Payment processing failed",
+                    txHash: error.txHash,
+                    reason: error.reason
+                });
+                return;
+            }
+
+            // 2. Update job status to 'submitted' if resource is a job
+            if (resource.startsWith("job:")) {
+                const jobId = resource.split(":")[1];
+                try {
+                    const { error: dbError } = await supabase()
+                        .from("jobs")
+                        .update({ status: "submitted" })
+                        .eq("id", jobId);
+
+                    if (dbError) throw dbError;
+                } catch (dbError) {
+                    console.error("Error updating job status after payment:", dbError);
+                }
+            }
+
+            const receipt = await client.waitForTransactionReceipt({
+                hash: txHash,
+            });
+
+            console.log("Transaction receipt:", receipt);
+
+            if (receipt.status !== "success") {
+                res.status(500).json({
+                    success: false,
+                    error: "Payment transaction failed",
+                    txHash: txHash
+                });
+                return;
+
+            }
+
+            console.log("Deposit confirmed on chain");
+
+            res.json({
+                success: true,
+                data: {
+                    result: "Payment successful",
+                    resource: resource,
+                    escrowTx: txHash
+                }
+            });
+        } catch (error) {
+            console.error("AgentController.handleX402Request error:", error);
+            res.status(500).json({ success: false, error: "Internal server error" });
+        }
+    }
+
+    /**
+     * Broadcasts a signed transaction to the blockchain.
+     * Acts as a facilitator for X402 payments.
+     */
+    static async broadcast(req: Request, res: Response) {
+        try {
+            const { signedTx } = req.body;
+
+            if (!signedTx) {
+                res.status(400).json({ success: false, error: "Missing signedTx" });
+                return;
+            }
+
+            // Validate that it is a valid signed transaction
+            try {
+                const tx = ethers.Transaction.from(signedTx);
+                if (!tx.hash) {
+                    throw new Error("Invalid transaction structure");
+                }
+            } catch (e) {
+                console.error("Invalid signed transaction:", e);
+                res.status(400).json({ success: false, error: "Invalid signed transaction format" });
+                return;
+            }
+
+            console.log(" Facilitator: Broadcasting transaction...");
+
+            if (!config.RPC_URL) {
+                throw new Error("RPC_URL not configured");
+            }
+            const provider = new ethers.JsonRpcProvider(config.RPC_URL);
+
+            // Send the raw transaction
+            const txResponse = await provider.broadcastTransaction(signedTx);
+            console.log(`Facilitator: Tx broadcasted: ${txResponse.hash}`);
+
+            res.json({
+                success: true,
+                txHash: txResponse.hash
+            });
+
+        } catch (error: any) {
+            console.error("❌ Facilitator Broadcast Error:", error);
+
+            res.status(500).json({
+                success: false,
+                error: "Broadcast failed",
+                reason: error.message
+            });
         }
     }
 }

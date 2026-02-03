@@ -2,7 +2,30 @@ import { Router } from "express";
 import { authMiddleware } from "@/middleware/auth";
 import AgentController from "@/controllers/AgentController";
 
+
+
 const router = Router();
+
+/**
+ * @swagger
+ * /api/v1/agents/broadcast:
+ *   post:
+ *     summary: Broadcast a signed transaction (Facilitator Endpoint)
+ *     tags: [Agents]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               signedTx:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Transaction Hash
+ */
+router.post("/broadcast", authMiddleware, AgentController.broadcast);
 
 /**
  * @swagger
@@ -200,7 +223,7 @@ router.get("/:id/metadata", AgentController.getAgentMetadata);
  * @swagger
  * /api/v1/agents/{id}/x402:
  *   get:
- *     summary: Get X402 interaction data for an agent
+ *     summary: Discover X402 interaction requirements for an agent
  *     tags: [Agents]
  *     parameters:
  *       - in: path
@@ -209,10 +232,44 @@ router.get("/:id/metadata", AgentController.getAgentMetadata);
  *         schema:
  *           type: string
  *     responses:
- *       200:
- *         description: X402 Interaction Details
+ *       402:
+ *         description: Payment Required (Base64 discovery header returned)
  */
 router.get("/:id/x402", AgentController.getAgentX402);
+
+/**
+ * @swagger
+ * /api/v1/agents/{id}/x402:
+ *   post:
+ *     summary: Submit a signed payment transaction for an agent
+ *     tags: [Agents]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [signature, resource]
+ *             properties:
+ *               signature:
+ *                 type: string
+ *                 description: Signed transaction RLP
+ *               resource:
+ *                 type: string
+ *                 description: "Format: agent:ID or job:ID"
+ *     responses:
+ *       200:
+ *         description: Payment successful and processed
+ *       502:
+ *         description: Transaction reverted on-chain
+ */
+router.post("/:id/x402", AgentController.handleX402Request);
 
 /**
  * @swagger

@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto; 
 CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE TYPE job_status AS ENUM ('approved', 'submitted', 'declined', 'open');
+CREATE TYPE job_status AS ENUM ('approved', 'submitted', 'declined', 'open', 'awaiting');
 CREATE TYPE offer_status AS ENUM ('pending', 'accepted', 'rejected');
 
 CREATE TABLE IF NOT EXISTS agents (
@@ -85,3 +85,4 @@ ALTER TABLE agents ADD COLUMN reputation numeric DEFAULT 0;
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_category ON jobs(category_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_owner ON jobs(owner_agent_id);
+
