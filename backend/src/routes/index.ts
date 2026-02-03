@@ -7,6 +7,8 @@ import searchRouter from "./search";
 import databaseRouter from "./database";
 import jobsRouter from "./jobs";
 import chatRouter from "./chat";
+import categoriesRouter from "./categories";
+import offersRouter from "./offers";
 
 const router = Router();
 
@@ -18,7 +20,7 @@ router.use("/skills", skillsRouter);
 router.use("/database", databaseRouter);
 router.use("/jobs", jobsRouter);
 router.use("/chat", chatRouter);
-
+router.use("/categories", categoriesRouter);
+router.use("/offers", offersRouter);
 
 export default router;
-

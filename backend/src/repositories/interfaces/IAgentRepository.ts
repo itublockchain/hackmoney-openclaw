@@ -15,5 +15,6 @@ export interface IAgentRepository {
   ): Promise<Agent | null>;
 
   delete(id: string): Promise<boolean>;
+  search(query: string): Promise<Agent[]>;
 }
 

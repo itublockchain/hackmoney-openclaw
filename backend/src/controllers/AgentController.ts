@@ -41,9 +41,56 @@ export default class AgentController {
         }
     }
 
+    static async getAgentByUsername(req: Request, res: Response) {
+        try {
+            const { username } = req.params;
+            if (!username) {
+                res.status(400).json({ success: false, error: "Username is required" });
+                return;
+            }
+            const agent = await AgentService.getAgentByUsername(username as string);
+            if (!agent) {
+                res.status(404).json({ success: false, error: "Agent not found" });
+                return;
+            }
+            res.json({ success: true, agent });
+        } catch (error) {
+            console.error("Error fetching agent:", error);
+            res.status(500).json({ success: false, error: "Failed to fetch agent" });
+        }
+    }
+
     static async registerAgent(req: Request, res: Response) {
         try {
-            const { username, name, title, description, wallet_address, erc8004_id, metadata } = req.body;
+            const { username, name, title, description, wallet_address, erc8004_id, metadata, message, signature, challenge } = req.body;
+
+            let finalWalletAddress = wallet_address;
+
+            // 1. SIWE Verification (Optional but preferred for security)
+            if (message && signature && challenge) {
+                try {
+                    const decoded = jwt.verify(challenge, config.JWT_SECRET) as any;
+                    if (decoded.type !== "challenge") {
+                        res.status(400).json({ success: false, error: "Invalid challenge token" });
+                        return;
+                    }
+
+                    const siweMessage = typeof message === 'string' ? new SiweMessage(message) : new SiweMessage(message as any);
+                    await siweMessage.verify({ signature });
+
+                    if (siweMessage.nonce !== decoded.nonce) {
+                        res.status(400).json({ success: false, error: "Verification failed: nonce mismatch" });
+                        return;
+                    }
+
+                    finalWalletAddress = siweMessage.address.toLowerCase();
+                    console.log(`✅ Securely recovered wallet address: ${finalWalletAddress}`);
+                } catch (err: any) {
+                    console.error("SIWE Verification failed during registration:", err);
+                    res.status(400).json({ success: false, error: "Signature verification failed: " + err.message });
+                    return;
+                }
+            }
 
             const finalUsername = username || name;
 
@@ -52,7 +99,7 @@ export default class AgentController {
                 return;
             }
 
-            if (!wallet_address) {
+            if (!finalWalletAddress) {
                 res.status(400).json({ success: false, error: "Wallet address is required for registration" });
                 return;
             }
@@ -62,7 +109,7 @@ export default class AgentController {
                 username: finalUsername,
                 title,
                 description,
-                wallet_address,
+                wallet_address: finalWalletAddress,
                 erc8004_id,
                 metadata: metadata || {}
             });
@@ -251,9 +298,13 @@ export default class AgentController {
             // 2. Register on chain
             const result = await BlockchainAgentService.registerAgentOnChain(agent);
 
-            // 3. Generate full ERC8004 metadata including new blockchain data
+            // 3. Extract numeric ID for the database
+            const numericId = parseInt(BlockchainAgentService.parseNumericId(result.agentId));
+
+            // 4. Generate full ERC8004 metadata including new blockchain data
             const agentWithBlockchainData = {
                 ...agent,
+                erc8004_id: numericId,
                 metadata: {
                     ...agent.metadata,
                     blockchainId: result.agentId,
@@ -263,8 +314,9 @@ export default class AgentController {
             };
             const fullMetadata = AgentService.generateAgentMetadata(agentWithBlockchainData as any);
 
-            // 4. Update agent with full blockchain info and persisted metadata
+            // 5. Update agent with full blockchain info and persisted metadata
             await AgentService.updateAgent(agent.id, {
+                erc8004_id: numericId,
                 metadata: {
                     ...fullMetadata,
                     blockchainId: result.agentId,
@@ -315,6 +367,43 @@ export default class AgentController {
         } catch (error) {
             console.error("Error fetching agent metadata:", error);
             res.status(500).json({ success: false, error: "Failed to fetch agent metadata" });
+        }
+    }
+
+    static async getAgentX402(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            if (!id) {
+                res.status(400).json({ success: false, error: "Agent ID is required" });
+                return;
+            }
+            const agent = await AgentService.getAgentById(id as string);
+            if (!agent) {
+                res.status(404).json({ success: false, error: "Agent not found" });
+                return;
+            }
+
+            // Return agent's interaction endpoint info
+            res.json({
+                success: true,
+                agent_id: agent.id,
+                name: agent.username,
+                x402_service: {
+                    status: "active",
+                    capabilities: [
+                        "autonomous-negotiation",
+                        "structured-data-exchange",
+                        "secure-payment-verification"
+                    ],
+                    endpoints: {
+                        chat: `${config.APP_URL}/api/v1/chat`,
+                        offers: `${config.APP_URL}/api/v1/offers`
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Error fetching agent X402 data:", error);
+            res.status(500).json({ success: false, error: "Failed to fetch agent X402 data" });
         }
     }
 }

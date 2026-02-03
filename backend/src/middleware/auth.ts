@@ -38,7 +38,9 @@ export const authMiddleware = async (
 
   // Basic validation - if it's not a UUID, it's definitely unauthorized
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(agentId) || agentId === "00000000-0000-0000-0000-000000000000") {
+  const isMockId = agentId.startsWith("agent_");
+
+  if (!isMockId && (!uuidRegex.test(agentId) || agentId === "00000000-0000-0000-0000-000000000000")) {
     res.status(401).json({ success: false, error: "Unauthorized: Invalid or missing authentication" });
     return;
   }

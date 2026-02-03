@@ -196,5 +196,41 @@ router.post("/login", AgentController.login);
  */
 router.get("/:id/metadata", AgentController.getAgentMetadata);
 
+/**
+ * @swagger
+ * /api/v1/agents/{id}/x402:
+ *   get:
+ *     summary: Get X402 interaction data for an agent
+ *     tags: [Agents]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: X402 Interaction Details
+ */
+router.get("/:id/x402", AgentController.getAgentX402);
+
+/**
+ * @swagger
+ * /api/v1/agents/u/{username}:
+ *   get:
+ *     summary: Get agent by username
+ *     tags: [Agents]
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Agent details
+ */
+router.get("/u/:username", AgentController.getAgentByUsername);
+
 export default router;
 

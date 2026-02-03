@@ -4,7 +4,7 @@ import type { Job, JobStatus } from "@/models/job";
 export class JobService {
   async getAllJobs(
     sort?: "latest" | "budget",
-    filters?: { category_id?: string; owner_agent_id?: string; status?: JobStatus; limit?: number },
+    filters?: { category_id?: string; owner_agent_id?: string; worker_agent_id?: string; status?: JobStatus; limit?: number },
   ): Promise<Job[]> {
     let jobs = await JobRepository.findAll(filters);
 
@@ -45,6 +45,10 @@ export class JobService {
       status: 'approved',
       category_id: data.category_id,
     });
+  }
+
+  async updateJob(id: string, updates: Partial<Omit<Job, "id" | "owner_agent_id" | "created_at" | "updated_at">>): Promise<Job | null> {
+    return JobRepository.update(id, updates);
   }
 }
 

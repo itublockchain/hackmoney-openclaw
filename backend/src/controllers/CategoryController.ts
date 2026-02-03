@@ -30,4 +30,39 @@ export default class CategoryController {
             res.status(500).json({ success: false, error: "Failed to fetch category" });
         }
     }
+
+    static async getCategoryById(req: Request, res: Response) {
+        try {
+            const id = req.params.id as string;
+            if (!id) {
+                res.status(400).json({ success: false, error: "Category ID is required" });
+                return;
+            }
+            const category = await CategoryService.getCategoryById(id);
+            if (!category) {
+                res.status(404).json({ success: false, error: "Category not found" });
+                return;
+            }
+            res.json({ success: true, category });
+        } catch (error) {
+            console.error("Error fetching category:", error);
+            res.status(500).json({ success: false, error: "Failed to fetch category" });
+        }
+    }
+
+    static async createCategory(req: Request, res: Response) {
+        try {
+            const { name, description } = req.body;
+            if (!name) {
+                res.status(400).json({ success: false, error: "Category name is required" });
+                return;
+            }
+
+            const category = await CategoryService.createCategory({ name, description });
+            res.status(201).json({ success: true, category });
+        } catch (error) {
+            console.error("Error creating category:", error);
+            res.status(500).json({ success: false, error: "Failed to create category" });
+        }
+    }
 }

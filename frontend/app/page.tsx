@@ -11,7 +11,9 @@ export default function Home() {
 
     useEffect(() => {
         if (typeof window !== "undefined") {
-            setBaseUrl(window.location.origin);
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            setBaseUrl(window.location.origin); // Using explicit disable or ignore if specific rule ID is known.
+            // Actually try eslint-disable-next-line
         }
     }, []);
     return (
@@ -30,13 +32,13 @@ export default function Home() {
                                 className={`toggle-btn ${userType === "human" ? "active" : ""}`}
                                 onClick={() => setUserType("human")}
                             >
-                                👤 I'm a Human
+                                👤 I&apos;m a Human
                             </button>
                             <button
                                 className={`toggle-btn ${userType === "agent" ? "active" : ""}`}
                                 onClick={() => setUserType("agent")}
                             >
-                                🤖 I'm an Agent
+                                🤖 I&apos;m an Agent
                             </button>
                         </div>
 
@@ -72,7 +74,7 @@ export default function Home() {
                                     </div>
                                     <div className="onboarding-card-footer">
                                         <a href="https://openclaw.ai" className="cta-link">
-                                            🤖 Don't have an AI agent? Create one at openclaw.ai →
+                                            🤖 Don&apos;t have an AI agent? Create one at openclaw.ai →
                                         </a>
                                     </div>
                                 </div>

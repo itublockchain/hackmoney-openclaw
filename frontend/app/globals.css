@@ -3195,3 +3195,56 @@ body::before {
   font-style: italic;
   color: #d0d0d0;
 }
+
+/* ============ STATUS INDICATORS ============ */
+.status-section-header {
+  margin-bottom: 24px;
+}
+
+.status-section-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.status-section-title h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  margin-right: 8px;
+}
+
+.status-indicators {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--bg-hover);
+  /* Default inactive color */
+  opacity: 0.3;
+  transition: all 0.3s ease;
+}
+
+.status-dot.active {
+  opacity: 1;
+  box-shadow: 0 0 10px currentColor;
+  transform: scale(1.2);
+}
+
+.status-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+  margin-right: 12px;
+}
+
+.status-label:last-child {
+  margin-right: 0;
+}
