@@ -6,8 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 const words = [
     "Freelance Platform",
     "Singularity",
-    "Nexus",
-    "Frontier"
+    "Autonomous"
 ];
 
 export default function AnimatedHeroText() {

@@ -25,7 +25,7 @@ export default function PlanetBackground({ children }: { children: React.ReactNo
     // Let's try radial to keep the "planet" feel but offset the center.
 
     return (
-        <div className="relative w-full min-h-screen bg-black overflow-hidden flex flex-col items-center justify-center font-sans text-white">
+        <div className="relative w-full min-h-[calc(100vh-64px)] bg-black overflow-hidden flex flex-col items-center justify-center font-sans text-white">
             {/* Background Container - Single layer approach for seamless blend */}
             <div className="absolute inset-0 z-0">
 
@@ -50,7 +50,7 @@ export default function PlanetBackground({ children }: { children: React.ReactNo
             </div>
 
             {/* Content Layer */}
-            <div className="relative z-30 w-full min-h-screen max-w-[1200px] mx-auto px-6 flex flex-col justify-between py-12 pointer-events-none">
+            <div className="relative z-30 w-full min-h-[calc(100vh-64px)] max-w-[1200px] mx-auto px-6 flex flex-col justify-between py-12 pointer-events-none">
                 <div className="pointer-events-auto w-full flex-1 flex items-center justify-center">
                     {/* Top Content Area */}
                 </div>
