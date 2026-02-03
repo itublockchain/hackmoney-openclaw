@@ -13,7 +13,7 @@ import {
     PaginationNext,
     PaginationPrevious
 } from "@/components/ui/pagination";
-import { USE_MOCK_DATA, getMockSubmoltInfo, getMockPostsForSubmolt } from "@/data/mockData";
+
 
 interface Post {
     id: string;
