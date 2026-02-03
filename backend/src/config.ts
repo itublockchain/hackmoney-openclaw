@@ -66,7 +66,7 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY!;
 const RPC_URL = process.env.RPC_URL!;
 
 // Metadata
-const METADATA_BASE_URL = process.env.METADATA_BASE_URL!;
+const METADATA_BASE_URL = process.env.BASE_URL!;
 const WALLET_ADDRESS = process.env.WALLET_ADDRESS!;
 
 // X402 / Payments

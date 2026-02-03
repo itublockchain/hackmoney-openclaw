@@ -1,12 +1,9 @@
 import { SDK } from "agent0-sdk";
 import config from "@/config";
 import type { Agent } from "@/models/agent";
-import { SupabaseAgentStorage } from "@/lib/SupabaseAgentStorage";
-import { MockAgentStorage } from "@/lib/MockAgentStorage";
 
 export class BlockchainAgentService {
     private sdk!: SDK;
-    private storage!: SupabaseAgentStorage | MockAgentStorage;
     private initialized: boolean = false;
 
     constructor() {
@@ -17,13 +14,6 @@ export class BlockchainAgentService {
                     rpcUrl: config.RPC_URL,
                     privateKey: config.PRIVATE_KEY,
                 });
-
-                if (config.SUPABASE_URL && config.SUPABASE_SERVICE_KEY) {
-                    this.storage = new SupabaseAgentStorage();
-                } else {
-                    console.log("Using MockAgentStorage (Supabase config missing)");
-                    this.storage = new MockAgentStorage();
-                }
 
                 this.initialized = true;
             } catch (err) {
