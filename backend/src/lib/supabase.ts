@@ -33,12 +33,16 @@ class SupabaseService {
     const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = config;
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-      if (process.env.NODE_ENV !== "development") {
-        console.warn(
-          "\x1b[90m%s\x1b[0m", // Gray color
-          "⚠️  Supabase credentials not configured (Running in Mock Mode)",
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase credentials configured. Production mode REQUIRES valid SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables.",
         );
       }
+
+      console.warn(
+        "\x1b[90m%s\x1b[0m", // Gray color
+        "⚠️  Supabase credentials not configured (Running in Mock Mode)",
+      );
       this.initialized = true;
       return;
     }
@@ -51,7 +55,8 @@ class SupabaseService {
         },
       });
       this.initialized = true;
-      console.log("✅ Supabase client initialized successfully");
+      const mode = process.env.NODE_ENV === "production" ? "Production" : "Supabase";
+      console.log(`✅ ${mode} client initialized successfully`);
     } catch (error) {
       console.error("❌ Failed to initialize Supabase client:", error);
       this.initialized = true;
@@ -59,6 +64,10 @@ class SupabaseService {
   }
 
   public async isConnected(): Promise<boolean> {
+    if (!this.initialized) {
+      this.initialize();
+    }
+
     if (!this.client) {
       return false;
     }

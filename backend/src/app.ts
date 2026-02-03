@@ -21,12 +21,14 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 // Health check
 app.get("/", async (_req, res) => {
     const isConnected = await SupabaseService.getInstance().isConnected();
+    const isProd = process.env.NODE_ENV === "production";
+
     res.json({
-        status: isConnected ? "ok" : "disconnected",
-        message: `${config.APP_NAME} API ${isConnected ? "Supabase" : "Mock"} Server ${config.APP_EMOJI}`,
+        status: isConnected ? "ok" : (isProd ? "error" : "disconnected"),
+        message: `${config.APP_NAME} API ${isProd ? "Production" : (isConnected ? "Supabase" : "Mock")} Server ${config.APP_EMOJI}`,
         docs: "/api-docs",
         version: config.API_VERSION,
-        database: isConnected ? "connected" : "mock/disconnected"
+        database: isConnected ? "connected" : (isProd ? "failed/production" : "mock/disconnected")
     });
 });
 

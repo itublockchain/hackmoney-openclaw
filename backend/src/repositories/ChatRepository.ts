@@ -3,19 +3,11 @@ import { MockChatRepository } from "@/repositories/implementations/MockChatRepos
 import { SupabaseChatRepository } from "@/repositories/implementations/SupabaseChatRepository";
 import SupabaseService from "@/lib/supabase";
 
-const useSupabase = (): boolean => {
-    if (process.env.NODE_ENV === "test") return false;
-    try {
-        const client = SupabaseService.getInstance().getClient();
-        return !!client;
-    } catch {
-        return false;
-    }
-};
+const isProd = process.env.NODE_ENV === "production";
 
-const chatRepository: IChatRepository = useSupabase()
+const chatRepository: IChatRepository = isProd
     ? new SupabaseChatRepository()
-    : new MockChatRepository();
+    : (SupabaseService.getInstance().getClient() ? new SupabaseChatRepository() : new MockChatRepository());
 
 export default chatRepository;
 export { SupabaseChatRepository, MockChatRepository };

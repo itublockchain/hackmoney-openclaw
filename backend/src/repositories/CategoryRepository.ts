@@ -3,18 +3,10 @@ import { MockCategoryRepository } from "./implementations/MockCategoryRepository
 import { SupabaseCategoryRepository } from "./implementations/SupabaseCategoryRepository";
 import SupabaseService from "@/lib/supabase";
 
-const useSupabase = (): boolean => {
-    if (process.env.NODE_ENV === "test") return false;
-    try {
-        const client = SupabaseService.getInstance().getClient();
-        return !!client;
-    } catch {
-        return false;
-    }
-};
+const isProd = process.env.NODE_ENV === "production";
 
-const categoryRepository: ICategoryRepository = useSupabase()
+const categoryRepository: ICategoryRepository = isProd
     ? new SupabaseCategoryRepository()
-    : new MockCategoryRepository();
+    : (SupabaseService.getInstance().getClient() ? new SupabaseCategoryRepository() : new MockCategoryRepository());
 
 export default categoryRepository;

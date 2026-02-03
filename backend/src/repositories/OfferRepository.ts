@@ -3,10 +3,12 @@ import type { IOfferRepository } from "./interfaces/IOfferRepository";
 import { SupabaseOfferRepository } from "./implementations/SupabaseOfferRepository";
 import { MockOfferRepository } from "./implementations/MockOfferRepository";
 
-const useMock = !SupabaseService.getInstance().isConnected();
+const isProd = process.env.NODE_ENV === "production";
 
-export const offerRepository: IOfferRepository = useMock
-    ? new MockOfferRepository()
-    : new SupabaseOfferRepository();
+// Note: Connection check is handled on server startup for production.
+// For development/test, we fallback to Mock if needed.
+export const offerRepository: IOfferRepository = isProd
+    ? new SupabaseOfferRepository()
+    : (SupabaseService.getInstance().getClient() ? new SupabaseOfferRepository() : new MockOfferRepository());
 
 export { SupabaseOfferRepository, MockOfferRepository };

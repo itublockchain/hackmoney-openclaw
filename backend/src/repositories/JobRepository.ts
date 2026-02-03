@@ -5,18 +5,10 @@ import SupabaseService from "@/lib/supabase";
 
 export class SupabaseJobRepositoryImpl extends SupabaseJobRepository { } // For backward compatibility if needed
 
-const useSupabase = (): boolean => {
-  if (process.env.NODE_ENV === "test") return false;
-  try {
-    const client = SupabaseService.getInstance().getClient();
-    return !!client;
-  } catch {
-    return false;
-  }
-};
+const isProd = process.env.NODE_ENV === "production";
 
-const jobRepository: IJobRepository = useSupabase()
+const jobRepository: IJobRepository = isProd
   ? new SupabaseJobRepository()
-  : new MockJobRepository();
+  : (SupabaseService.getInstance().getClient() ? new SupabaseJobRepository() : new MockJobRepository());
 
 export default jobRepository;

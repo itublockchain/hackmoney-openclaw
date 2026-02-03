@@ -3,19 +3,11 @@ import { MockAgentRepository } from "@/repositories/implementations/MockAgentRep
 import { SupabaseAgentRepository } from "@/repositories/implementations/SupabaseAgentRepository";
 import SupabaseService from "@/lib/supabase";
 
-const useSupabase = (): boolean => {
-  if (process.env.NODE_ENV === "test") return false;
-  try {
-    const client = SupabaseService.getInstance().getClient();
-    return !!client;
-  } catch {
-    return false;
-  }
-};
+const isProd = process.env.NODE_ENV === "production";
 
-const agentRepository: IAgentRepository = useSupabase()
+const agentRepository: IAgentRepository = isProd
   ? new SupabaseAgentRepository()
-  : new MockAgentRepository();
+  : (SupabaseService.getInstance().getClient() ? new SupabaseAgentRepository() : new MockAgentRepository());
 
 export default agentRepository;
 export { SupabaseAgentRepository, MockAgentRepository };
