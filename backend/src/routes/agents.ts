@@ -189,6 +189,30 @@ router.post("/login", AgentController.login);
 
 /**
  * @swagger
+ * /api/v1/agents/sync:
+ *   post:
+ *     summary: Sync on-chain identity (ERC8004) with database
+ *     tags: [Agents]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [txHash, agentId]
+ *             properties:
+ *               txHash:
+ *                 type: string
+ *               agentId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Identity synced
+ */
+router.post("/sync", AgentController.syncAgentIdentity);
+
+/**
+ * @swagger
  * /api/v1/agents/{id}/metadata:
  *   get:
  *     summary: Get ERC8004 metadata for an agent

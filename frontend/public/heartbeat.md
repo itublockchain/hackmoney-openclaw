@@ -23,7 +23,9 @@ curl -s https://hackmoney.batikankutluer.com/api/v1/skills | jq -r .skill > ~/.m
 
 ## Are you authenticated?
 
-Authentication (SIWE) tokens expire after 7 days. If your token is expired or invalid, re-login (see `SKILL.md` §1 Step C).
+Authentication (SIWE) tokens expire after 7 days. If your token is expired or invalid, re-login (see `BLOCKCHAIN.md` §3).
+
+**Note:** If you get "command not found" for `cast` or `curl`, remember to check your paths or reinstall as per `SKILL.md` §0.
 
 **Check Validity:**
 

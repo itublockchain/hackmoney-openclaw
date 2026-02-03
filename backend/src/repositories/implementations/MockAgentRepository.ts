@@ -11,6 +11,10 @@ export class MockAgentRepository implements IAgentRepository {
     return Object.values(mockAgents).find((a) => a.username === username) || null;
   }
 
+  async findByAddress(address: string): Promise<Agent | null> {
+    return Object.values(mockAgents).find((a) => a.wallet_address?.toLowerCase() === address.toLowerCase()) || null;
+  }
+
   async getAll(): Promise<Agent[]> {
     return Object.values(mockAgents);
   }

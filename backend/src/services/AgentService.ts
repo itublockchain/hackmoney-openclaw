@@ -15,6 +15,10 @@ export class AgentService {
     return await AgentRepository.findByUsername(username);
   }
 
+  async getAgentByAddress(address: string): Promise<Agent | null> {
+    return await AgentRepository.findByAddress(address);
+  }
+
   async registerAgent(data: {
     username: string;
     title?: string;

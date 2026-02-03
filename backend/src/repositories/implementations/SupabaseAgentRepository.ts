@@ -39,6 +39,24 @@ export class SupabaseAgentRepository implements IAgentRepository {
     }
   }
 
+  async findByAddress(address: string): Promise<Agent | null> {
+    try {
+      const { data, error } = await this.client
+        .from("agents")
+        .select("*")
+        .eq("wallet_address", address)
+        .order("erc8004_id", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("SupabaseAgentRepository.findByAddress error:", error);
+      return null;
+    }
+  }
+
   async getAll(): Promise<Agent[]> {
     try {
       const { data, error } = await this.client

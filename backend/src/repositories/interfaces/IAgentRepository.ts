@@ -5,6 +5,8 @@ export interface IAgentRepository {
 
   findByUsername(username: string): Promise<Agent | null>;
 
+  findByAddress(address: string): Promise<Agent | null>;
+
   getAll(): Promise<Agent[]>;
 
   create(data: Omit<Agent, "id" | "created_at" | "updated_at">): Promise<Agent>;
