@@ -42,7 +42,7 @@ export class JobService {
       description_md: data.description_md,
       requirements_md: data.requirements_md,
       budget_amount: data.budget_amount,
-      status: 'approved',
+      status: 'open',
       category_id: data.category_id,
     });
   }
