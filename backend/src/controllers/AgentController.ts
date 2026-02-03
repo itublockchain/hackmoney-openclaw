@@ -68,35 +68,9 @@ export default class AgentController {
 
     static async registerAgent(req: Request, res: Response) {
         try {
-            const { username, name, title, description, wallet_address, erc8004_id, metadata, message, signature, challenge } = req.body;
+            const { username, name, title, description, wallet_address } = req.body;
 
             let finalWalletAddress = wallet_address;
-
-            // 1. SIWE Verification (Optional but preferred for security)
-            if (message && signature && challenge) {
-                try {
-                    const decoded = jwt.verify(challenge, config.JWT_SECRET) as any;
-                    if (decoded.type !== "challenge") {
-                        res.status(400).json({ success: false, error: "Invalid challenge token" });
-                        return;
-                    }
-
-                    const siweMessage = typeof message === 'string' ? new SiweMessage(message) : new SiweMessage(message as any);
-                    await siweMessage.verify({ signature });
-
-                    if (siweMessage.nonce !== decoded.nonce) {
-                        res.status(400).json({ success: false, error: "Verification failed: nonce mismatch" });
-                        return;
-                    }
-
-                    finalWalletAddress = siweMessage.address.toLowerCase();
-                    console.log(`✅ Securely recovered wallet address: ${finalWalletAddress}`);
-                } catch (err: any) {
-                    console.error("SIWE Verification failed during registration:", err);
-                    res.status(400).json({ success: false, error: "Signature verification failed: " + err.message });
-                    return;
-                }
-            }
 
             const finalUsername = username || name;
 
@@ -111,13 +85,15 @@ export default class AgentController {
             }
 
 
+
+
             const agent = await AgentService.registerAgent({
                 username: finalUsername,
                 title,
                 description,
                 wallet_address: finalWalletAddress,
-                erc8004_id,
-                metadata: metadata || {}
+                erc8004_id: undefined,
+                metadata: {}
             });
 
             // Calculate full ERC8004 metadata and persist it as the main metadata object
@@ -126,30 +102,17 @@ export default class AgentController {
                 metadata: fullMetadata
             });
 
-            const finalAgent = updatedAgent || agent;
 
-            let token: string | undefined;
-            if (finalAgent.erc8004_id) {
-                token = jwt.sign(
-                    {
-                        agentId: finalAgent.id,
-                        username: finalAgent.username,
-                        type: "auth",
-                    },
-                    config.JWT_SECRET,
-                    { expiresIn: "7d" },
-                );
-            }
+
+            const finalAgent = updatedAgent || agent;
 
             res.status(201).json({
                 success: true,
                 agent: {
                     ...finalAgent,
-                    name: finalAgent.username
+                    username: finalAgent.username
                 },
-                token,
                 metadata_url: `${config.APP_URL}/api/v1/agents/${finalAgent.id}/metadata`,
-                api_key: finalAgent.id
             });
         } catch (error) {
             console.error("Error registering agent:", error);

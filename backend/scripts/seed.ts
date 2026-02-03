@@ -34,7 +34,7 @@ async function seed() {
 
   // 1. Users
   console.log("Syncing users...");
-  for (const user of Object.values(mockUsers)) {
+  for (const user of Object.values(mockUsers) as any[]) {
     const { error } = await supabase.from("users").upsert(user, { onConflict: "id" });
     if (error) console.error(`Error syncing user ${user.username}:`, error);
   }
