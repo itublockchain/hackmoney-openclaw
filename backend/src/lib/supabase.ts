@@ -6,7 +6,7 @@ class SupabaseService {
   private client: SupabaseClient | null = null;
   private initialized: boolean = false;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): SupabaseService {
     if (!SupabaseService.instance) {
@@ -74,5 +74,5 @@ class SupabaseService {
   }
 }
 
-export const supabase = SupabaseService.getInstance().getClient;
+export const supabase = () => SupabaseService.getInstance().getClient();
 export default SupabaseService;

@@ -125,6 +125,8 @@ async function runUltimateTest() {
             },
             body: JSON.stringify({ name: catName, description: "Ultimate Category" })
         }).then(r => r.json()) as any;
+
+        if (!createCat.success) throw new Error("Category creation failed: " + JSON.stringify(createCat));
         categoryId = createCat.category.id;
         console.log(`✅ Category Created: ${catName}`);
 
@@ -202,7 +204,13 @@ async function runUltimateTest() {
         console.log(`✅ Offer Created: ${offerId}`);
 
         const getOffers = await fetch(`${BASE_URL}/offers?job_id=${jobId}`).then(r => r.json()) as any;
-        if (getOffers.offers.length > 0) console.log(`✅ Offers Retrieved for Job (${getOffers.offers.length})`);
+        if (getOffers.offers.length > 0) {
+            console.log(`✅ Offers Retrieved for Job (${getOffers.offers.length})`);
+            const testOffer = getOffers.offers[0];
+            if (testOffer.agents && testOffer.agents.username && testOffer.agents.reputation !== undefined) {
+                console.log("✅ Offer Metadata (Username/Reputation) Verified");
+            }
+        }
 
         const acceptOffer = await fetch(`${BASE_URL}/offers/${offerId}`, {
             method: "PATCH",
@@ -214,11 +222,16 @@ async function runUltimateTest() {
         }).then(r => r.json()) as any;
         if (acceptOffer.offer.status === "accepted") console.log("✅ Offer Accepted");
 
-        // --- 11. X402 Endpoint ---
-        console.log("\n📡 [STAGE 11] X402 Interaction Endpoint...");
-        const x402 = await fetch(`${BASE_URL}/agents/${agentId}/x402`).then(r => r.json()) as any;
-        if (x402.success && x402.x402_service.status === "active") {
-            console.log("✅ X402 Endpoint Verified");
+        // --- 11. X402 Discovery Endpoint ---
+        console.log("\n📡 [STAGE 11] X402 Discovery Endpoint...");
+        const x402Response = await fetch(`${BASE_URL}/agents/${agentId}/x402`);
+        const x402Body = await x402Response.json() as any;
+        const paymentHeader = x402Response.headers.get("PAYMENT-REQUIRED");
+
+        if (x402Response.status === 402 && paymentHeader && x402Body.wallet_address) {
+            console.log("✅ X402 Discovery Verified (402 Required)");
+        } else {
+            throw new Error(`X402 Discovery failed. Status: ${x402Response.status}, Header: ${!!paymentHeader}, Wallet: ${!!x402Body.wallet_address}`);
         }
 
         // --- 12. Job Completion (Done) Flow ---
@@ -255,6 +268,43 @@ async function runUltimateTest() {
             console.log("✅ Job Status Transition (decline) Verified");
         } else {
             throw new Error("Failed to decline job: " + JSON.stringify(declineJob));
+        }
+
+        // --- 14. X402 Payment Execution (Handshake completion) ---
+        console.log("\n💳 [STAGE 14] X402 Payment Execution...");
+        // Reset job to open for payment testing
+        await fetch(`${BASE_URL}/jobs/${jobId}/open`, {
+            method: "PATCH",
+            headers: { "Authorization": `Bearer ${authToken}` }
+        });
+
+        // Use real wallet to sign a transaction to broadcast
+        const { ethers } = require("ethers");
+        const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, new ethers.JsonRpcProvider(process.env.RPC_URL || "https://rpc.sepolia.org"));
+
+        // Create a minimal viable transaction
+        const tx = await wallet.populateTransaction({
+            to: wallet.address, // Send to self
+            value: 0, // 0 ETH
+        });
+        const signedTx = await wallet.signTransaction(tx);
+
+        const x402PayRes = await fetch(`${BASE_URL}/agents/${agentId}/x402`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                signature: signedTx,
+                resource: `job:${jobId}`
+            })
+        }).then(r => r.json()) as any;
+
+        // If broadcast fails because of mock URL, we check the database effect
+        const verifyJob = await fetch(`${BASE_URL}/jobs/${jobId}`).then(r => r.json()) as any;
+
+        if (x402PayRes.success && verifyJob.job.status === "submitted") {
+            console.log("✅ X402 Payment Lifecycle Verified (Execution + Status Update)");
+        } else {
+            throw new Error(`X402 Payment failed. Success: ${x402PayRes.success}, DB Status: ${verifyJob?.job?.status || 'unknown'}`);
         }
 
         console.log("\n✨ THE ULTIMATE TEST SUITE PASSED 100% ✨");
