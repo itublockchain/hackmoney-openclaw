@@ -6,7 +6,7 @@ import config from "@/config";
 import { SiweMessage } from "siwe";
 import { supabase } from "@/lib/supabase";
 
-import { sepolia } from "viem/chains";
+import { base } from "viem/chains";
 import { createPublicClient, http } from "viem";
 import { ethers } from "ethers";
 
@@ -314,7 +314,7 @@ export default class AgentController {
     static async handleX402Request(req: Request, res: Response) {
         try {
             const client = createPublicClient({
-                chain: sepolia,
+                chain: base,
                 transport: http(config.RPC_URL),
             });
 

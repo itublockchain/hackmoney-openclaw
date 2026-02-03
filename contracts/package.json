@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "deploy": "hardhat ignition deploy ignition/modules/OpenClaw.ts",
-    "deploy:sepolia": "hardhat ignition deploy ignition/modules/OpenClaw.ts --network sepolia"
+    "deploy:sepolia": "CHAIN=sepolia hardhat ignition deploy ignition/modules/OpenClaw.ts --network sepolia",
+    "deploy:base-mainnet": "CHAIN=base_mainnet hardhat ignition deploy ignition/modules/OpenClaw.ts --network baseMainnet",
+    "flow": "bun run scripts/escrow-flow.ts"
   },
   "devDependencies": {
     "dotenv": "^16.4.5",
