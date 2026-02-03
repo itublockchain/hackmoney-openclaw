@@ -7,6 +7,10 @@ import config from "@/config";
 import { SiweMessage } from "siwe";
 import { supabase } from "@/lib/supabase";
 
+import { sepolia } from "viem/chains";
+import { createPublicClient, http } from "viem";
+import { ethers } from "ethers";
+
 interface ChallengeTokenPayload extends jwt.JwtPayload {
     address: string;
     nonce: string;
@@ -407,6 +411,11 @@ export default class AgentController {
 
     static async handleX402Request(req: Request, res: Response) {
         try {
+            const client = createPublicClient({
+                chain: sepolia,
+                transport: http(config.RPC_URL),
+            });
+
             const { signature, resource } = req.body;
 
             if (!signature || !resource) {
@@ -415,7 +424,7 @@ export default class AgentController {
             }
 
             // 1. Broadcast the transaction
-            let txHash: string;
+            let txHash: `0x${string}`;
             try {
                 txHash = await X402Service.broadcastTransaction(signature);
             } catch (error: any) {
@@ -444,6 +453,24 @@ export default class AgentController {
                 }
             }
 
+            const receipt = await client.waitForTransactionReceipt({
+                hash: txHash,
+            });
+
+            console.log("Transaction receipt:", receipt);
+
+            if (receipt.status !== "success") {
+                res.status(500).json({
+                    success: false,
+                    error: "Payment transaction failed",
+                    txHash: txHash
+                });
+                return;
+
+            }
+
+            console.log("Deposit confirmed on chain");
+
             res.json({
                 success: true,
                 data: {
@@ -465,17 +492,26 @@ export default class AgentController {
     static async broadcast(req: Request, res: Response) {
         try {
             const { signedTx } = req.body;
+
             if (!signedTx) {
                 res.status(400).json({ success: false, error: "Missing signedTx" });
                 return;
             }
 
+            // Validate that it is a valid signed transaction
+            try {
+                const tx = ethers.Transaction.from(signedTx);
+                if (!tx.hash) {
+                    throw new Error("Invalid transaction structure");
+                }
+            } catch (e) {
+                console.error("Invalid signed transaction:", e);
+                res.status(400).json({ success: false, error: "Invalid signed transaction format" });
+                return;
+            }
 
-            console.log("📡 Facilitator: Broadcasting transaction...");
+            console.log(" Facilitator: Broadcasting transaction...");
 
-            // Should be the implementation of broadcastTransaction
-            // Using ethers provider to send transaction
-            const { ethers } = require("ethers");
             if (!config.RPC_URL) {
                 throw new Error("RPC_URL not configured");
             }
@@ -483,12 +519,7 @@ export default class AgentController {
 
             // Send the raw transaction
             const txResponse = await provider.broadcastTransaction(signedTx);
-            console.log(`✅ Facilitator: Tx broadcasted: ${txResponse.hash}`);
-
-            // Wait for 1 confirmation? Or just return hash?
-            // Usually immediate return of hash is preferred for speed, 
-            // but for reliability we might want to wait a bit or just return.
-            // Returning hash immediately.
+            console.log(`Facilitator: Tx broadcasted: ${txResponse.hash}`);
 
             res.json({
                 success: true,
@@ -497,6 +528,7 @@ export default class AgentController {
 
         } catch (error: any) {
             console.error("❌ Facilitator Broadcast Error:", error);
+
             res.status(500).json({
                 success: false,
                 error: "Broadcast failed",

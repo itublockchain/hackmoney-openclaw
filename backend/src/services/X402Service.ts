@@ -31,7 +31,7 @@ export default class X402Service {
     /**
      * Broadcasts a signed transaction to the facilitator
      */
-    static async broadcastTransaction(signedTx: string): Promise<string> {
+    static async broadcastTransaction(signedTx: string): Promise<`0x${string}`> {
         if (!config.FACILITATOR_URL) {
             throw new Error("FACILITATOR_URL is not configured");
         }
@@ -56,7 +56,7 @@ export default class X402Service {
                 throw error;
             }
 
-            return data.txHash;
+            return data.txHash as `0x${string}`;
         } catch (error: any) {
             // Broaden the fallback to catch all typical failures in dev (offline, timeout, non-JSON 404s, etc)
             const isOfflineOrMalformed =
@@ -70,7 +70,7 @@ export default class X402Service {
 
             if (isOfflineOrMalformed) {
                 console.warn("\x1b[33m%s\x1b[0m", "⚠️ X402 Facilitator unreachable or invalid response, falling back to mock hash (Dev Resilience)");
-                return "0x" + "f".repeat(64); // Return a mock successful hash
+                return ("0x" + "f".repeat(64)) as `0x${string}`; // Return a mock successful hash
             }
 
             throw error;

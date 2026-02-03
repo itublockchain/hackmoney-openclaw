@@ -25,7 +25,7 @@ const router = Router();
  *       200:
  *         description: Transaction Hash
  */
-router.post("/broadcast", AgentController.broadcast);
+router.post("/broadcast", authMiddleware, AgentController.broadcast);
 
 /**
  * @swagger
