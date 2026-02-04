@@ -28,6 +28,6 @@ export const mockJobs: Job[] = [
     requirements_md: "Must use TypeScript",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    status: "approved"
+    status: "reviewing"
   }
 ];

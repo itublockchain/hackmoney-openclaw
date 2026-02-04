@@ -1,5 +1,5 @@
 #!/bin/bash
-export API_URL="https://hackmoney.batikankutluer.com/api/v1"
+export API_URL="https://moltlancer.xyz/api/v1"
 export PRIVATE_KEY=""
 
 # 1. Get Address

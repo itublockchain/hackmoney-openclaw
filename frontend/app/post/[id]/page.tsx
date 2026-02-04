@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReactMarkdown from "react-markdown";
 import Avatar from "boring-avatars";
+import TimeDisplay from "../../../components/TimeDisplay";
 
 interface JobPostDetail {
     id: string;
@@ -18,7 +19,7 @@ interface JobPostDetail {
     deadline: string;
     category: string;
     postedAt: string;
-    status: "open" | "approved" | "submitted" | "completed" | "cancelled" | "declined" | "in_progress";
+    status: "open" | "agreed" | "funded" | "reviewing" | "done" | "cancelled" | "declined" | "rejected";
     postedBy: {
         id: string;
         name: string;
@@ -28,6 +29,10 @@ interface JobPostDetail {
     };
     bids: any[];
     chatMessages: any[];
+    submission?: {
+        description: string;
+        links?: string[];
+    };
 }
 
 export default function JobPostDetailPage() {
@@ -37,6 +42,7 @@ export default function JobPostDetailPage() {
     const [job, setJob] = useState<JobPostDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [isExpanded, setIsExpanded] = useState(true);
+
 
     useEffect(() => {
         const fetchJobAndChat = async () => {
@@ -99,7 +105,7 @@ export default function JobPostDetailPage() {
                             id: msg.id,
                             author,
                             content: msg.message_text,
-                            timestamp: new Date(msg.created_at).toLocaleString()
+                            timestamp: msg.created_at // Keep ISO for TimeDisplay
                         };
                     }));
 
@@ -109,9 +115,9 @@ export default function JobPostDetailPage() {
                         agentName: offer.agents?.username || "Unknown Agent",
                         agentHandle: offer.agents?.username ? `u/${offer.agents.username}` : "u/unknown",
                         // Mocking scores/reputation as they might not be in the offer model yet or need complex calculation
-                        agentScore: 80 + Math.floor(Math.random() * 20),
+                        agentScore: offer.agents?.reputation ? offer.agents.reputation * 20 : 0,
                         bidAmount: offer.bid_amount || 0, // Assuming bid_amount is in offer, or default to 0
-                        reputation: 4.5 + (Math.random() * 0.5),
+                        reputation: offer.agents?.reputation ?? 0,
                         isWinner: offer.status === 'accepted',
                         message: offer.message || "No message provided" // Assuming message is in offer
                     }));
@@ -139,7 +145,7 @@ export default function JobPostDetailPage() {
                         minBudget: apiJob.budget_amount || 0,
                         deadline: "Open",
                         category: apiJob?.categories?.name || "General",
-                        postedAt: new Date(apiJob.created_at).toLocaleDateString(),
+                        postedAt: apiJob.created_at, // Keep as ISO string for TimeDisplay
                         status: apiJob.status || "open",
                         postedBy: {
                             id: apiJob.owner_agent_id,
@@ -149,7 +155,8 @@ export default function JobPostDetailPage() {
                             isVerified: true
                         },
                         bids: mappedBids,
-                        chatMessages: messagesWithAgents
+                        chatMessages: messagesWithAgents,
+                        submission: apiJob.submission || undefined
                     };
                     setJob(mappedJob);
                 } else {
@@ -171,6 +178,8 @@ export default function JobPostDetailPage() {
     const getMarkdownContent = () => {
         if (job?.markdownContent) return job.markdownContent;
 
+        const postedDate = job?.postedAt ? new Date(job.postedAt).toLocaleDateString() : 'Unknown';
+
         return `# ${job?.title}
 
 ## 📋 Project Summary
@@ -183,14 +192,14 @@ ${job?.requirements}
 
 ## 💰 Budget and Dates
 
-- **Max Budget**: $${job?.maxBudget?.toLocaleString()} USD
+- **Max Budget**: ${job?.maxBudget?.toLocaleString(undefined, { maximumFractionDigits: 18 })} USD
 - **Deadline**: ${job?.deadline}
 - **Category**: ${job?.category}
 
 ## 📝 Employer/Client
 
 - **Name**: ${job?.postedBy?.name}
-- **Posted**: ${job?.postedAt}
+- **Posted**: ${postedDate}
 
 ---
 
@@ -236,13 +245,48 @@ ${job?.requirements}
                             <h2>STATUS SECTION</h2>
                             <span className={`status-dot ${job.status === "open" ? "active" : ""}`} style={{ backgroundColor: "#22c55e" }}></span>
                             <span className="status-label">open</span>
-                            <span className={`status-dot ${job.status === "approved" ? "active" : ""}`} style={{ backgroundColor: "#3b82f6" }}></span>
-                            <span className="status-label">approved</span>
-                            <span className={`status-dot ${job.status === "submitted" || job.status === "in_progress" ? "active" : ""}`} style={{ backgroundColor: "#f59e0b" }}></span>
-                            <span className="status-label">submitted</span>
-                            <span className={`status-dot ${job.status === "completed" || job.status === "cancelled" || job.status === "declined" ? "active" : ""}`} style={{ backgroundColor: "#ef4444" }}></span>
-                            <span className="status-label">declined</span>
+
+                            <span className={`status-dot ${job.status === "agreed" ? "active" : ""}`} style={{ backgroundColor: "#3b82f6" }}></span>
+                            <span className="status-label">agreed</span>
+
+                            <span className={`status-dot ${job.status === "funded" ? "active" : ""}`} style={{ backgroundColor: "#8b5cf6" }}></span>
+                            <span className="status-label">funded</span>
+
+                            <span className={`status-dot ${job.status === "reviewing" ? "active" : ""}`} style={{ backgroundColor: "#f59e0b" }}></span>
+                            <span className="status-label">reviewing</span>
+
+                            {job.status === "rejected" ? (
+                                <>
+                                    <span className={`status-dot active`} style={{ backgroundColor: "#ef4444" }}></span>
+                                    <span className="status-label">rejected</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className={`status-dot ${job.status === "done" ? "active" : ""}`} style={{ backgroundColor: "#6366f1" }}></span>
+                                    <span className="status-label">done</span>
+                                </>
+                            )}
                         </div>
+
+                        <div className="status-actions" style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
+                            {/* All interactive buttons removed as per request. API usage only. */}
+                        </div>
+
+                        {job.submission && (
+                            <div className="submission-display" style={{ marginTop: '20px', padding: '16px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                                <h4 style={{ margin: '0 0 8px 0', color: '#0369a1' }}>Submission Details</h4>
+                                <p style={{ whiteSpace: 'pre-wrap' }}>{job.submission.description}</p>
+                                {job.submission.links && job.submission.links.length > 0 && (
+                                    <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                                        {job.submission.links.map((link, i) => (
+                                            <li key={i}>
+                                                <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: '#0284c7' }}>{link}</a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                 </div>
@@ -345,7 +389,7 @@ ${job?.requirements}
                                                             </div>
                                                             {msg.author.name}
                                                         </Link>
-                                                        <span className="chat-time">{msg.timestamp}</span>
+                                                        <span className="chat-time"><TimeDisplay date={msg.timestamp} /></span>
                                                     </div>
                                                     <p className="chat-content">{msg.content}</p>
                                                 </div>

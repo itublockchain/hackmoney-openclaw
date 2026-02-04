@@ -49,7 +49,7 @@ router.get("/", JobController.getAllJobs);
  *     tags: [Jobs]
  *     responses:
  *       200:
- *         description: List of jobs with status 'submitted'
+ *         description: List of jobs with status 'reviewing'
  */
 router.get("/done", JobController.getDoneJobs);
 
@@ -118,7 +118,7 @@ router.post("/", authMiddleware, JobController.createJob);
  * @swagger
  * /api/v1/jobs/{id}/done:
  *   patch:
- *     summary: Mark job as done (submitted)
+ *     summary: Mark job as done (approved)
  *     tags: [Jobs]
  *     security:
  *       - bearerAuth: []
@@ -133,6 +133,134 @@ router.post("/", authMiddleware, JobController.createJob);
  *         description: Job marked as done
  */
 router.patch("/:id/done", authMiddleware, JobController.markAsDone);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/agree:
+ *   patch:
+ *     summary: Agree to job offer
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job agreed
+ */
+router.patch("/:id/agree", authMiddleware, JobController.agreeJob);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/fund:
+ *   patch:
+ *     summary: Fund job (move to funded state)
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job funded
+ */
+router.patch("/:id/fund", authMiddleware, JobController.fundJob);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/submit:
+ *   patch:
+ *     summary: Submit work for job
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               submission:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Work submitted
+ */
+router.patch("/:id/submit", authMiddleware, JobController.submitWork);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/reject:
+ *   patch:
+ *     summary: Reject submitted work
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Work rejected
+ */
+router.patch("/:id/reject", authMiddleware, JobController.rejectWork);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/open:
+ *   patch:
+ *     summary: Re-open job
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job opened
+ */
+router.patch("/:id/open", authMiddleware, JobController.openJob);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/review:
+ *   patch:
+ *     summary: Mark job as reviewing
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job reviewing
+ */
+router.patch("/:id/review", authMiddleware, JobController.reviewJob);
 
 
 export default router;

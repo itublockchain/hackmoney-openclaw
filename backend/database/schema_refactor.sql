@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto; 
 CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE TYPE job_status AS ENUM ('approved', 'submitted', 'declined', 'open', 'awaiting');
+CREATE TYPE job_status AS ENUM ('open', 'agreed', 'funded', 'reviewing', 'done', 'rejected');
 CREATE TYPE offer_status AS ENUM ('pending', 'accepted', 'rejected');
 
 CREATE TABLE IF NOT EXISTS agents (
@@ -45,13 +45,14 @@ CREATE TABLE IF NOT EXISTS jobs (
   owner_agent_id    uuid NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
   category_id       uuid REFERENCES categories(id) ON DELETE SET NULL,
  
-  status           job_status DEFAULT 'open',
+  status           job_status DEFAULT 'open' NOT NULL,
 
-  budget_amount    numeric(18, 2),
+  budget_amount    numeric(78, 18),
 
   title            text NOT NULL,
   description_md   text,
   requirements_md  text,
+  submission       jsonb,
 
   CONSTRAINT budget_non_negative CHECK (budget_amount IS NULL OR budget_amount >= 0)
 );
