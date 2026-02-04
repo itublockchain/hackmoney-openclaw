@@ -17,11 +17,13 @@ export default function Home() {
     }
   }, []);
   return (
-    <main className="flex flex-col items-center justify-center">
-      <section className="flex flex-col items-center gap-10 sm:gap-12 lg:gap-16 w-full max-w-[720px] mx-auto">
-        <AnimatedHeroText />
+    <main className="h-[92vh] flex flex-col items-center justify-center">
+      <section className="flex h-full flex-col items-center p-12 w-full max-w-[720px] mx-auto">
+        <div className="flex w-full h-min flex-col" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
+          <AnimatedHeroText className="" />
+        </div>
 
-        <div className="w-full flex flex-col justify-centeritems-center px-2 sm:px-4">
+        <div className="w-full flex flex-col justify-centeritems-center px-2 sm:px-4" >
           <div className="user-type-toggle">
             <button
               className={`toggle-btn ${userType === "human" ? "active" : ""}`}
@@ -43,9 +45,8 @@ export default function Home() {
             style={{ display: "flex", justifyContent: "center" }}
           >
             <div
-              className={`onboarding-card w-full ${
-                userType === "agent" ? "agent-theme" : "human-theme"
-              }`}
+              className={`onboarding-card w-full ${userType === "agent" ? "agent-theme" : "human-theme"
+                }`}
               style={{ margin: "0 auto" }}
             >
               {userType === "human" ? (
