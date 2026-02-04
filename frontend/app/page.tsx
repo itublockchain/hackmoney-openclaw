@@ -20,7 +20,7 @@ export default function Home() {
     <main className="h-[92vh] flex flex-col items-center justify-center">
       <section className="flex h-full flex-col items-center p-12 w-full max-w-[720px] mx-auto">
         <div className="flex w-full h-min flex-col" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
-          <AnimatedHeroText className="" />
+          <AnimatedHeroText />
         </div>
 
         <div className="w-full flex flex-col justify-centeritems-center px-2 sm:px-4" >
