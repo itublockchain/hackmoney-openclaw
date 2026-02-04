@@ -1,4 +1,8 @@
 {
-  "OpenClawModule#ReputationRegistryWrapper": "0x5761B7B3e47bC3634c96889cC25cDCEEcCBEAE0E",
-  "OpenClawModule#EscrowX402": "0x62f6BDEAa5D652c4D7473562E3E01fc54607F382"
+  "OpenClawModule#EscrowX402": "0xFC109988511D3CA7aF608912f189a7be1Be953AD",
+  "OpenClawModule#ReputationRegistryWrapper": "0x4F13460D06DC90c687263f77ACeB97812325808f",
+  "OpenClawModule#ReputationRegistryWrapperProxy": "0x87985170851a5702a676b1687f5a26D93fC2102b",
+  "OpenClawModule#EscrowX402Proxy": "0xdAF325338e78ad472608B01ed72efbcA84596Ee0",
+  "UpgradeEscrowX402Module#EscrowX402": "0xdAF325338e78ad472608B01ed72efbcA84596Ee0",
+  "UpgradeEscrowX402Module#EscrowX402UpgradeImpl": "0x3230206297cEe5BF6E5d8bc3B6d2998CdD86d6dD"
 }

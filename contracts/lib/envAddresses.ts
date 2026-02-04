@@ -1,8 +1,8 @@
 /**
  * Contract adreslerini .env'den [chain]_[CONTRACT_NAME]_ADDRESS formatında okur.
- * Sadece contracts klasörü için geçerli.
+ * Upgradeable kontratlar için ESCROW_X402, REPUTATION_REGISTRY_WRAPPER = PROXY adresi.
  *
- * Örnek: CHAIN=base_mainnet iken BASE_MAINNET_ESCROW_X402_ADDRESS okunur.
+ * Örnek: CHAIN=base_mainnet iken BASE_MAINNET_ESCROW_X402_ADDRESS okunur (proxy).
  */
 export function getContractAddress(
   chain: string,

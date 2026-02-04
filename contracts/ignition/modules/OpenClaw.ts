@@ -2,7 +2,7 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import { getContractAddress } from "../../lib/envAddresses.js";
 
 /**
- * ReputationRegistryWrapper + EscrowX402 tek modülde.
+ * ReputationRegistryWrapper + EscrowX402 tek modülde (upgradeable proxy ile).
  * Adresler .env'den [chain]_[CONTRACT_NAME]_ADDRESS formatında okunur (örn. BASE_MAINNET_REPUTATION_REGISTRY_CORE_ADDRESS).
  */
 export default buildModule("OpenClawModule", (m) => {
@@ -19,13 +19,26 @@ export default buildModule("OpenClawModule", (m) => {
       process.env.IDENTITY_REGISTRY_ADDRESS
   );
 
-  const wrapper = m.contract("ReputationRegistryWrapper", [coreAddress]);
+  // ReputationRegistryWrapper (UUPS proxy)
+  const wrapperImpl = m.contract("ReputationRegistryWrapper", []);
+  const wrapperInitData = m.encodeFunctionCall(wrapperImpl, "initialize", [
+    initialOwner,
+    coreAddress,
+  ]);
+  const wrapper = m.contract("ERC1967Proxy", [wrapperImpl, wrapperInitData], {
+    id: "ReputationRegistryWrapperProxy",
+  });
 
-  const escrow = m.contract("EscrowX402", [
+  // EscrowX402 (UUPS proxy)
+  const escrowImpl = m.contract("EscrowX402", []);
+  const escrowInitData = m.encodeFunctionCall(escrowImpl, "initialize", [
     initialOwner,
     identityRegistry,
     wrapper,
   ]);
+  const escrow = m.contract("ERC1967Proxy", [escrowImpl, escrowInitData], {
+    id: "EscrowX402Proxy",
+  });
 
   return { reputationRegistryWrapper: wrapper, escrowX402: escrow };
 });
