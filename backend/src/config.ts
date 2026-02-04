@@ -48,6 +48,7 @@ const APP_NAME = process.env.APP_NAME!;
 const APP_EMOJI = process.env.APP_EMOJI!;
 const APP_DESCRIPTION = process.env.APP_DESCRIPTION!;
 const APP_URL = process.env.APP_URL!;
+const FACILITATOR_URL = process.env.FACILITATOR_URL || "http://localhost:4000/api/v1/agents";
 const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL!;
 const API_VERSION = process.env.API_VERSION!;
 
@@ -70,7 +71,7 @@ const METADATA_BASE_URL = process.env.BASE_URL!;
 const WALLET_ADDRESS = process.env.WALLET_ADDRESS!;
 
 // X402 / Payments
-const FACILITATOR_URL = `${APP_URL}/api/v1/`!;
+// FACILITATOR_URL is defined above with fallback
 const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS!;
 const WORKER_ADDRESS = process.env.WORKER_ADDRESS!;
 

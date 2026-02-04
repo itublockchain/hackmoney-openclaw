@@ -55,61 +55,38 @@ export default class X402Service {
         throw new Error("Could not derive hash from signed transaction");
     } catch (e) {
       throw new Error(
-        `Invalid signed transaction format: ${
-          e instanceof Error ? e.message : String(e)
+        `Invalid signed transaction format: ${e instanceof Error ? e.message : String(e)
         }`
       );
     }
 
-    if (!config.FACILITATOR_URL) {
-      // In development, if no facilitator URL is set, we can simulate a success
+    if (!config.RPC_URL) {
+      // Graceful fallback for dev
       if (process.env.NODE_ENV === "development") {
-        console.warn(
-          "⚠️ FACILITATOR_URL not set in development. Using mock transaction hash."
-        );
+        console.warn("⚠️ RPC_URL not set in development. Using mock transaction hash.");
         return this.getMockTxHash();
       }
-      throw new Error("FACILITATOR_URL is not configured");
+      throw new Error("RPC_URL is not configured");
     }
 
     try {
-      // console.log(`📡 Broadcasting tx to facilitator: ${config.FACILITATOR_URL}`);
-      const response = await fetch(`${config.FACILITATOR_URL}/broadcast`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ signedTx }),
-        // Increased timeout for blockchain operations
-        signal: AbortSignal.timeout(15000),
-      });
+      // Direct broadcast via RPC provider
+      // console.log(`📡 Broadcasting tx via RPC: ${config.RPC_URL}`);
+      const provider = new ethers.JsonRpcProvider(config.RPC_URL);
 
-      const data = (await response.json().catch(() => null)) as any;
+      const txResponse = await provider.broadcastTransaction(signedTx);
+      // console.log(`✅ Faciltiator: Tx broadcasted: ${txResponse.hash}`);
 
-      if (!response.ok || !data?.success) {
-        const errorMessage =
-          data?.error ||
-          data?.reason ||
-          `Broadcast failed with status ${response.status}`;
-        const error = new Error(errorMessage);
-        (error as any).status = response.status;
-        (error as any).txHash = data?.txHash;
-        (error as any).reason = data?.reason;
-        throw error;
-      }
+      return txResponse.hash as `0x${string}`;
 
-      return data.txHash as `0x${string}`;
     } catch (error: any) {
       // Resilience logic ONLY for development environment
-      // This prevents production from failing silently or faking transactions
       if (
-        process.env.NODE_ENV === "development" &&
-        this.isNetworkError(error)
+        process.env.NODE_ENV === "development"
       ) {
         console.warn(
           "\x1b[33m%s\x1b[0m",
-          `⚠️ X402 Facilitator unreachable (${error.message}). Returning MOCK hash for development flow.`
+          `⚠️ Broadcast failed (${error.message}). Returning MOCK hash for development flow.`
         );
         return this.getMockTxHash();
       }

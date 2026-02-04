@@ -46,18 +46,24 @@ export class SupabaseJobRepository implements IJobRepository {
         .from("jobs")
         .select("*, agents(username, reputation), categories(name), offers!left(*)"); // Join offers to find worker
 
-      if (filters.category_id) query = query.eq("category_id", filters.category_id);
-      if (filters.owner_agent_id) query = query.eq("owner_agent_id", filters.owner_agent_id);
+      if (filters.category_id) {
+        query = query.eq("category_id", filters.category_id);
+      }
+      if (filters.owner_agent_id) {
+        query = query.eq("owner_agent_id", filters.owner_agent_id);
+      }
       if (filters.status) {
         if (filters.status.includes(',')) {
-          query = query.in("status", filters.status.split(','));
+          // split strings and filter
+          const statuses = filters.status.split(',');
+          query = query.in("status", statuses);
         } else {
           query = query.eq("status", filters.status);
         }
       }
-      query = query.order("created_at", { ascending: false });
-      if (filters.limit) query = query.limit(filters.limit);
-      const { data, error } = await query;
+
+      // Ensure we call order on the query builder
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(filters.limit || 1000);
 
       if (error) throw error;
 
@@ -108,9 +114,13 @@ export class SupabaseJobRepository implements IJobRepository {
     >
   ): Promise<Job | null> {
     try {
+      // Ensure we don't try to update read-only computed fields
+      // and explicit exclude worker_agent_id which isn't a column
+      const { worker_agent_id, ...safeUpdates } = updates as any;
+
       const { data, error } = await this.client
         .from("jobs")
-        .update(updates)
+        .update(safeUpdates)
         .eq("id", id)
         .select()
         .single();

@@ -476,6 +476,7 @@ export default class AgentController {
 
     static async handleX402Request(req: Request, res: Response) {
         try {
+            console.log("💰 handleX402Request triggered. Body keys:", Object.keys(req.body));
             const { signature, resource } = req.body;
 
             if (!signature || !resource) {
@@ -501,18 +502,26 @@ export default class AgentController {
             }
 
             // 2. Confirm Transaction
-            const receipt = await AgentController.waitForTransaction(txHash);
+            console.log(`Waiting for confirmation of tx: ${txHash}`);
+            let receipt;
+            try {
+                receipt = await AgentController.waitForTransaction(txHash);
+            } catch (waitError: any) {
+                console.error("❌ waitForTransaction threw error:", waitError);
+                throw new Error(`Transaction confirmation failed: ${waitError.message}`);
+            }
 
             if (receipt.status !== "success") {
+                console.error("❌ Transaction status is not success:", receipt.status);
                 res.status(500).json({
                     success: false,
-                    error: "Payment transaction failed",
+                    error: "Payment transaction failed on-chain",
                     txHash: txHash,
                 });
                 return;
             }
 
-            console.log("Deposit confirmed on chain");
+            console.log("✅ Deposit confirmed on chain. Receipt:", { blockNumber: receipt.blockNumber, transactionHash: receipt.transactionHash });
 
             // 3. Update job status if needed - ONLY after confirmation
             await AgentController.updateJobStatusAfterPayment(resource);
@@ -548,11 +557,33 @@ export default class AgentController {
     private static async waitForTransaction(
         txHash: `0x${string}`
     ): Promise<TransactionReceipt> {
+        const chainId = parseInt(`${config.CHAIN_ID}`);
+
+        // Define a custom chain to match the configured environment
+        // preventing viem from throwing "Chain ID mismatch" errors
+        const targetChain = {
+            id: chainId,
+            name: "Target Chain",
+            network: "target-chain",
+            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+            rpcUrls: {
+                default: { http: [config.RPC_URL] },
+                public: { http: [config.RPC_URL] },
+            },
+        } as const;
+
         const client = createPublicClient({
-            chain: base,
+            chain: targetChain,
             transport: http(config.RPC_URL),
         });
-        return await client.waitForTransactionReceipt({ hash: txHash });
+
+        console.log(`Waiting for tx ${txHash} on chain ${chainId}...`);
+
+        return await client.waitForTransactionReceipt({
+            hash: txHash,
+            timeout: 60000, // 60 seconds timeout
+            retryCount: 5
+        });
     }
 
     static async syncAgentIdentity(req: Request, res: Response) {

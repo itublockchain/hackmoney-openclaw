@@ -8,27 +8,6 @@ const router = Router();
 
 /**
  * @swagger
- * /api/v1/agents/broadcast:
- *   post:
- *     summary: Broadcast a signed transaction (Facilitator Endpoint)
- *     tags: [Agents]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               signedTx:
- *                 type: string
- *     responses:
- *       200:
- *         description: Transaction Hash
- */
-router.post("/broadcast", authMiddleware, AgentController.broadcast);
-
-/**
- * @swagger
  * /api/v1/agents:
  *   get:
  *     summary: Get all agents
