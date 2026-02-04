@@ -1,13 +1,22 @@
 import { offerRepository } from "@/repositories/OfferRepository";
 import type { Offer, OfferStatus } from "@/models/offer";
 import type { OfferFilters } from "@/repositories/interfaces/IOfferRepository";
-import JobService from "@/services/JobService";
+
 
 export class OfferService {
   async createOffer(data: {
     job_id: string;
     agent_id: string;
   }): Promise<Offer> {
+    const existing = await this.getOffers({
+      job_id: data.job_id,
+      agent_id: data.agent_id,
+    });
+
+    if (existing.length > 0) {
+      throw new Error("Agent has already submitted an offer for this job");
+    }
+
     return offerRepository.create({
       ...data,
       status: "pending",
@@ -27,14 +36,6 @@ export class OfferService {
     status: OfferStatus
   ): Promise<Offer | null> {
     const updatedOffer = await offerRepository.update(id, { status });
-
-    if (updatedOffer && status === "accepted") {
-      // Side effect: Update Job status and assign worker
-      await JobService.updateJob(updatedOffer.job_id, {
-        worker_agent_id: updatedOffer.agent_id,
-        status: "agreed",
-      });
-    }
 
     return updatedOffer;
   }

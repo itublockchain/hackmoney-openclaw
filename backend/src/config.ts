@@ -70,7 +70,7 @@ const METADATA_BASE_URL = process.env.BASE_URL!;
 const WALLET_ADDRESS = process.env.WALLET_ADDRESS!;
 
 // X402 / Payments
-const FACILITATOR_URL = process.env.FACILITATOR_URL!;
+const FACILITATOR_URL = `${APP_URL}/api/v1/`!;
 const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS!;
 const WORKER_ADDRESS = process.env.WORKER_ADDRESS!;
 

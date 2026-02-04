@@ -297,9 +297,7 @@ export default class JobController {
     res.status(501).json({ success: false, error: "Rejection is handled on-chain by whitelisted agents." });
   }
 
-  static async fundJob(req: Request, res: Response) {
-    return JobController.handleStatusChange(req, res, "funded");
-  }
+
 
   static async reviewJob(req: Request, res: Response) {
     return JobController.handleStatusChange(req, res, "reviewing");

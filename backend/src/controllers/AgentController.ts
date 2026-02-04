@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import AgentService from "@/services/AgentService";
 import X402Service from "@/services/X402Service";
+import JobService from "@/services/JobService";
 import jwt from "jsonwebtoken";
 import config from "@/config";
 import { SiweMessage } from "siwe";
@@ -406,6 +407,8 @@ export default class AgentController {
     static async getAgentX402(req: Request, res: Response) {
         try {
             const { id } = req.params;
+            const { job_id } = req.query;
+
             if (!id) {
                 res.status(400).json({ success: false, error: "Agent ID is required" });
                 return;
@@ -416,20 +419,52 @@ export default class AgentController {
                 return;
             }
 
+            let amount = "0";
+            let resourceIdx = `agent:${agent.id}`;
+            let description = `Interaction with agent: ${agent.username}`;
+
+            // If job_id is provided, implies we are funding a job
+            if (job_id && typeof job_id === "string") {
+                const job = await JobService.getJobById(job_id);
+                if (job) {
+                    // Check if there is an accepted offer to ensure we are in a valid state to fund
+                    const jobAny = job as any;
+
+                    // We use the job's budget amount as the agreed payment amount
+                    if (job.budget_amount) {
+                        amount = job.budget_amount.toString();
+                    }
+
+                    // For the resource, we point to the job
+                    resourceIdx = `job:${job.id}`;
+                    description = `Fund job: ${job.title}`;
+                }
+            }
+
             // Generate the X402 Discovery Header
             const header = X402Service.generatePaymentHeader({
-                amount: "0", // Default discovery amount
-                resource: `agent:${agent.id}`,
-                description: `Interaction with agent: ${agent.username}`,
+                amount: amount,
+                resource: resourceIdx,
+                description: description,
             });
+
+            const paymentDetails = {
+                "pay-to": config.ESCROW_CONTRACT_ADDRESS,
+                "max-amount-wei": amount,
+                resource: resourceIdx,
+                description: description,
+                scheme: "exact",
+                network: "base",
+                chainId: config.CHAIN_ID,
+            };
 
             res.set("PAYMENT-REQUIRED", header);
             res.status(402).json({
                 success: false,
                 error: "Payment Required",
                 wallet_address: agent.wallet_address,
-                message:
-                    "Sign deposit(worker) tx and send signed RLP in POST /agents/:id/x402.",
+                message: "Sign deposit(worker) tx and send signed RLP in POST /agents/:id/x402.",
+                "x402-payment-required": paymentDetails,
             });
         } catch (error) {
             console.error("Error fetching agent X402 data:", error);
@@ -465,10 +500,7 @@ export default class AgentController {
                 return;
             }
 
-            // 2. Update job status if needed
-            await AgentController.updateJobStatusAfterPayment(resource);
-
-            // 3. Confirm Transaction
+            // 2. Confirm Transaction
             const receipt = await AgentController.waitForTransaction(txHash);
 
             if (receipt.status !== "success") {
@@ -481,6 +513,9 @@ export default class AgentController {
             }
 
             console.log("Deposit confirmed on chain");
+
+            // 3. Update job status if needed - ONLY after confirmation
+            await AgentController.updateJobStatusAfterPayment(resource);
 
             res.json({
                 success: true,
@@ -500,12 +535,10 @@ export default class AgentController {
         if (resource.startsWith("job:")) {
             const jobId = resource.split(":")[1];
             try {
-                const { error: dbError } = await supabase()
-                    .from("jobs")
-                    .update({ status: "submitted" })
-                    .eq("id", jobId);
-
-                if (dbError) throw dbError;
+                // Use JobService for consistency
+                // Update status to "funded" as this is the payment/deposit step
+                await JobService.updateJob(jobId as string, { status: "funded" });
+                console.log(`Job ${jobId} status updated to 'funded'`);
             } catch (dbError) {
                 console.error("Error updating job status after payment:", dbError);
             }

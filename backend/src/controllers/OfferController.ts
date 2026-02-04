@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import OfferService from "@/services/OfferService";
 import type { OfferStatus } from "@/models/offer";
+import JobService from "@/services/JobService";
 
 export default class OfferController {
   static async createOffer(req: Request, res: Response) {
@@ -24,9 +25,13 @@ export default class OfferController {
       });
 
       res.status(201).json({ success: true, offer });
-    } catch (error) {
+    } catch (error: any) {
       console.error("OfferController.createOffer error:", error);
-      res.status(500).json({ success: false, error: "Failed to create offer" });
+      if (error.message === "Agent has already submitted an offer for this job") {
+        res.status(400).json({ success: false, error: error.message });
+      } else {
+        res.status(500).json({ success: false, error: "Failed to create offer" });
+      }
     }
   }
 
@@ -83,6 +88,18 @@ export default class OfferController {
       if (!offer) {
         res.status(404).json({ success: false, error: "Offer not found" });
         return;
+      }
+
+      if (status === "accepted") {
+        console.log(`[OfferController] Accepting offer ${offer.id}. Updating Job ${offer.job_id} with worker ${offer.agent_id}`);
+        try {
+          const updateResult = await JobService.updateJob(offer.job_id, {
+            status: "agreed",
+          });
+          console.log(`[OfferController] Job update result:`, updateResult);
+        } catch (jobError) {
+          console.error(`[OfferController] Failed to update job ${offer.job_id}:`, jobError);
+        }
       }
 
       res.json({ success: true, offer });

@@ -16,9 +16,20 @@ export class SupabaseJobRepository implements IJobRepository {
         .from("jobs")
         .select("*, agents(username, reputation), categories(name), offers(*, agents(username, reputation))")
         .eq("id", id)
+        .eq("offers.status", "accepted") // We only care about the accepted offer for worker info
         .single();
       if (error) throw error;
-      return data;
+
+      // Derive worker_agent_id from accepted offer if not present on job
+      // Note: Supabase's single() might return Filtered array for filtered relations
+      // But typically we process the array.
+      const jobData = data as any;
+      if (jobData.offers && jobData.offers.length > 0) {
+        // If there's an accepted offer, that agent is the worker
+        const acceptedOffer = jobData.offers[0];
+        jobData.worker_agent_id = acceptedOffer.agent_id;
+      }
+      return jobData;
     } catch (error: any) {
       // Suppress "0 rows" error as it just means "Not Found"
       if (error?.code === 'PGRST116') {
@@ -31,7 +42,10 @@ export class SupabaseJobRepository implements IJobRepository {
 
   async findAll(filters: JobFilters = {}): Promise<Job[]> {
     try {
-      let query = this.client.from("jobs").select("*, agents(username, reputation), categories(name)");
+      let query = this.client
+        .from("jobs")
+        .select("*, agents(username, reputation), categories(name), offers!left(*)"); // Join offers to find worker
+
       if (filters.category_id) query = query.eq("category_id", filters.category_id);
       if (filters.owner_agent_id) query = query.eq("owner_agent_id", filters.owner_agent_id);
       if (filters.status) {
@@ -44,8 +58,26 @@ export class SupabaseJobRepository implements IJobRepository {
       query = query.order("created_at", { ascending: false });
       if (filters.limit) query = query.limit(filters.limit);
       const { data, error } = await query;
+
       if (error) throw error;
-      return (data as any) || [];
+
+      const jobs = (data as any[]).map(job => {
+        if (job.offers) {
+          // Find accepted offer in the joined offers
+          // Note: If we don't partial filter in select, we do it here.
+          // To be safe and performant, let's just look at the array.
+          const acceptedOffer = Array.isArray(job.offers)
+            ? job.offers.find((o: any) => o.status === "accepted")
+            : (job.offers.status === "accepted" ? job.offers : null);
+
+          if (acceptedOffer) {
+            job.worker_agent_id = acceptedOffer.agent_id;
+          }
+        }
+        return job;
+      });
+
+      return jobs;
     } catch (error) {
       console.error("SupabaseJobRepository.findAll error:", error);
       return [];

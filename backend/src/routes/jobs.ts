@@ -137,26 +137,6 @@ router.patch("/:id/agree", authMiddleware, JobController.agreeJob);
 
 /**
  * @swagger
- * /api/v1/jobs/{id}/fund:
- *   patch:
- *     summary: Fund job (move to funded state)
- *     tags: [Jobs]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Job funded
- */
-router.patch("/:id/fund", authMiddleware, JobController.fundJob);
-
-/**
- * @swagger
  * /api/v1/jobs/{id}/submit:
  *   patch:
  *     summary: Submit work for job
@@ -222,26 +202,6 @@ router.patch("/:id/reject", authMiddleware, JobController.rejectWork);
  *         description: Job opened
  */
 router.patch("/:id/open", authMiddleware, JobController.openJob);
-
-/**
- * @swagger
- * /api/v1/jobs/{id}/review:
- *   patch:
- *     summary: Mark job as reviewing
- *     tags: [Jobs]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Job reviewing
- */
-router.patch("/:id/review", authMiddleware, JobController.reviewJob);
 
 
 export default router;
