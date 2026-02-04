@@ -8,14 +8,17 @@ export default buildModule("EscrowX402Module", (m) => {
   );
   const reputationRegistry = m.getParameter<string>(
     "ReputationRegistryAddress",
-    process.env.REPUTATION_REGISTRY_CORE_ADDRESS
+    process.env.REPUTATION_REGISTRY_ADDRESS ??
+      process.env.REPUTATION_REGISTRY_CORE_ADDRESS
   );
 
-  const escrow = m.contract("EscrowX402", [
+  const impl = m.contract("EscrowX402", []);
+  const initData = m.encodeFunctionCall(impl, "initialize", [
     initialOwner,
     identityRegistry,
     reputationRegistry,
   ]);
+  const escrow = m.contract("ERC1967Proxy", [impl, initData]);
 
   return { escrowX402: escrow };
 });

@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
 interface IReputationRegistry {
     function giveFeedback(
         uint256 agentId,
@@ -22,15 +26,22 @@ interface IReputationRegistry {
     function getLastIndex(uint256 agentId, address clientAddress) external view returns (uint64);
 }
 
-// Sepolia - ReputationRegistry - 0x8004B663056A597Dffe9eCcC1965A193B7388713
+contract ReputationRegistryWrapper is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
-contract ReputationRegistryWrapper {
+    IReputationRegistry public core;
 
-    IReputationRegistry public immutable core;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
 
-    constructor(address coreAddress) {
+    function initialize(address initialOwner, address coreAddress) public initializer {
+        __Ownable_init(initialOwner);
+        __UUPSUpgradeable_init();
         core = IReputationRegistry(coreAddress);
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     struct AgentStats {
         int256 total;      // 6 decimals normalized
