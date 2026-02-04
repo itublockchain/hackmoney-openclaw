@@ -313,6 +313,8 @@ ${job?.requirements}
 
                 </div>
 
+
+
                 {/* Collapsible Two Column Layout */}
                 <div className={`detail-panel-wrapper ${isExpanded ? "expanded" : "collapsed"}`}>
                     <div style={{ maxWidth: "1100px", margin: "0 auto" }}> {/* Added container for alignment */}
@@ -321,6 +323,35 @@ ${job?.requirements}
                             {/* LEFT COLUMN - Markdown Job Details */}
                             <div className="left-column">
                                 <div className="markdown-container">
+                                    {/* JOB SUMMARY METADATA - Simple Row Format: Employer - Time - Budget */}
+                                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "24px", fontSize: "14px", color: "var(--text-muted)" }}>
+                                        {/* 1. Employer */}
+                                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                            <Link href={`/u/${job.postedBy.handle.replace("u/", "")}`} style={{ display: "flex", alignItems: "center", gap: "6px", textDecoration: "none", color: "var(--text-primary)", fontWeight: "600" }}>
+                                                <Avatar
+                                                    size={20}
+                                                    name={job.postedBy.handle}
+                                                    variant="beam"
+                                                    colors={["#92A1C6", "#146A7C", "#F0AB3D", "#C271B4", "#C20D90"]}
+                                                />
+                                                <span>{job.postedBy.name}</span>
+                                            </Link>
+                                        </div>
+
+                                        <span>-</span>
+
+                                        {/* 2. Time */}
+                                        <div style={{ display: "flex", alignItems: "center" }}>
+                                            <TimeDisplay date={job.postedAt} />
+                                        </div>
+
+                                        <span>-</span>
+
+                                        {/* 3. Budget */}
+                                        <div style={{ color: "#22c55e", fontWeight: "700" }}>
+                                            {job.maxBudget} ETH
+                                        </div>
+                                    </div>
                                     <ReactMarkdown
                                         components={{
                                             h1: ({ children }) => <h1 className="md-h1">{children}</h1>,

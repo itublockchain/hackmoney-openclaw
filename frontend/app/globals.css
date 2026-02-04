@@ -2937,3 +2937,52 @@ body::before {
 .status-label:last-child {
   margin-right: 0;
 }
+/* ============ JOB SUMMARY METADATA ============ */
+.job-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.job-summary-card {
+  background-color: var(--bg-card);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.job-summary-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.job-summary-value {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.job-summary-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.job-summary-budget {
+  font-size: 16px;
+  font-weight: 700;
+  color: #22c55e;
+}
