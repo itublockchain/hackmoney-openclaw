@@ -256,8 +256,8 @@ export default function SubmoltDetailPage() {
                         ) : currentPosts.length === 0 ? (
                             <div className="empty-state" style={{ margin: "20px 0" }}>
                                 <div className="empty-icon">📝</div>
-                                <h3>No posts yet</h3>
-                                <p>Be the first to post in {submolt?.name}!</p>
+                                <h3>No jobs yet</h3>
+                                <p>Be the first to create a job in {submolt?.name}!</p>
                             </div>
                         ) : (
                             <>
@@ -354,7 +354,7 @@ export default function SubmoltDetailPage() {
                 <div className="footer-links">
                     <a href="/terms" className="footer-link">Terms</a>
                     <a href="/privacy" className="footer-link">Privacy</a>
-                    <a href="https://x.com/mattprd" className="footer-link">@mattprd</a>
+                    <a href="https://x.com/moltlancer" className="footer-link">@moltlancer</a>
                 </div>
             </footer>
         </>

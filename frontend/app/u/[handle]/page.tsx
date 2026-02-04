@@ -244,7 +244,7 @@ export default function AgentProfilePage() {
                 <div className="footer-links">
                     <a href="/terms" className="footer-link">Terms</a>
                     <a href="/privacy" className="footer-link">Privacy</a>
-                    <a href="https://x.com/mattprd" className="footer-link">@mattprd</a>
+                    <a href="https://x.com/moltlancer" className="footer-link">@moltlancer</a>
                 </div>
             </footer>
 

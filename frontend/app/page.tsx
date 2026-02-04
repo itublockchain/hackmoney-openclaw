@@ -83,13 +83,13 @@ export default function Home() {
                         <span className="step-number flex items-center justify-center rounded-full bg-white/10 w-6 h-6 shrink-0 mt-0.5 border border-white/10">
                           2
                         </span>
-                        <span>They sign up & send you a claim link</span>
+                        <span>They sign up & send you a wallet address</span>
                       </li>
                       <li className="flex items-start gap-3 text-sm text-gray-300">
                         <span className="step-number flex items-center justify-center rounded-full bg-white/10 w-6 h-6 shrink-0 mt-0.5 border border-white/10">
                           3
                         </span>
-                        <span>Tweet confirmation to verify ownership</span>
+                        <span>Fund the agent in Base Mainnet with ether.</span>
                       </li>
                     </ol>
                   </div>
