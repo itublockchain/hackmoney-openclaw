@@ -44,6 +44,8 @@ export default function JobPostDetailPage() {
     const [isExpanded, setIsExpanded] = useState(true);
 
 
+    const [showSubmissionModal, setShowSubmissionModal] = useState(false);
+
     useEffect(() => {
         const fetchJobAndChat = async () => {
             setLoading(true);
@@ -234,6 +236,19 @@ ${job?.requirements}
         );
     }
 
+    // Modal Helper to extract content
+    const getSubmissionContent = () => {
+        if (!job.submission) return "No submission content.";
+        // Check for submission.md key
+        if (typeof job.submission === 'object' && 'submission.md' in job.submission) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return (job.submission as any)['submission.md'];
+        }
+        // Fallback checks
+        if (job.submission.description) return job.submission.description;
+        return JSON.stringify(job.submission, null, 2);
+    };
+
     return (
         <>
             <div className="page-container">
@@ -273,18 +288,25 @@ ${job?.requirements}
                         </div>
 
                         {job.submission && (
-                            <div className="submission-display" style={{ marginTop: '20px', padding: '16px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
-                                <h4 style={{ margin: '0 0 8px 0', color: '#0369a1' }}>Submission Details</h4>
-                                <p style={{ whiteSpace: 'pre-wrap' }}>{job.submission.description}</p>
-                                {job.submission.links && job.submission.links.length > 0 && (
-                                    <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
-                                        {job.submission.links.map((link, i) => (
-                                            <li key={i}>
-                                                <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: '#0284c7' }}>{link}</a>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
+                            <div className="submission-actions" style={{ marginTop: '20px' }}>
+                                <button
+                                    onClick={() => setShowSubmissionModal(true)}
+                                    style={{
+                                        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontWeight: '600',
+                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}
+                                >
+                                    <span>📄</span> Show Submission
+                                </button>
                             </div>
                         )}
                     </div>
@@ -407,7 +429,6 @@ ${job?.requirements}
                 </div>
             </div>
 
-
             <footer className="footer">
                 <div className="footer-links">
                     <a href="/terms" className="footer-link">Terms</a>
@@ -415,6 +436,69 @@ ${job?.requirements}
                     <a href="https://x.com/mattprd" className="footer-link">@mattprd</a>
                 </div>
             </footer>
+
+            {/* Submission Modal */}
+            {showSubmissionModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9999,
+                    backdropFilter: 'blur(4px)'
+                }} onClick={() => setShowSubmissionModal(false)}>
+                    <div style={{
+                        backgroundColor: '#1e293b', // Slate 800 - dark theme compatible
+                        borderRadius: '12px',
+                        width: '80%',
+                        maxWidth: '800px',
+                        maxHeight: '80vh',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        border: '1px solid #334155'
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{
+                            padding: '16px 24px',
+                            borderBottom: '1px solid #334155',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                        }}>
+                            <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '18px' }}>Submission Content (submission.md)</h3>
+                            <button
+                                onClick={() => setShowSubmissionModal(false)}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#94a3b8',
+                                    fontSize: '24px',
+                                    cursor: 'pointer',
+                                    lineHeight: 1
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div style={{
+                            padding: '24px',
+                            overflowY: 'auto',
+                            color: '#e2e8f0',
+                            fontFamily: 'monospace',
+                            whiteSpace: 'pre-wrap',
+                            fontSize: '14px',
+                            lineHeight: '1.5'
+                        }}>
+                            {getSubmissionContent()}
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
