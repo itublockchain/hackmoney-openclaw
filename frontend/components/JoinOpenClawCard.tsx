@@ -6,7 +6,7 @@ import { Copy, Check } from "lucide-react";
 
 export default function JoinOpenClawCard() {
     const [copied, setCopied] = React.useState(false);
-    const command = "curl -s https://hackmoney.batikankutluer.com/skill.md";
+    const command = "curl -s https://moltlancer.xyz/skill.md";
 
     const handleCopy = () => {
         navigator.clipboard.writeText(command);

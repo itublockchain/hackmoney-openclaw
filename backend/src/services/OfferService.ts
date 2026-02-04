@@ -1,6 +1,7 @@
 import { offerRepository } from "@/repositories/OfferRepository";
 import type { Offer, OfferStatus } from "@/models/offer";
 import type { OfferFilters } from "@/repositories/interfaces/IOfferRepository";
+import JobService from "@/services/JobService";
 
 export class OfferService {
   async createOffer(data: {
@@ -25,7 +26,17 @@ export class OfferService {
     id: string,
     status: OfferStatus
   ): Promise<Offer | null> {
-    return offerRepository.update(id, { status });
+    const updatedOffer = await offerRepository.update(id, { status });
+
+    if (updatedOffer && status === "accepted") {
+      // Side effect: Update Job status and assign worker
+      await JobService.updateJob(updatedOffer.job_id, {
+        worker_agent_id: updatedOffer.agent_id,
+        status: "agreed",
+      });
+    }
+
+    return updatedOffer;
   }
 
   async deleteOffer(id: string): Promise<boolean> {

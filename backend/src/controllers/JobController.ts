@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import JobService from "@/services/JobService";
 import type { JobStatus } from "@/models/job";
+import CategoryRepository from "@/repositories/CategoryRepository";
 
 export default class JobController {
   static async getAllJobs(req: Request, res: Response) {
@@ -69,10 +70,46 @@ export default class JobController {
         return;
       }
 
+      const finalDescription = description_md || description;
+      if (!finalDescription) {
+        res.status(400).json({
+          success: false,
+          error: "Missing required field: description_md (or description)",
+        });
+        return;
+      }
+
+      if (!requirements_md) {
+        res.status(400).json({
+          success: false,
+          error: "Missing required field: requirements_md",
+        });
+        return;
+      }
+
       const finalBudget = JobController.parseBudget(budget_amount, budget);
-      const finalCategoryId = JobController.validateCategoryId(
+      let finalCategoryId = JobController.validateCategoryId(
         category_id || category
       );
+
+      if (!finalCategoryId && (category_id || category)) {
+        console.log(`Looking up category by name: ${category_id || category}`);
+
+        // Try exact match or case-insensitive search if repository supports it
+        // For now, rely on findByName (exact match usually)
+        const cat = await CategoryRepository.findByName(category_id || category);
+
+        if (cat) {
+          finalCategoryId = cat.id;
+        } else {
+          console.warn(`Category not found by name: ${category_id || category}`);
+          res.status(400).json({
+            success: false,
+            error: `Category not found: ${category_id || category}. Please check the category list.`
+          });
+          return;
+        }
+      }
       const owner_agent_id = JobController.getOwnerAgentId(req);
 
       const job = await JobService.createJob({
@@ -103,7 +140,7 @@ export default class JobController {
       // "done" usually means 'submitted' (waiting for approval) or 'approved' (payment completed)
       // The user requested "lists all the job that completed"
       const jobs = await JobService.getAllJobs("latest", {
-        status: "submitted",
+        status: "reviewing",
       });
       res.json({ success: true, jobs });
     } catch (error) {
@@ -150,12 +187,11 @@ export default class JobController {
         return;
       }
 
-      // If status is 'submitted', force it to 'awaiting'
-      const statusToUpdate =
-        newStatus === "submitted" ? "awaiting" : "submitted";
+      // Status transition logic
+      // For now, simply trust the requested status, or implement state machine checks here
 
       const updatedJob = await JobService.updateJob(id as string, {
-        status: statusToUpdate,
+        status: newStatus,
       });
       res.json({ success: true, job: updatedJob });
     } catch (error) {
@@ -170,23 +206,88 @@ export default class JobController {
   }
 
   static async markAsDone(req: Request, res: Response) {
-    return JobController.handleStatusChange(req, res, "awaiting");
+    try {
+      const { id } = req.params;
+      const agentId = (req as any).agent?.id;
+
+      if (!id) {
+        res.status(400).json({ success: false, error: "Job ID is required" });
+        return;
+      }
+
+      const job = await JobService.getJobById(id as string);
+      if (!job) {
+        res.status(404).json({ success: false, error: "Job not found" });
+        return;
+      }
+
+      if (job.worker_agent_id !== agentId) {
+        res.status(403).json({ success: false, error: "Forbidden: Only the worker can mark the job as done." });
+        return;
+      }
+
+      const updatedJob = await JobService.updateJob(id as string, {
+        status: "done",
+      });
+      res.json({ success: true, job: updatedJob });
+    } catch (error) {
+      console.error("Error marking job as done:", error);
+      res.status(500).json({ success: false, error: "Failed to mark job as done" });
+    }
   }
 
-  static async approveJob(req: Request, res: Response) {
-    return JobController.handleStatusChange(req, res, "approved");
+  static async agreeJob(req: Request, res: Response) {
+    return JobController.handleStatusChange(req, res, "agreed");
   }
 
-  static async declineJob(req: Request, res: Response) {
-    return JobController.handleStatusChange(req, res, "declined");
+  static async submitWork(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { submission } = req.body;
+      const agentId = (req as any).agent?.id;
+
+      if (!id) {
+        res.status(400).json({ success: false, error: "Job ID is required" });
+        return;
+      }
+
+      const job = await JobService.getJobById(id as string);
+      if (!job) {
+        res.status(404).json({ success: false, error: "Job not found" });
+        return;
+      }
+
+      const isWorker = job.worker_agent_id === agentId;
+      if (!isWorker) {
+        res.status(403).json({ success: false, error: "Forbidden: Only the worker can submit work." });
+        return;
+      }
+
+      const updatedJob = await JobService.updateJob(id as string, {
+        status: "reviewing",
+        submission: submission
+      });
+      res.json({ success: true, job: updatedJob });
+    } catch (error) {
+      console.error("Error submitting work:", error);
+      res.status(500).json({ success: false, error: "Failed to submit work" });
+    }
+  }
+
+  static async rejectWork(req: Request, res: Response) {
+    res.status(501).json({ success: false, error: "Rejection is handled on-chain by whitelisted agents." });
+  }
+
+  static async fundJob(req: Request, res: Response) {
+    return JobController.handleStatusChange(req, res, "funded");
+  }
+
+  static async reviewJob(req: Request, res: Response) {
+    return JobController.handleStatusChange(req, res, "reviewing");
   }
 
   static async openJob(req: Request, res: Response) {
     return JobController.handleStatusChange(req, res, "open");
-  }
-
-  static async awaitJob(req: Request, res: Response) {
-    return JobController.handleStatusChange(req, res, "awaiting");
   }
 
   private static parseBudget(
@@ -198,7 +299,14 @@ export default class JobController {
       if (typeof budget === "object") {
         finalBudget = budget.max || budget.min || budget.amount;
       } else {
-        finalBudget = parseFloat(budget);
+        finalBudget = budget;
+      }
+    }
+    // Ensure it's a number if it's a string, protecting against "0" string if relevant, but mainly just parsing float.
+    if (typeof finalBudget === 'string') {
+      const parsed = parseFloat(finalBudget);
+      if (!isNaN(parsed)) {
+        finalBudget = parsed;
       }
     }
     return finalBudget;

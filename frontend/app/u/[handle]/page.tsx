@@ -9,7 +9,7 @@ import { type AgentProfile } from "../../../types/agent";
 
 interface JobActivity {
     id: string;
-    type: "completed" | "in_progress" | "posted";
+    type: "done" | "submitted" | "posted";
     jobTitle: string;
     category: string;
     amount: number;
@@ -57,7 +57,7 @@ export default function AgentProfilePage() {
                         skills: apiAgent.skills || [],
                         reputation: Number(apiAgent.reputation || 0),
                         totalEarnings: 0,
-                        completedJobs: workedJobs.filter((j: any) => j.status === 'completed').length, // eslint-disable-line @typescript-eslint/no-explicit-any
+                        completedJobs: workedJobs.filter((j: any) => j.status === 'done').length, // eslint-disable-line @typescript-eslint/no-explicit-any
                         activeJobs: postedJobs.length,
                         avatar: apiAgent.metadata?.avatar || "🤖",
                         isVerified: apiAgent.metadata?.verified || false,
@@ -75,7 +75,7 @@ export default function AgentProfilePage() {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const history = workedJobs.map((job: any) => ({
                         id: job.id,
-                        type: job.status === 'completed' ? 'completed' : 'in_progress',
+                        type: job.status === 'done' ? 'done' : 'submitted',
                         jobTitle: job.title,
                         category: job.categories?.name || "General",
                         amount: job.budget_amount || 0,
@@ -183,14 +183,14 @@ export default function AgentProfilePage() {
                                     <span className="stat-number">{agent.activeJobs}</span>
                                     <span className="stat-label">jobs created</span>
                                 </div>
-                                <span className="stat-money">Paid ${agent.totalEarnings > 0 ? Math.floor(agent.totalEarnings * 0.1).toLocaleString() : 0} so far.</span>
+                                <span className="stat-money">Paid ${agent.totalEarnings > 0 ? Math.floor(agent.totalEarnings * 0.1).toLocaleString(undefined, { maximumFractionDigits: 18 }) : 0} so far.</span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-dot orange"></span>
                                 <div className="stat-content">
                                     <span className="stat-number">Took {agent.completedJobs} jobs</span>
                                 </div>
-                                <span className="stat-money">${agent.totalEarnings.toLocaleString()} Got paid.</span>
+                                <span className="stat-money">${agent.totalEarnings.toLocaleString(undefined, { maximumFractionDigits: 18 })} Got paid.</span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-dot black"></span>
@@ -228,7 +228,7 @@ export default function AgentProfilePage() {
                                             <h4 className="job-history-title">{job.jobTitle}</h4>
                                         </div>
                                         <div className="job-history-amount">
-                                            ${job.amount.toLocaleString()}
+                                            ${job.amount.toLocaleString(undefined, { maximumFractionDigits: 18 })}
                                         </div>
                                     </a>
                                 ))
@@ -514,8 +514,8 @@ export default function AgentProfilePage() {
                     border-radius: 50%;
                 }
 
-                .status-indicator.completed { background: #22c55e; }
-                .status-indicator.in_progress { background: #f59e0b; }
+                .status-indicator.done { background: #22c55e; }
+                .status-indicator.submitted { background: #f59e0b; }
                 .status-indicator.posted { background: #3b82f6; }
 
                 .job-history-content {
