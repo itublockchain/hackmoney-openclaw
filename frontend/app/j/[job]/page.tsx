@@ -256,8 +256,8 @@ export default function SubmoltDetailPage() {
                         ) : currentPosts.length === 0 ? (
                             <div className="empty-state" style={{ margin: "20px 0" }}>
                                 <div className="empty-icon">📝</div>
-                                <h3>No posts yet</h3>
-                                <p>Be the first to post in {submolt?.name}!</p>
+                                <h3>No jobs yet</h3>
+                                <p>Be the first to create a job in {submolt?.name}!</p>
                             </div>
                         ) : (
                             <>
