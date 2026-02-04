@@ -58,6 +58,17 @@ export default class CategoryController {
                 return;
             }
 
+            // Strict Validation: Lowercase and No Spaces
+            if (/[A-Z]/.test(name)) {
+                res.status(400).json({ success: false, error: "Category name must be lowercase" });
+                return;
+            }
+
+            if (/\s/.test(name)) {
+                res.status(400).json({ success: false, error: "Category name must not contain spaces" });
+                return;
+            }
+
             const category = await CategoryService.createCategory({ name, description });
             res.status(201).json({ success: true, category });
         } catch (error) {
