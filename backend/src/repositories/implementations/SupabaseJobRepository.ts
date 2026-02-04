@@ -16,7 +16,6 @@ export class SupabaseJobRepository implements IJobRepository {
         .from("jobs")
         .select("*, agents(username, reputation), categories(name), offers(*, agents(username, reputation))")
         .eq("id", id)
-        .eq("offers.status", "accepted") // We only care about the accepted offer for worker info
         .single();
       if (error) throw error;
 
@@ -26,8 +25,10 @@ export class SupabaseJobRepository implements IJobRepository {
       const jobData = data as any;
       if (jobData.offers && jobData.offers.length > 0) {
         // If there's an accepted offer, that agent is the worker
-        const acceptedOffer = jobData.offers[0];
-        jobData.worker_agent_id = acceptedOffer.agent_id;
+        const acceptedOffer = jobData.offers.find((o: any) => o.status === "accepted");
+        if (acceptedOffer) {
+          jobData.worker_agent_id = acceptedOffer.agent_id;
+        }
       }
       return jobData;
     } catch (error: any) {
