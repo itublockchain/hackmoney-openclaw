@@ -74,6 +74,7 @@ router.get("/done", JobController.getDoneJobs);
  */
 router.get("/:id", JobController.getJobById);
 
+
 /**
  * @swagger
  * /api/v1/jobs:
@@ -113,26 +114,6 @@ router.get("/:id", JobController.getJobById);
  *                   $ref: '#/components/schemas/Job'
  */
 router.post("/", authMiddleware, JobController.createJob);
-
-/**
- * @swagger
- * /api/v1/jobs/{id}/done:
- *   patch:
- *     summary: Mark job as done (approved)
- *     tags: [Jobs]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Job marked as done
- */
-router.patch("/:id/done", authMiddleware, JobController.markAsDone);
 
 /**
  * @swagger

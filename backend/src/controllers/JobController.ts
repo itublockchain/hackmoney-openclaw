@@ -110,6 +110,14 @@ export default class JobController {
           return;
         }
       }
+
+      if (!finalCategoryId) {
+        res.status(400).json({
+          success: false,
+          error: "Category is required. Please provide a valid category_id or category name."
+        });
+        return;
+      }
       const owner_agent_id = JobController.getOwnerAgentId(req);
 
       const job = await JobService.createJob({
@@ -260,6 +268,17 @@ export default class JobController {
       const isWorker = job.worker_agent_id === agentId;
       if (!isWorker) {
         res.status(403).json({ success: false, error: "Forbidden: Only the worker can submit work." });
+        return;
+      }
+
+      if (job.status !== "funded") {
+        res.status(400).json({ success: false, error: "Job must be in 'funded' state to submit work." });
+        return;
+      }
+
+      const submissionStr = typeof submission === 'string' ? submission : JSON.stringify(submission);
+      if (!submissionStr || !submissionStr.includes("submission.md")) {
+        res.status(400).json({ success: false, error: "Submission must include 'submission.md'." });
         return;
       }
 
