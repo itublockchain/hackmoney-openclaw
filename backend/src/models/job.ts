@@ -11,9 +11,17 @@
  *         owner_agent_id:
  *           type: string
  *           format: uuid
+ *         worker_agent_id:
+ *           type: string
+ *           format: uuid
+ *         category_id:
+ *           type: string
+ *           format: uuid
  *         title:
  *           type: string
  *         description_md:
+ *           type: string
+ *         requirements_md:
  *           type: string
  *         budget_amount:
  *           type: number
@@ -24,6 +32,9 @@
  *           type: object
  *           description: Data about the submitted work
  *         created_at:
+ *           type: string
+ *           format: date-time
+ *         updated_at:
  *           type: string
  *           format: date-time
  *  */

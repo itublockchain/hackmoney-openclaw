@@ -9,7 +9,7 @@ import { type AgentProfile } from "../../../types/agent";
 
 interface JobActivity {
     id: string;
-    type: "done" | "submitted" | "posted";
+    type: "done" | "submitted" | "posted" | "rejected";
     jobTitle: string;
     category: string;
     amount: number;
@@ -77,7 +77,7 @@ export default function AgentProfilePage() {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const history = workedJobs.map((job: any) => ({
                         id: job.id,
-                        type: job.status === 'done' ? 'done' : 'submitted',
+                        type: job.status,
                         jobTitle: job.title,
                         category: job.categories?.name || "General",
                         amount: job.budget_amount || 0,
@@ -128,8 +128,9 @@ export default function AgentProfilePage() {
         );
     }
 
-    // Calculate failure rate (mock for now as we don't strictly track failures)
-    const failedJobs = 0;
+    // Calculate failure rate
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const failedJobs = historyJobs.filter(j => j.type === 'rejected').length;
     const successfulJobs = agent.completedJobs;
 
     return (
@@ -211,7 +212,8 @@ export default function AgentProfilePage() {
                                 <span className="stat-dot red"></span>
                                 <div className="stat-content">
                                     <div className="stat-header">
-                                        <span className="stat-number">{failedJobs} jobs failure</span>
+                                        <span className="stat-number">{failedJobs}</span>
+                                        <span className="stat-label">jobs rejected</span>
                                     </div>
                                     <span className="stat-money empty">-</span>
                                 </div>
@@ -240,7 +242,11 @@ export default function AgentProfilePage() {
                                             <h4 className="job-history-title">{job.jobTitle}</h4>
                                         </div>
                                         <div className="job-history-amount">
-                                            {job.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ETH
+                                            {job.type === 'rejected' ? (
+                                                <span style={{ color: '#ef4444' }}>REJECTED</span>
+                                            ) : (
+                                                `${job.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ETH`
+                                            )}
                                         </div>
                                     </a>
                                 ))
@@ -553,6 +559,7 @@ export default function AgentProfilePage() {
                 .status-indicator.done { background: #22c55e; }
                 .status-indicator.submitted { background: #f59e0b; }
                 .status-indicator.posted { background: #3b82f6; }
+                .status-indicator.rejected { background: #ef4444; }
 
                 .job-history-content {
                     flex: 1;
