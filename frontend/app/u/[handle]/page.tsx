@@ -180,34 +180,44 @@ export default function AgentProfilePage() {
                             <div className="stat-item">
                                 <span className="stat-dot green"></span>
                                 <div className="stat-content">
-                                    <span className="stat-number">{agent.activeJobs}</span>
-                                    <span className="stat-label">jobs created</span>
+                                    <div className="stat-header">
+                                        <span className="stat-number">{agent.activeJobs}</span>
+                                        <span className="stat-label">jobs created</span>
+                                    </div>
+                                    <span className="stat-money">Paid {agent.totalEarnings > 0 ? Math.floor(agent.totalEarnings * 0.1).toLocaleString(undefined, { maximumFractionDigits: 18 }) : 0} ETH so far.</span>
                                 </div>
-                                <span className="stat-money">Paid ${agent.totalEarnings > 0 ? Math.floor(agent.totalEarnings * 0.1).toLocaleString(undefined, { maximumFractionDigits: 18 }) : 0} so far.</span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-dot orange"></span>
                                 <div className="stat-content">
-                                    <span className="stat-number">Took {agent.completedJobs} jobs</span>
+                                    <div className="stat-header">
+                                        <span className="stat-number">Took {agent.completedJobs} jobs</span>
+                                    </div>
+                                    <span className="stat-money">{agent.totalEarnings.toLocaleString(undefined, { maximumFractionDigits: 18 })} ETH Got paid.</span>
                                 </div>
-                                <span className="stat-money">${agent.totalEarnings.toLocaleString(undefined, { maximumFractionDigits: 18 })} Got paid.</span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-dot black"></span>
                                 <div className="stat-content">
-                                    <span className="stat-number">{successfulJobs} jobs done</span>
+                                    <div className="stat-header">
+                                        <span className="stat-number">{successfulJobs} jobs done</span>
+                                    </div>
+                                    <span className="stat-money empty">-</span>
                                 </div>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-dot red"></span>
                                 <div className="stat-content">
-                                    <span className="stat-number">{failedJobs} jobs failure</span>
+                                    <div className="stat-header">
+                                        <span className="stat-number">{failedJobs} jobs failure</span>
+                                    </div>
+                                    <span className="stat-money empty">-</span>
                                 </div>
                             </div>
                         </div>
-
-
                     </div>
+
+
 
                     {/* Job History / Posts Section */}
                     <div className="profile-posts-section">
@@ -218,7 +228,7 @@ export default function AgentProfilePage() {
                                 historyJobs.map((job) => (
                                     <a key={job.id} href={job.link} className="job-history-card">
                                         <div className="job-history-status">
-                                            <span className={`status-indicator ${job.type}`}></span>
+                                            <span className={`status-indicator {job.type}`}></span>
                                         </div>
                                         <div className="job-history-content">
                                             <div className="job-history-meta">
@@ -228,7 +238,7 @@ export default function AgentProfilePage() {
                                             <h4 className="job-history-title">{job.jobTitle}</h4>
                                         </div>
                                         <div className="job-history-amount">
-                                            ${job.amount.toLocaleString(undefined, { maximumFractionDigits: 18 })}
+                                            {job.amount.toLocaleString(undefined, { maximumFractionDigits: 18 })} ETH
                                         </div>
                                     </a>
                                 ))
@@ -361,8 +371,8 @@ export default function AgentProfilePage() {
 
                 /* Job Stats Row */
                 .job-stats-row {
-                    display: flex;
-                    flex-wrap: wrap;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                     gap: 16px;
                     padding-bottom: 20px;
                     border-bottom: 1px solid var(--border-color);
@@ -371,15 +381,23 @@ export default function AgentProfilePage() {
 
                 .stat-item {
                     display: flex;
-                    align-items: center;
-                    gap: 8px;
+                    align-items: flex-start;
+                    gap: 12px;
+                    padding: 8px;
+                    border-radius: 8px;
+                    transition: background 0.2s;
+                }
+
+                .stat-item:hover {
+                    background: var(--surface-bg);
                 }
 
                 .stat-dot {
-                    width: 14px;
-                    height: 14px;
+                    width: 10px;
+                    height: 10px;
                     border-radius: 50%;
                     flex-shrink: 0;
+                    margin-top: 6px;
                 }
 
                 .stat-dot.green { background: #22c55e; }
@@ -390,23 +408,39 @@ export default function AgentProfilePage() {
                 .stat-content {
                     display: flex;
                     flex-direction: column;
+                    gap: 4px;
+                }
+
+                .stat-header {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 6px;
+                    flex-wrap: wrap;
                 }
 
                 .stat-number {
-                    font-size: 13px;
-                    font-weight: 600;
+                    font-size: 15px;
+                    font-weight: 700;
                     color: var(--text-primary);
                 }
 
                 .stat-label {
-                    font-size: 11px;
+                    font-size: 12px;
                     color: var(--text-muted);
+                    font-weight: 500;
+                    text-transform: uppercase;
                 }
 
                 .stat-money {
                     font-size: 12px;
                     color: #22c55e;
-                    font-weight: 500;
+                    font-weight: 600;
+                    font-family: monospace;
+                }
+
+                .stat-money.empty {
+                    color: transparent;
+                    user-select: none;
                 }
 
                 /* Profile Sections */
