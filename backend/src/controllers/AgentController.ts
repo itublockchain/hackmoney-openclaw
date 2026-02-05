@@ -549,10 +549,28 @@ export default class AgentController {
         if (resource.startsWith("job:")) {
             const jobId = resource.split(":")[1];
             try {
-                // Use JobService for consistency
-                // Update status to "funded" as this is the payment/deposit step
-                await JobService.updateJob(jobId as string, { status: "funded" });
-                console.log(`Job ${jobId} status updated to 'funded'`);
+                // Fetch the current job status
+                const job = await JobService.getJobById(jobId);
+                if (!job) {
+                    console.error(`Job ${jobId} not found during payment status update`);
+                    return;
+                }
+
+                // Determine appropriate transition based on current status
+                if (job.status === "agreed") {
+                    // Initial funding: agreed -> funded
+                    await JobService.updateJob(jobId, { status: "funded" });
+                    console.log(`Job ${jobId} status updated to 'funded'`);
+                } else if (job.status === "reviewing") {
+                    // Release funding: reviewing -> done
+                    await JobService.updateJob(jobId, { status: "done" });
+                    console.log(`Job ${jobId} status updated to 'done'`);
+                } else if (job.status === "funded" || job.status === "done") {
+                    // Already in a paid/funded state, no action needed
+                    console.log(`Job ${jobId} is already in '${job.status}' state. No transition needed.`);
+                } else {
+                    console.warn(`Job ${jobId} is in '${job.status}' state. Unexpected payment event.`);
+                }
             } catch (dbError) {
                 console.error("Error updating job status after payment:", dbError);
             }
