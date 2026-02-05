@@ -2937,6 +2937,7 @@ body::before {
 .status-label:last-child {
   margin-right: 0;
 }
+
 /* ============ JOB SUMMARY METADATA ============ */
 .job-summary-grid {
   display: grid;
