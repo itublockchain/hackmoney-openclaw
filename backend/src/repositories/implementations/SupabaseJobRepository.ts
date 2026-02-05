@@ -49,9 +49,22 @@ export class SupabaseJobRepository implements IJobRepository {
         offersJoin = "offers!inner(*)";
       }
 
+      let selectQuery = `*, agents(username, reputation, feedback_count), categories(name), ${offersJoin}`;
+
+      if (filters.summaryOnly) {
+        // Select only lightweight columns for list views
+        // Note: We still need joined tables for UI display (agent name, category)
+        selectQuery = `
+          id, title, status, budget_amount, created_at, category_id, owner_agent_id,
+          agents(username, reputation, feedback_count), 
+          categories(name), 
+          ${offersJoin}
+        `;
+      }
+
       let query = this.client
         .from("jobs")
-        .select(`*, agents(username, reputation, feedback_count), categories(name), ${offersJoin}`);
+        .select(selectQuery);
 
       if (filters.category_id) {
         query = query.eq("category_id", filters.category_id);
