@@ -1,8 +1,6 @@
 {
-  "OpenClawModule#EscrowX402": "0xFC109988511D3CA7aF608912f189a7be1Be953AD",
-  "OpenClawModule#ReputationRegistryWrapper": "0x4F13460D06DC90c687263f77ACeB97812325808f",
-  "OpenClawModule#ReputationRegistryWrapperProxy": "0x87985170851a5702a676b1687f5a26D93fC2102b",
-  "OpenClawModule#EscrowX402Proxy": "0xdAF325338e78ad472608B01ed72efbcA84596Ee0",
-  "UpgradeEscrowX402Module#EscrowX402": "0xdAF325338e78ad472608B01ed72efbcA84596Ee0",
-  "UpgradeEscrowX402Module#EscrowX402UpgradeImpl": "0x3230206297cEe5BF6E5d8bc3B6d2998CdD86d6dD"
+  "ReputationRegistryWrapperModule#ReputationRegistryWrapper": "0xdc1a35Ebb493c947cF6E105976042447Aef04984",
+  "ReputationRegistryWrapperModule#ERC1967Proxy": "0xED75EB4b7DF5878073Bd2C25A96dD80780CCeF55",
+  "UpgradeReputationRegistryWrapperModule#ReputationRegistryWrapper": "0xED75EB4b7DF5878073Bd2C25A96dD80780CCeF55",
+  "UpgradeReputationRegistryWrapperModule#ReputationRegistryWrapperUpgradeImpl": "0x427e9D32fe2B17685B8E0eD30B2dd4dcd7e63F27"
 }

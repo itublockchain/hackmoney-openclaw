@@ -5,6 +5,8 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+
 
 interface IIdentityRegistry {
     function getAgentIdByWallet(address wallet) external view returns (uint256);
@@ -14,12 +16,13 @@ interface IReputationRegistryWrapper {
     function getAverageReputation(uint256 agentId) external view returns (int256);
 }
 
-contract EscrowX402 is Initializable, PausableUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
+contract EscrowX402 is Initializable, PausableUpgradeable, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
     struct Escrow {
         address depositor;
         address worker;
         uint256 amount;
         bool released;
+        bool rejected;
     }
 
     mapping(string => Escrow) public escrows;
@@ -28,10 +31,11 @@ contract EscrowX402 is Initializable, PausableUpgradeable, OwnableUpgradeable, U
     IIdentityRegistry public identityRegistry;
     IReputationRegistryWrapper public reputationRegistry;
 
-    uint256 public releaseFeeBps; // basis points: 100 = 1%, max 10000 = 100%
+    uint256 public releaseFeeBps;
 
     event Deposited(string jobId, address depositor, address worker, uint256 amount);
     event Released(string jobId, address worker, uint256 amount);
+    event Rejected(string jobId, address depositor, uint256 amount);
     event ReleaseFeeUpdated(uint256 feeBps);
     event RegistriesUpdated(address identityRegistry, address reputationRegistry);
     event AgentWhitelistChange(address agentAddress, bool isWhitelisted);
@@ -48,8 +52,14 @@ contract EscrowX402 is Initializable, PausableUpgradeable, OwnableUpgradeable, U
         __Ownable_init(initialOwner);
         __Pausable_init();
         __UUPSUpgradeable_init();
+        __ReentrancyGuard_init();
         identityRegistry = IIdentityRegistry(identityRegistry_);
         reputationRegistry = IReputationRegistryWrapper(reputationRegistry_);
+    }
+
+    modifier onlyWhitelistedAgent() {
+        require(WhitelistedAgents[msg.sender], "You are not whitelisted");
+        _;
     }
 
     function setRegistries(address identityRegistry_, address reputationRegistry_)
@@ -61,25 +71,26 @@ contract EscrowX402 is Initializable, PausableUpgradeable, OwnableUpgradeable, U
         emit RegistriesUpdated(identityRegistry_, reputationRegistry_);
     }
 
-    function deposit(string memory jobId, address worker) external payable whenNotPaused {
+    function deposit(string memory jobId, address worker) external payable {
         require(msg.value > 0, "Zero deposit");
-        require(!escrows[jobId].released, "This Job Finalized.");
+        require(escrows[jobId].depositor == address(0), "Job already deposited");
         require(worker != address(0), "Invalid worker");
 
         escrows[jobId] = Escrow({
             depositor: msg.sender,
             worker: worker,
             amount: msg.value,
-            released: false
+            released: false,
+            rejected: false
         });
 
         emit Deposited(jobId, msg.sender, worker, msg.value);
     }
 
-    function release(string memory jobId) public whenNotPaused {
-        require(WhitelistedAgents[msg.sender], "You are not whitelisted");
+    function release(string memory jobId) public onlyWhitelistedAgent nonReentrant whenNotPaused {
         Escrow storage e = escrows[jobId];
-        require(!e.released, "Already released");
+        require(!e.released && !e.rejected, "Job already finalized");
+        require(e.depositor != address(0), "Job not deposited");
 
         e.released = true;
 
@@ -96,6 +107,28 @@ contract EscrowX402 is Initializable, PausableUpgradeable, OwnableUpgradeable, U
         }
 
         emit Released(jobId, e.worker, e.amount);
+    }
+
+    function reject(string memory jobId) public onlyWhitelistedAgent nonReentrant whenNotPaused {
+        Escrow storage e = escrows[jobId];
+        require(!e.released && !e.rejected, "Job already finalized");
+        require(e.depositor != address(0), "Job not deposited");
+
+        e.rejected = true;
+        
+        uint256 feeAmount = (e.amount * releaseFeeBps) / 10000;
+        uint256 depositorAmount = e.amount - feeAmount;
+
+        if (depositorAmount > 0) {
+            (bool ok, ) = e.depositor.call{value: depositorAmount}("");
+            require(ok, "ETH transfer to depositor failed");
+        }
+        if (feeAmount > 0) {
+            (bool okFee, ) = owner().call{value: feeAmount}("");
+            require(okFee, "ETH fee transfer failed");
+        }
+
+        emit Rejected(jobId, e.depositor, e.amount);
     }
 
     function setReleaseFee(uint256 feeBps) external onlyOwner {
@@ -123,4 +156,5 @@ contract EscrowX402 is Initializable, PausableUpgradeable, OwnableUpgradeable, U
         onlyOwner
     {}
 
+    uint256[50] private __gap;
 }

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import "@nomicfoundation/hardhat-verify";
+import hardhatVerify from "@nomicfoundation/hardhat-verify";
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
 import { configVariable, defineConfig } from "hardhat/config";
 import dotenv from "dotenv";
@@ -9,7 +9,7 @@ dotenv.config();
 const privateKey = process.env.PRIVATE_KEY;
 
 export default defineConfig({
-  plugins: [hardhatToolboxViemPlugin],
+  plugins: [hardhatToolboxViemPlugin, hardhatVerify],
   solidity: {
     profiles: {
       default: {
@@ -49,19 +49,24 @@ export default defineConfig({
     },
     baseMainnet: {
       type: "http",
-      chainType: "l1",
+      chainType: "op",
       url:
         process.env.BASE_MAINNET_RPC_URL ||
         configVariable("BASE_MAINNET_RPC_URL"),
       accounts: privateKey ? [privateKey] : [configVariable("PRIVATE_KEY")],
+      // @ts-ignore
+      verify: {
+        etherscan: {
+          apiUrl: "https://api.basescan.org",
+          apiKey: process.env.BASESCAN_API_KEY,
+        },
+      },
     },
   },
-  // @ts-ignore
-  verify: {
+  "verify": {
     etherscan: {
-      apiKey:
-        process.env.BASESCAN_API_KEY || configVariable("BASESCAN_API_KEY"),
-      enabled: true,
-    },
-  },
+      "apiKey": process.env.BASESCAN_API_KEY || "",
+      "enabled": true
+    }
+  }
 });

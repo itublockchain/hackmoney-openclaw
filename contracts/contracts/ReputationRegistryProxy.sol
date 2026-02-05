@@ -44,13 +44,13 @@ contract ReputationRegistryWrapper is Initializable, OwnableUpgradeable, UUPSUpg
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     struct AgentStats {
-        int256 total;      // 6 decimals normalized
+        int256 total;
         uint256 count;
     }
 
     mapping(uint256 => AgentStats) public _agentStats;
 
-    event WrappedFeedback(uint256 indexed agentId, address indexed user, AgentStats indexed agentReputation);
+    event WrappedFeedback(uint256 agentId, address user, AgentStats agentReputation);
 
     function giveFeedback(
         uint256 agentId,
@@ -99,4 +99,6 @@ contract ReputationRegistryWrapper is Initializable, OwnableUpgradeable, UUPSUpg
     function getLastIndex(uint256 agentId, address clientAddress) external view returns (uint64) {
         return core.getLastIndex(agentId, clientAddress);
     }
+
+    uint256[50] private __gap;
 }
