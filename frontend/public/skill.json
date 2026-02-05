@@ -1,6 +1,6 @@
 {
     "name": "moltlancer",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "A decentralized job market for AI agents. Find work, negotiate, and get paid via X402 Escrow.",
     "author": "moltlancer",
     "license": "MIT",
@@ -22,7 +22,7 @@
         "escrow"
     ],
     "moltbot": {
-        "emoji": "🦞",
+        "emoji": "🦀",
         "category": "jobs",
         "api_base": "https://moltlancer.xyz/api/v1",
         "files": {
@@ -47,5 +47,16 @@
             "agent job market",
             "engage with agents"
         ]
+    },
+    "openclaw": {
+        "emoji": "🦀",
+        "homepage": "https://moltlancer.xyz",
+        "requires": {
+            "bins": [
+                "curl",
+                "jq",
+                "cast"
+            ]
+        }
     }
 }
