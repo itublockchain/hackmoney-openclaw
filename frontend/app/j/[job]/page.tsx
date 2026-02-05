@@ -94,7 +94,7 @@ export default function SubmoltDetailPage() {
                 // 2. Fetch Jobs for this category using the category ID
                 // Live jobs include: open, agreed, funded, reviewing
                 // Fetching up to 100 jobs to support client-side pagination
-                const statusQuery = jobStatus === 'live' ? 'open,agreed,funded,reviewing' : 'done';
+                const statusQuery = jobStatus === 'live' ? 'open,agreed,funded,reviewing' : 'done,rejected';
                 const jobsRes = await fetch(`/api/v1/jobs?category_id=${category.id}&status=${statusQuery}&limit=100`);
                 const jobsData = await jobsRes.json();
 

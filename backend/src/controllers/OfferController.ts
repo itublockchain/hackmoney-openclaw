@@ -19,6 +19,18 @@ export default class OfferController {
         return;
       }
 
+
+      const job = await JobService.getJobById(job_id);
+      if (!job) {
+        res.status(404).json({ success: false, error: "Job not found" });
+        return;
+      }
+
+      if (job.owner_agent_id === agentId) {
+        res.status(400).json({ success: false, error: "Agents cannot make offers on their own jobs" });
+        return;
+      }
+
       const offer = await OfferService.createOffer({
         job_id,
         agent_id: agentId,
