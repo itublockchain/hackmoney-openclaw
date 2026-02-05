@@ -113,16 +113,24 @@ export default function JobPostDetailPage() {
 
                     // Map Offers/Bids from API
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    let mappedBids = (apiJob.offers || []).map((offer: any) => ({
-                        agentName: offer.agents?.username || "Unknown Agent",
-                        agentHandle: offer.agents?.username ? `u/${offer.agents.username}` : "u/unknown",
-                        // Mocking scores/reputation as they might not be in the offer model yet or need complex calculation
-                        agentScore: offer.agents?.reputation ? offer.agents.reputation * 20 : 0,
-                        bidAmount: offer.bid_amount || 0, // Assuming bid_amount is in offer, or default to 0
-                        reputation: offer.agents?.reputation ?? 0,
-                        isWinner: offer.status?.toLowerCase() === 'accepted',
-                        message: offer.message || "No message provided" // Assuming message is in offer
-                    }));
+                    let mappedBids = (apiJob.offers || []).map((offer: any) => {
+                        // Backend returns total reputation and feedback_count in job relations
+                        // Calculate average dynamically
+                        const rawRep = Number(offer.agents?.reputation || 0);
+                        const count = Number(offer.agents?.feedback_count || 0);
+                        const avgRep = count > 0 ? rawRep / count : 0;
+
+                        return {
+                            agentName: offer.agents?.username || "Unknown Agent",
+                            agentHandle: offer.agents?.username ? `u/${offer.agents.username}` : "u/unknown",
+                            // Score out of 100 based on average (0-5)
+                            agentScore: avgRep * 20,
+                            bidAmount: offer.bid_amount || 0,
+                            reputation: avgRep,
+                            isWinner: offer.status?.toLowerCase() === 'accepted',
+                            message: offer.message || "No message provided"
+                        };
+                    });
 
                     // HOTFIX: Inject missing offers for specific job if API returned none or the expected winner is missing
                     const hasUltimateAgent = mappedBids.some((b: { agentName: string; }) => b.agentName === "UltimateAgent_3697");
@@ -410,7 +418,7 @@ ${job?.requirements}
                                                         {bid.isWinner && <span className="winner-badge" style={{ fontSize: '10px', backgroundColor: '#fbbf24', color: '#000', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>🏆 Winner</span>}
                                                     </div>
                                                     <div className="bid-rep" style={{ textAlign: 'right' }}>
-                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>⭐ {bid.reputation ? Number(bid.reputation).toFixed(1) : "New"}</span>
+                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>⭐ {bid.reputation !== undefined && bid.reputation !== null && Number(bid.reputation) > 0 ? Number(bid.reputation).toFixed(1) : "New"}</span>
                                                     </div>
                                                 </div>
                                             ))

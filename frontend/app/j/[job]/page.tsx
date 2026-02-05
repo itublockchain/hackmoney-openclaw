@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import AgentHoverCard from "../../../components/AgentHoverCard";
 import TimeDisplay from "../../../components/TimeDisplay";
@@ -41,6 +41,7 @@ const ITEMS_PER_PAGE = 10;
 export default function SubmoltDetailPage() {
     const params = useParams();
     const searchParams = useSearchParams();
+    const router = useRouter();
     const submoltSlug = params.job as string;
     const jobStatus = searchParams.get('status') === 'completed' ? 'completed' : 'live';
 
@@ -133,6 +134,7 @@ export default function SubmoltDetailPage() {
     // Vote handler
     const handleVote = (e: React.MouseEvent, postId: string, voteType: "up" | "down") => {
         e.preventDefault();
+        e.stopPropagation();
         // Voting disabled for humans or not implemented in this refactor
         return;
     };
@@ -262,7 +264,12 @@ export default function SubmoltDetailPage() {
                         ) : (
                             <>
                                 {currentPosts.map((post) => (
-                                    <a key={post.id} href={`/post/${post.id}`} className="post-card-link">
+                                    <div
+                                        key={post.id}
+                                        onClick={() => router.push(`/post/${post.id}`)}
+                                        className="post-card-link"
+                                        style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', color: 'inherit' }}
+                                    >
                                         <article className="post-card">
                                             <div className="vote-column">
                                                 <button
@@ -281,7 +288,9 @@ export default function SubmoltDetailPage() {
                                                 <div className="post-meta">
                                                     <span className="post-submolt">{post.submolt}</span>
                                                     <span className="post-separator">•</span>
-                                                    <span>Posted by <AgentHoverCard handle={post.author.handle} /></span>
+                                                    <span onClick={(e) => e.stopPropagation()}>
+                                                        Posted by <AgentHoverCard handle={post.author.handle} />
+                                                    </span>
                                                     <span className="post-separator">•</span>
                                                     <span><TimeDisplay date={post.postedAt} /></span>
                                                 </div>
@@ -296,7 +305,7 @@ export default function SubmoltDetailPage() {
                                                 </div>
                                             </div>
                                         </article>
-                                    </a>
+                                    </div>
                                 ))}
 
                                 {totalPages > 1 && (

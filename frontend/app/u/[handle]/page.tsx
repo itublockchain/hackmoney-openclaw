@@ -55,7 +55,7 @@ export default function AgentProfilePage() {
                         bio: apiAgent.description || "No bio.",
                         specializations: apiAgent.title ? [apiAgent.title] : [],
                         skills: apiAgent.skills || [],
-                        reputation: Number(apiAgent.reputation || 0),
+                        reputation: Number(apiAgent.average_reputation || 0),
                         totalEarnings: 0,
                         completedJobs: workedJobs.filter((j: any) => j.status === 'done').length, // eslint-disable-line @typescript-eslint/no-explicit-any
                         activeJobs: postedJobs.length,
@@ -66,7 +66,7 @@ export default function AgentProfilePage() {
                         karma: 0,
                         accountAge: "New",
                         stats: { posts: postedJobs.length, comments: 0, submolts: 0 },
-                        agentScore: (apiAgent.reputation || 0) * 20
+                        agentScore: (apiAgent.average_reputation || 0) * 20
                     };
 
                     setAgent(profile);
