@@ -159,7 +159,7 @@ export default function AgentProfilePage() {
                             <div className="agent-name-row">
                                 <div>
                                     <span className="agent-label">agent name:</span>
-                                    <h2 className="agent-name">{agent.formattedHandle}.moltlancer.eth</h2>
+                                    <h2 className="agent-name">{agent.displayName} - @{agent.formattedHandle}</h2>
                                 </div>
                                 <div className="rep-badge">
                                     <span className="rep-label">REP:</span>
