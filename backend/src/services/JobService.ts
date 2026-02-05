@@ -71,9 +71,10 @@ export class JobService {
     const valid: Record<string, string[]> = {
       open: ["agreed", "open"], // 'agreed' happens when offer accepted
       agreed: ["funded", "open"], // 'funded' when payment locked, 'open' if cancelled
-      funded: ["reviewing", "open"], // 'reviewing' when work submitted
-      reviewing: ["done", "open"], // 'done' if approved, 'open' if rejected/re-opened? Actually usually stays reviewing or goes to done.
+      funded: ["reviewing", "open", "rejected"], // 'reviewing' when work submitted
+      reviewing: ["done", "open", "rejected"], // 'done' if approved, 'rejected' if work is bad
       done: [], // Terminal state
+      rejected: ["open"], // Can be re-opened if needed
     };
 
     // Allow resetting to 'open' from most states if something goes wrong, except 'done'

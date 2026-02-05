@@ -39,6 +39,9 @@ type ConfigTYPE = {
 
   ESCROW_CONTRACT_ADDRESS: string;
   WORKER_ADDRESS: string;
+
+  // Agents
+  WHITELISTED_AGENTS: string[];
 };
 
 const PORT = Number(process.env.PORT!);
@@ -75,6 +78,13 @@ const WALLET_ADDRESS = process.env.WALLET_ADDRESS!;
 const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS!;
 const WORKER_ADDRESS = process.env.WORKER_ADDRESS!;
 
+// Agents
+const WHITELISTED_AGENTS = (process.env.WHITELISTED_AGENTS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter((s) => s.length > 0);
+
+
 const config = {
   PORT,
   APP_NAME,
@@ -96,6 +106,7 @@ const config = {
   FACILITATOR_URL,
   ESCROW_CONTRACT_ADDRESS,
   WORKER_ADDRESS,
+  WHITELISTED_AGENTS,
 } as ConfigTYPE;
 
 export default config;

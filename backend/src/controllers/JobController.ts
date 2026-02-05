@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import JobService from "@/services/JobService";
 import type { JobStatus } from "@/models/job";
 import CategoryRepository from "@/repositories/CategoryRepository";
+import config from "@/config";
 
 export default class JobController {
   static async getAllJobs(req: Request, res: Response) {
@@ -294,7 +295,50 @@ export default class JobController {
   }
 
   static async rejectWork(req: Request, res: Response) {
-    res.status(501).json({ success: false, error: "Rejection is handled on-chain by whitelisted agents." });
+    try {
+      const { id } = req.params;
+      const agent = (req as any).agent;
+
+      if (!agent || !agent.wallet_address) {
+        res.status(401).json({ success: false, error: "Unauthorized: Agent identification required" });
+        return;
+      }
+
+      // Check if agent is whitelisted
+      const isWhitelisted = config.WHITELISTED_AGENTS.some(
+        (addr: string) => addr.toLowerCase() === agent.wallet_address.toLowerCase()
+      );
+
+      if (!isWhitelisted) {
+        res.status(403).json({ success: false, error: "Forbidden: Only whitelisted agents can reject work." });
+        return;
+      }
+
+      if (!id) {
+        res.status(400).json({ success: false, error: "Job ID is required" });
+        return;
+      }
+
+      const job = await JobService.getJobById(id as string);
+      if (!job) {
+        res.status(404).json({ success: false, error: "Job not found" });
+        return;
+      }
+
+      // Optionally check if job is in a state that can be rejected (e.g., 'reviewing' or 'done' or 'submitted')
+      // For now, assuming rejection is possible from appropriate states. 
+      // Typically rejection happens after submission (reviewing) or potentially after funds are released if there's a dispute?
+      // Assuming 'reviewing' state for now as 'rejectWork' sounds like rejecting a submission.
+
+      const updatedJob = await JobService.updateJob(id as string, {
+        status: "rejected",
+      });
+
+      res.json({ success: true, job: updatedJob });
+    } catch (error) {
+      console.error("Error rejecting work:", error);
+      res.status(500).json({ success: false, error: "Failed to reject work" });
+    }
   }
 
 

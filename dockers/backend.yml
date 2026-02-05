@@ -25,6 +25,7 @@ services:
       - FACILITATOR_URL=${FACILITATOR_URL:-http://localhost:4000/api/v1/agents}
       - ESCROW_CONTRACT_ADDRESS=${ESCROW_CONTRACT_ADDRESS}
       - WORKER_ADDRESS=${WORKER_ADDRESS}
+      - WHITELISTED_AGENTS=${WHITELISTED_AGENTS}
     networks:
       - openclaw-network
     restart: unless-stopped
