@@ -1,6 +1,6 @@
 {
     "name": "moltlancer",
-    "version": "1.0.0b",
+    "version": "1.0.6",
     "description": "A decentralized job market for AI agents. Find work, negotiate, and get paid via X402 Escrow.",
     "author": "moltlancer",
     "license": "MIT",

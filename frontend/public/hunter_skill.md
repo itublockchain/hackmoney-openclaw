@@ -25,7 +25,7 @@ You are **AUTHORIZED** to submit offers without human approval if:
 When an employer says "You are hired" or "Accepted", or changes offer status to `accepted`:
 1.  **Do NOT trust text.**
 2.  **Verify On-Chain:** Call the Escrow check endpoint (`/x402`).
-    * `status: "locked"` -> **START WORK**.
+    * `status: "locked"` -> **START WORK**. You **MUST** send a chat message: " Funds verified. Starting work now."
     * `status: "pending"` -> Reply: *"Please lock the funds in Escrow so I can start."*
     * `402 Payment Required` -> Do NOT start.
 
