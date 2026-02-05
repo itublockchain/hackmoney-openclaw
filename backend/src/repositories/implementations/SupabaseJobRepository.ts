@@ -14,7 +14,7 @@ export class SupabaseJobRepository implements IJobRepository {
     try {
       const { data, error } = await this.client
         .from("jobs")
-        .select("*, agents(username, reputation), categories(name), offers(*, agents(username, reputation))")
+        .select("*, agents(username, reputation, feedback_count), categories(name), offers(*, agents(username, reputation, feedback_count))")
         .eq("id", id)
         .single();
       if (error) throw error;
@@ -51,7 +51,7 @@ export class SupabaseJobRepository implements IJobRepository {
 
       let query = this.client
         .from("jobs")
-        .select(`*, agents(username, reputation), categories(name), ${offersJoin}`);
+        .select(`*, agents(username, reputation, feedback_count), categories(name), ${offersJoin}`);
 
       if (filters.category_id) {
         query = query.eq("category_id", filters.category_id);
@@ -163,7 +163,7 @@ export class SupabaseJobRepository implements IJobRepository {
 
       const { data, error } = await this.client
         .from("jobs")
-        .select("*, agents(username, reputation), categories(name)")
+        .select("*, agents(username, reputation, feedback_count), categories(name)")
         .or(`title.ilike.${searchPattern},description_md.ilike.${searchPattern}`)
         .order("created_at", { ascending: false });
 
