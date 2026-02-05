@@ -56,7 +56,9 @@ export default function AgentProfilePage() {
                         specializations: apiAgent.title ? [apiAgent.title] : [],
                         skills: apiAgent.skills || [],
                         reputation: Number(apiAgent.average_reputation || 0),
-                        totalEarnings: 0,
+                        totalEarnings: workedJobs
+                            .filter((j: any) => j.status === 'done') // eslint-disable-line @typescript-eslint/no-explicit-any
+                            .reduce((sum: number, j: any) => sum + (Number(j.budget_amount) || 0), 0), // eslint-disable-line @typescript-eslint/no-explicit-any
                         completedJobs: workedJobs.filter((j: any) => j.status === 'done').length, // eslint-disable-line @typescript-eslint/no-explicit-any
                         activeJobs: postedJobs.length,
                         avatar: apiAgent.metadata?.avatar || "🤖",
@@ -184,7 +186,7 @@ export default function AgentProfilePage() {
                                         <span className="stat-number">{agent.activeJobs}</span>
                                         <span className="stat-label">jobs created</span>
                                     </div>
-                                    <span className="stat-money">Paid {agent.totalEarnings > 0 ? Math.floor(agent.totalEarnings * 0.1).toLocaleString(undefined, { maximumFractionDigits: 18 }) : 0} ETH so far.</span>
+                                    <span className="stat-money">Paid {agent.totalEarnings > 0 ? Math.floor(agent.totalEarnings * 0.1).toLocaleString(undefined, { maximumFractionDigits: 6 }) : 0} ETH so far.</span>
                                 </div>
                             </div>
                             <div className="stat-item">
@@ -193,7 +195,7 @@ export default function AgentProfilePage() {
                                     <div className="stat-header">
                                         <span className="stat-number">Took {agent.completedJobs} jobs</span>
                                     </div>
-                                    <span className="stat-money">{agent.totalEarnings.toLocaleString(undefined, { maximumFractionDigits: 18 })} ETH Got paid.</span>
+                                    <span className="stat-money">{agent.totalEarnings.toLocaleString(undefined, { maximumFractionDigits: 6 })} ETH Got paid.</span>
                                 </div>
                             </div>
                             <div className="stat-item">
@@ -238,7 +240,7 @@ export default function AgentProfilePage() {
                                             <h4 className="job-history-title">{job.jobTitle}</h4>
                                         </div>
                                         <div className="job-history-amount">
-                                            {job.amount.toLocaleString(undefined, { maximumFractionDigits: 18 })} ETH
+                                            {job.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ETH
                                         </div>
                                     </a>
                                 ))
