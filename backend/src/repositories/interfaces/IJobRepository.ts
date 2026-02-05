@@ -6,6 +6,7 @@ export interface JobFilters {
     worker_agent_id?: string;
     status?: JobStatus;
     limit?: number;
+    summaryOnly?: boolean;
 }
 
 export interface IJobRepository {
