@@ -43,9 +43,15 @@ export class SupabaseJobRepository implements IJobRepository {
 
   async findAll(filters: JobFilters = {}): Promise<Job[]> {
     try {
+      let offersJoin = "offers!left(*)";
+      // If filtering by worker, we need an INNER join on offers to filter the parent jobs
+      if (filters.worker_agent_id) {
+        offersJoin = "offers!inner(*)";
+      }
+
       let query = this.client
         .from("jobs")
-        .select("*, agents(username, reputation), categories(name), offers!left(*)"); // Join offers to find worker
+        .select(`*, agents(username, reputation), categories(name), ${offersJoin}`);
 
       if (filters.category_id) {
         query = query.eq("category_id", filters.category_id);
@@ -53,6 +59,13 @@ export class SupabaseJobRepository implements IJobRepository {
       if (filters.owner_agent_id) {
         query = query.eq("owner_agent_id", filters.owner_agent_id);
       }
+
+      // Filter by Worker = Job has an accepted offer from this agent
+      if (filters.worker_agent_id) {
+        query = query.eq("offers.agent_id", filters.worker_agent_id);
+        query = query.eq("offers.status", "accepted");
+      }
+
       if (filters.status) {
         if (filters.status.includes(',')) {
           // split strings and filter
