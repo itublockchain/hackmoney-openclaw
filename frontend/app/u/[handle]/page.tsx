@@ -9,7 +9,7 @@ import { type AgentProfile } from "../../../types/agent";
 
 interface JobActivity {
     id: string;
-    type: "completed" | "in_progress" | "posted";
+    type: "done" | "submitted" | "posted" | "rejected";
     jobTitle: string;
     category: string;
     amount: number;
@@ -55,9 +55,11 @@ export default function AgentProfilePage() {
                         bio: apiAgent.description || "No bio.",
                         specializations: apiAgent.title ? [apiAgent.title] : [],
                         skills: apiAgent.skills || [],
-                        reputation: Number(apiAgent.reputation || 0),
-                        totalEarnings: 0,
-                        completedJobs: workedJobs.filter((j: any) => j.status === 'completed').length, // eslint-disable-line @typescript-eslint/no-explicit-any
+                        reputation: Number(apiAgent.average_reputation || 0),
+                        totalEarnings: workedJobs
+                            .filter((j: any) => j.status === 'done') // eslint-disable-line @typescript-eslint/no-explicit-any
+                            .reduce((sum: number, j: any) => sum + (Number(j.budget_amount) || 0), 0), // eslint-disable-line @typescript-eslint/no-explicit-any
+                        completedJobs: workedJobs.filter((j: any) => j.status === 'done').length, // eslint-disable-line @typescript-eslint/no-explicit-any
                         activeJobs: postedJobs.length,
                         avatar: apiAgent.metadata?.avatar || "🤖",
                         isVerified: apiAgent.metadata?.verified || false,
@@ -66,7 +68,7 @@ export default function AgentProfilePage() {
                         karma: 0,
                         accountAge: "New",
                         stats: { posts: postedJobs.length, comments: 0, submolts: 0 },
-                        agentScore: (apiAgent.reputation || 0) * 20
+                        agentScore: (apiAgent.average_reputation || 0) * 20
                     };
 
                     setAgent(profile);
@@ -75,7 +77,7 @@ export default function AgentProfilePage() {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const history = workedJobs.map((job: any) => ({
                         id: job.id,
-                        type: job.status === 'completed' ? 'completed' : 'in_progress',
+                        type: job.status,
                         jobTitle: job.title,
                         category: job.categories?.name || "General",
                         amount: job.budget_amount || 0,
@@ -126,8 +128,9 @@ export default function AgentProfilePage() {
         );
     }
 
-    // Calculate failure rate (mock for now as we don't strictly track failures)
-    const failedJobs = 0;
+    // Calculate failure rate
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const failedJobs = historyJobs.filter(j => j.type === 'rejected').length;
     const successfulJobs = agent.completedJobs;
 
     return (
@@ -159,7 +162,7 @@ export default function AgentProfilePage() {
                             <div className="agent-name-row">
                                 <div>
                                     <span className="agent-label">agent name:</span>
-                                    <h2 className="agent-name">{agent.formattedHandle}.moltlancer.eth</h2>
+                                    <h2 className="agent-name">{agent.displayName} - @{agent.formattedHandle}</h2>
                                 </div>
                                 <div className="rep-badge">
                                     <span className="rep-label">REP:</span>
@@ -180,34 +183,45 @@ export default function AgentProfilePage() {
                             <div className="stat-item">
                                 <span className="stat-dot green"></span>
                                 <div className="stat-content">
-                                    <span className="stat-number">{agent.activeJobs}</span>
-                                    <span className="stat-label">jobs created</span>
+                                    <div className="stat-header">
+                                        <span className="stat-number">{agent.activeJobs}</span>
+                                        <span className="stat-label">jobs created</span>
+                                    </div>
+                                    <span className="stat-money">Paid {agent.totalEarnings > 0 ? Math.floor(agent.totalEarnings * 0.1).toLocaleString(undefined, { maximumFractionDigits: 6 }) : 0} ETH so far.</span>
                                 </div>
-                                <span className="stat-money">Paid ${agent.totalEarnings > 0 ? Math.floor(agent.totalEarnings * 0.1).toLocaleString() : 0} so far.</span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-dot orange"></span>
                                 <div className="stat-content">
-                                    <span className="stat-number">Took {agent.completedJobs} jobs</span>
+                                    <div className="stat-header">
+                                        <span className="stat-number">Took {agent.completedJobs} jobs</span>
+                                    </div>
+                                    <span className="stat-money">{agent.totalEarnings.toLocaleString(undefined, { maximumFractionDigits: 6 })} ETH Got paid.</span>
                                 </div>
-                                <span className="stat-money">${agent.totalEarnings.toLocaleString()} Got paid.</span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-dot black"></span>
                                 <div className="stat-content">
-                                    <span className="stat-number">{successfulJobs} jobs done</span>
+                                    <div className="stat-header">
+                                        <span className="stat-number">{successfulJobs} jobs done</span>
+                                    </div>
+                                    <span className="stat-money empty">-</span>
                                 </div>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-dot red"></span>
                                 <div className="stat-content">
-                                    <span className="stat-number">{failedJobs} jobs failure</span>
+                                    <div className="stat-header">
+                                        <span className="stat-number">{failedJobs}</span>
+                                        <span className="stat-label">jobs rejected</span>
+                                    </div>
+                                    <span className="stat-money empty">-</span>
                                 </div>
                             </div>
                         </div>
-
-
                     </div>
+
+
 
                     {/* Job History / Posts Section */}
                     <div className="profile-posts-section">
@@ -218,7 +232,7 @@ export default function AgentProfilePage() {
                                 historyJobs.map((job) => (
                                     <a key={job.id} href={job.link} className="job-history-card">
                                         <div className="job-history-status">
-                                            <span className={`status-indicator ${job.type}`}></span>
+                                            <span className={`status-indicator {job.type}`}></span>
                                         </div>
                                         <div className="job-history-content">
                                             <div className="job-history-meta">
@@ -228,7 +242,11 @@ export default function AgentProfilePage() {
                                             <h4 className="job-history-title">{job.jobTitle}</h4>
                                         </div>
                                         <div className="job-history-amount">
-                                            ${job.amount.toLocaleString()}
+                                            {job.type === 'rejected' ? (
+                                                <span style={{ color: '#ef4444' }}>REJECTED</span>
+                                            ) : (
+                                                `${job.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ETH`
+                                            )}
                                         </div>
                                     </a>
                                 ))
@@ -244,7 +262,7 @@ export default function AgentProfilePage() {
                 <div className="footer-links">
                     <a href="/terms" className="footer-link">Terms</a>
                     <a href="/privacy" className="footer-link">Privacy</a>
-                    <a href="https://x.com/mattprd" className="footer-link">@mattprd</a>
+                    <a href="https://x.com/moltlancer" className="footer-link">@moltlancer</a>
                 </div>
             </footer>
 
@@ -361,8 +379,8 @@ export default function AgentProfilePage() {
 
                 /* Job Stats Row */
                 .job-stats-row {
-                    display: flex;
-                    flex-wrap: wrap;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                     gap: 16px;
                     padding-bottom: 20px;
                     border-bottom: 1px solid var(--border-color);
@@ -371,15 +389,23 @@ export default function AgentProfilePage() {
 
                 .stat-item {
                     display: flex;
-                    align-items: center;
-                    gap: 8px;
+                    align-items: flex-start;
+                    gap: 12px;
+                    padding: 8px;
+                    border-radius: 8px;
+                    transition: background 0.2s;
+                }
+
+                .stat-item:hover {
+                    background: var(--surface-bg);
                 }
 
                 .stat-dot {
-                    width: 14px;
-                    height: 14px;
+                    width: 10px;
+                    height: 10px;
                     border-radius: 50%;
                     flex-shrink: 0;
+                    margin-top: 6px;
                 }
 
                 .stat-dot.green { background: #22c55e; }
@@ -390,23 +416,39 @@ export default function AgentProfilePage() {
                 .stat-content {
                     display: flex;
                     flex-direction: column;
+                    gap: 4px;
+                }
+
+                .stat-header {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 6px;
+                    flex-wrap: wrap;
                 }
 
                 .stat-number {
-                    font-size: 13px;
-                    font-weight: 600;
+                    font-size: 15px;
+                    font-weight: 700;
                     color: var(--text-primary);
                 }
 
                 .stat-label {
-                    font-size: 11px;
+                    font-size: 12px;
                     color: var(--text-muted);
+                    font-weight: 500;
+                    text-transform: uppercase;
                 }
 
                 .stat-money {
                     font-size: 12px;
                     color: #22c55e;
-                    font-weight: 500;
+                    font-weight: 600;
+                    font-family: monospace;
+                }
+
+                .stat-money.empty {
+                    color: transparent;
+                    user-select: none;
                 }
 
                 /* Profile Sections */
@@ -514,9 +556,10 @@ export default function AgentProfilePage() {
                     border-radius: 50%;
                 }
 
-                .status-indicator.completed { background: #22c55e; }
-                .status-indicator.in_progress { background: #f59e0b; }
+                .status-indicator.done { background: #22c55e; }
+                .status-indicator.submitted { background: #f59e0b; }
                 .status-indicator.posted { background: #3b82f6; }
+                .status-indicator.rejected { background: #ef4444; }
 
                 .job-history-content {
                     flex: 1;

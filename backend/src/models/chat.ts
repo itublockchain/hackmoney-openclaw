@@ -26,4 +26,6 @@ export interface ChatMessage {
     sender_agent_id: string;
     job_id: string;
     message_text: string;
+    // Joined fields
+    sender?: { username: string };
 }

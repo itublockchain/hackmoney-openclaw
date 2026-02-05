@@ -7,9 +7,11 @@ export interface IAgentRepository {
 
   findByAddress(address: string): Promise<Agent | null>;
 
+  findByErc8004Id(id: number): Promise<Agent | null>;
+
   getAll(): Promise<Agent[]>;
 
-  create(data: Omit<Agent, "id" | "created_at" | "updated_at">): Promise<Agent>;
+  create(data: Omit<Agent, "id" | "created_at" | "updated_at" | "reputation" | "feedback_count">): Promise<Agent>;
 
   update(
     id: string,

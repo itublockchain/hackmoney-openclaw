@@ -34,6 +34,8 @@ export interface Agent {
     description?: string;
     wallet_address?: string;
     erc8004_id?: number;
+    reputation: number;
+    feedback_count: number;
     metadata: Record<string, any>;
     created_at: string;
     updated_at: string;

@@ -1,176 +1,392 @@
 import type { Request, Response } from "express";
 import JobService from "@/services/JobService";
 import type { JobStatus } from "@/models/job";
+import CategoryRepository from "@/repositories/CategoryRepository";
+import config from "@/config";
 
 export default class JobController {
-    static async getAllJobs(req: Request, res: Response) {
-        try {
-            const { sort, category_id, owner_agent_id, worker_agent_id, status, limit } = req.query;
-            const jobs = await JobService.getAllJobs(
-                sort as "latest" | "budget",
-                {
-                    category_id: category_id as string,
-                    owner_agent_id: owner_agent_id as string,
-                    worker_agent_id: worker_agent_id as string,
-                    status: status as JobStatus,
-                    limit: limit ? parseInt(limit as string) : undefined
-                },
-            );
-            res.json({ success: true, jobs });
-        } catch (error) {
-            console.error("Error fetching jobs:", error);
-            res.status(500).json({ success: false, error: "Failed to fetch jobs" });
+  static async getAllJobs(req: Request, res: Response) {
+    try {
+      const {
+        sort,
+        category_id,
+        owner_agent_id,
+        worker_agent_id,
+        status,
+        limit,
+      } = req.query;
+      const jobs = await JobService.getAllJobs(sort as "latest" | "budget", {
+        category_id: category_id as string,
+        owner_agent_id: owner_agent_id as string,
+        worker_agent_id: worker_agent_id as string,
+        status: status as JobStatus,
+        limit: limit ? parseInt(limit as string) : undefined,
+      });
+      res.json({ success: true, jobs });
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch jobs" });
+    }
+  }
+
+  static async getJobById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        res.status(400).json({ success: false, error: "Job ID is required" });
+        return;
+      }
+
+      const job = await JobService.getJobById(id as string);
+      if (!job) {
+        res.status(404).json({ success: false, error: "Job not found" });
+        return;
+      }
+
+      res.json({ success: true, job });
+    } catch (error) {
+      console.error("Error fetching job:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch job" });
+    }
+  }
+
+  static async createJob(req: Request, res: Response) {
+    try {
+      const {
+        title,
+        description_md,
+        description,
+        requirements_md,
+        budget_amount,
+        budget,
+        category_id,
+        category,
+      } = req.body;
+
+      if (!title) {
+        res.status(400).json({
+          success: false,
+          error: "Missing required field: title",
+        });
+        return;
+      }
+
+      const finalDescription = description_md || description;
+      if (!finalDescription) {
+        res.status(400).json({
+          success: false,
+          error: "Missing required field: description_md (or description)",
+        });
+        return;
+      }
+
+      if (!requirements_md) {
+        res.status(400).json({
+          success: false,
+          error: "Missing required field: requirements_md",
+        });
+        return;
+      }
+
+      const finalBudget = JobController.parseBudget(budget_amount, budget);
+      let finalCategoryId = JobController.validateCategoryId(
+        category_id || category
+      );
+
+      if (!finalCategoryId && (category_id || category)) {
+        console.log(`Looking up category by name: ${category_id || category}`);
+
+        // Try exact match or case-insensitive search if repository supports it
+        // For now, rely on findByName (exact match usually)
+        const cat = await CategoryRepository.findByName(category_id || category);
+
+        if (cat) {
+          finalCategoryId = cat.id;
+        } else {
+          console.warn(`Category not found by name: ${category_id || category}`);
+          res.status(400).json({
+            success: false,
+            error: `Category not found: ${category_id || category}. Please check the category list.`
+          });
+          return;
         }
+      }
+
+      if (!finalCategoryId) {
+        res.status(400).json({
+          success: false,
+          error: "Category is required. Please provide a valid category_id or category name."
+        });
+        return;
+      }
+      const owner_agent_id = JobController.getOwnerAgentId(req);
+
+      const job = await JobService.createJob({
+        owner_agent_id,
+        title,
+        description_md: description_md || description,
+        requirements_md,
+        budget_amount: finalBudget,
+        category_id: finalCategoryId,
+      });
+
+      res.status(201).json({ success: true, job });
+    } catch (error) {
+      console.error("Error creating job:", error);
+      res
+        .status(501)
+        .json({
+          success: false,
+          error: "Failed to create job",
+          details: error,
+        });
+      return;
     }
+  }
 
-    static async getJobById(req: Request, res: Response) {
-        try {
-            const { id } = req.params;
-            if (!id) {
-                res.status(400).json({ success: false, error: "Job ID is required" });
-                return;
-            }
-
-            const job = await JobService.getJobById(id as string);
-            if (!job) {
-                res.status(404).json({ success: false, error: "Job not found" });
-                return;
-            }
-
-            res.json({ success: true, job });
-        } catch (error) {
-            console.error("Error fetching job:", error);
-            res.status(500).json({ success: false, error: "Failed to fetch job" });
-        }
+  static async getDoneJobs(req: Request, res: Response) {
+    try {
+      // "done" usually means 'submitted' (waiting for approval) or 'approved' (payment completed)
+      // The user requested "lists all the job that completed"
+      const jobs = await JobService.getAllJobs("latest", {
+        status: "reviewing",
+      });
+      res.json({ success: true, jobs });
+    } catch (error) {
+      console.error("Error fetching done jobs:", error);
+      res
+        .status(500)
+        .json({ success: false, error: "Failed to fetch done jobs" });
     }
+  }
 
-    static async createJob(req: Request, res: Response) {
-        try {
-            const {
-                title,
-                description_md,
-                description,
-                requirements_md,
-                budget_amount,
-                budget,
-                category_id,
-                category
-            } = req.body;
+  private static async handleStatusChange(
+    req: Request,
+    res: Response,
+    newStatus: JobStatus
+  ) {
+    try {
+      const { id } = req.params;
+      const agentId = (req as any).agent?.id;
 
-            if (!title) {
-                res.status(400).json({
-                    success: false,
-                    error: "Missing required field: title",
-                });
-                return;
-            }
+      if (!id) {
+        res.status(400).json({ success: false, error: "Job ID is required" });
+        return;
+      }
 
-            // Flexibly handle budget
-            let finalBudget = budget_amount;
-            if (!finalBudget && budget) {
-                if (typeof budget === 'object') {
-                    finalBudget = budget.max || budget.min || budget.amount;
-                } else {
-                    finalBudget = parseFloat(budget);
-                }
-            }
+      const job = await JobService.getJobById(id as string);
+      if (!job) {
+        res.status(404).json({ success: false, error: "Job not found" });
+        return;
+      }
 
-            // Flexibly handle category (UUID validation)
-            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-            let finalCategoryId = category_id || category;
-            if (finalCategoryId && !uuidRegex.test(finalCategoryId)) {
-                // If it's not a UUID, for now we skip setting it to avoid DB error
-                // In a future refactor, we could look up the category ID by name
-                finalCategoryId = undefined;
-            }
+      const isOwner = job.owner_agent_id === agentId;
+      const isWorker = job.worker_agent_id === agentId;
 
-            // In a real app, owner_user_id would come from authenticated user session
-            const owner_agent_id = (req as any).user?.id || (req as any).agent?.id || "00000000-0000-0000-0000-000000000000";
+      const canUpdate = isOwner || isWorker;
 
-            const job = await JobService.createJob({
-                owner_agent_id,
-                title,
-                description_md: description_md || description,
-                requirements_md,
-                budget_amount: finalBudget,
-                category_id: finalCategoryId,
-            });
+      if (!canUpdate) {
+        res
+          .status(403)
+          .json({
+            success: false,
+            error:
+              "Forbidden: Only the job owner or worker can change the status",
+          });
+        return;
+      }
 
-            res.status(201).json({ success: true, job });
-        } catch (error) {
-            console.error("Error creating job:", error);
-            res.status(501).json({ success: false, error: "Failed to create job", details: error });
-            return;
-        }
+      // Status transition logic
+      // For now, simply trust the requested status, or implement state machine checks here
+
+      const updatedJob = await JobService.updateJob(id as string, {
+        status: newStatus,
+      });
+      res.json({ success: true, job: updatedJob });
+    } catch (error) {
+      console.error(`Error changing job status to ${newStatus}:`, error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          error: `Failed to change job status to ${newStatus}`,
+        });
     }
+  }
 
-    static async getDoneJobs(req: Request, res: Response) {
-        try {
-            // "done" usually means 'submitted' (waiting for approval) or 'approved' (payment completed)
-            // The user requested "lists all the job that completed"
-            const jobs = await JobService.getAllJobs("latest", { status: "submitted" });
-            res.json({ success: true, jobs });
-        } catch (error) {
-            console.error("Error fetching done jobs:", error);
-            res.status(500).json({ success: false, error: "Failed to fetch done jobs" });
-        }
+  static async markAsDone(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const agentId = (req as any).agent?.id;
+
+      if (!id) {
+        res.status(400).json({ success: false, error: "Job ID is required" });
+        return;
+      }
+
+      const job = await JobService.getJobById(id as string);
+      if (!job) {
+        res.status(404).json({ success: false, error: "Job not found" });
+        return;
+      }
+
+      if (job.worker_agent_id !== agentId) {
+        res.status(403).json({ success: false, error: "Forbidden: Only the worker can mark the job as done." });
+        return;
+      }
+
+      const updatedJob = await JobService.updateJob(id as string, {
+        status: "done",
+      });
+      res.json({ success: true, job: updatedJob });
+    } catch (error) {
+      console.error("Error marking job as done:", error);
+      res.status(500).json({ success: false, error: "Failed to mark job as done" });
     }
+  }
 
-    private static async handleStatusChange(req: Request, res: Response, newStatus: JobStatus) {
-        try {
-            const { id } = req.params;
-            const agentId = (req as any).agent?.id;
+  static async agreeJob(req: Request, res: Response) {
+    return JobController.handleStatusChange(req, res, "agreed");
+  }
 
-            if (!id) {
-                res.status(400).json({ success: false, error: "Job ID is required" });
-                return;
-            }
+  static async submitWork(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { submission } = req.body;
+      const agentId = (req as any).agent?.id;
 
-            const job = await JobService.getJobById(id as string);
-            if (!job) {
-                res.status(404).json({ success: false, error: "Job not found" });
-                return;
-            }
+      if (!id) {
+        res.status(400).json({ success: false, error: "Job ID is required" });
+        return;
+      }
 
-            const isOwner = job.owner_agent_id === agentId;
-            const isWorker = job.worker_agent_id === agentId;
+      const job = await JobService.getJobById(id as string);
+      if (!job) {
+        res.status(404).json({ success: false, error: "Job not found" });
+        return;
+      }
 
-            const canUpdate = isOwner || isWorker;
+      const isWorker = job.worker_agent_id === agentId;
+      if (!isWorker) {
+        res.status(403).json({ success: false, error: "Forbidden: Only the worker can submit work." });
+        return;
+      }
 
-            if (!canUpdate) {
-                res.status(403).json({ success: false, error: "Forbidden: Only the job owner or worker can change the status" });
-                return;
-            }
+      if (job.status !== "funded") {
+        res.status(400).json({ success: false, error: "Job must be in 'funded' state to submit work." });
+        return;
+      }
 
-            // If status is 'submitted', force it to 'awaiting'
-            const statusToUpdate = newStatus === 'submitted' ? 'awaiting' : "submitted";
+      const submissionStr = typeof submission === 'string' ? submission : JSON.stringify(submission);
+      if (!submissionStr || !submissionStr.includes("submission.md")) {
+        res.status(400).json({ success: false, error: "Submission must include 'submission.md'." });
+        return;
+      }
 
-            const updatedJob = await JobService.updateJob(id as string, { status: statusToUpdate });
-            res.json({ success: true, job: updatedJob });
-        } catch (error) {
-            console.error(`Error changing job status to ${newStatus}:`, error);
-            res.status(500).json({ success: false, error: `Failed to change job status to ${newStatus}` });
-        }
+      const updatedJob = await JobService.updateJob(id as string, {
+        status: "reviewing",
+        submission: submission
+      });
+      res.json({ success: true, job: updatedJob });
+    } catch (error) {
+      console.error("Error submitting work:", error);
+      res.status(500).json({ success: false, error: "Failed to submit work" });
     }
+  }
 
-    static async markAsDone(req: Request, res: Response) {
-        return JobController.handleStatusChange(req, res, 'awaiting');
-    }
+  static async rejectWork(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const agent = (req as any).agent;
 
-    static async approveJob(req: Request, res: Response) {
-        return JobController.handleStatusChange(req, res, 'approved');
-    }
+      if (!agent || !agent.wallet_address) {
+        res.status(401).json({ success: false, error: "Unauthorized: Agent identification required" });
+        return;
+      }
 
-    static async declineJob(req: Request, res: Response) {
-        return JobController.handleStatusChange(req, res, 'declined');
-    }
+      // Check if agent is whitelisted
+      const isWhitelisted = config.WHITELISTED_AGENTS.some(
+        (addr: string) => addr.toLowerCase() === agent.wallet_address.toLowerCase()
+      );
 
-    static async openJob(req: Request, res: Response) {
-        return JobController.handleStatusChange(req, res, 'open');
-    }
+      if (!isWhitelisted) {
+        res.status(403).json({ success: false, error: "Forbidden: Only whitelisted agents can reject work." });
+        return;
+      }
 
-    static async awaitJob(req: Request, res: Response) {
-        return JobController.handleStatusChange(req, res, 'awaiting');
+      if (!id) {
+        res.status(400).json({ success: false, error: "Job ID is required" });
+        return;
+      }
+
+      const job = await JobService.getJobById(id as string);
+      if (!job) {
+        res.status(404).json({ success: false, error: "Job not found" });
+        return;
+      }
+
+      // Optionally check if job is in a state that can be rejected (e.g., 'reviewing' or 'done' or 'submitted')
+      // For now, assuming rejection is possible from appropriate states. 
+      // Typically rejection happens after submission (reviewing) or potentially after funds are released if there's a dispute?
+      // Assuming 'reviewing' state for now as 'rejectWork' sounds like rejecting a submission.
+
+      const updatedJob = await JobService.updateJob(id as string, {
+        status: "rejected",
+      });
+
+      res.json({ success: true, job: updatedJob });
+    } catch (error) {
+      console.error("Error rejecting work:", error);
+      res.status(500).json({ success: false, error: "Failed to reject work" });
     }
+  }
+
+
+
+  static async reviewJob(req: Request, res: Response) {
+    return JobController.handleStatusChange(req, res, "reviewing");
+  }
+
+  static async openJob(req: Request, res: Response) {
+    return JobController.handleStatusChange(req, res, "open");
+  }
+
+  private static parseBudget(
+    budget_amount: any,
+    budget: any
+  ): number | undefined {
+    let finalBudget = budget_amount;
+    if (!finalBudget && budget) {
+      if (typeof budget === "object") {
+        finalBudget = budget.max || budget.min || budget.amount;
+      } else {
+        finalBudget = budget;
+      }
+    }
+    // Ensure it's a number if it's a string, protecting against "0" string if relevant, but mainly just parsing float.
+    if (typeof finalBudget === 'string') {
+      const parsed = parseFloat(finalBudget);
+      if (!isNaN(parsed)) {
+        finalBudget = parsed;
+      }
+    }
+    return finalBudget;
+  }
+
+  private static validateCategoryId(categoryId: any): string | undefined {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (categoryId && uuidRegex.test(categoryId)) {
+      return categoryId;
+    }
+    return undefined;
+  }
+
+  private static getOwnerAgentId(req: Request): string {
+    return (
+      (req as any).user?.id ||
+      (req as any).agent?.id ||
+      "00000000-0000-0000-0000-000000000000"
+    );
+  }
 }
-

@@ -65,7 +65,7 @@ router.get("/", CategoryController.getAllCategories);
  *       401:
  *         description: Unauthorized
  */
-router.post("/", authMiddleware, CategoryController.createCategory);
+// router.post("/", authMiddleware, CategoryController.createCategory);
 
 /**
  * @swagger

@@ -49,7 +49,7 @@ router.get("/", JobController.getAllJobs);
  *     tags: [Jobs]
  *     responses:
  *       200:
- *         description: List of jobs with status 'submitted'
+ *         description: List of jobs with status 'reviewing'
  */
 router.get("/done", JobController.getDoneJobs);
 
@@ -73,6 +73,7 @@ router.get("/done", JobController.getDoneJobs);
  *         description: Job not found
  */
 router.get("/:id", JobController.getJobById);
+
 
 /**
  * @swagger
@@ -116,9 +117,9 @@ router.post("/", authMiddleware, JobController.createJob);
 
 /**
  * @swagger
- * /api/v1/jobs/{id}/done:
+ * /api/v1/jobs/{id}/agree:
  *   patch:
- *     summary: Mark job as done (submitted)
+ *     summary: Agree to job offer
  *     tags: [Jobs]
  *     security:
  *       - bearerAuth: []
@@ -130,9 +131,77 @@ router.post("/", authMiddleware, JobController.createJob);
  *           type: string
  *     responses:
  *       200:
- *         description: Job marked as done
+ *         description: Job agreed
  */
-router.patch("/:id/done", authMiddleware, JobController.markAsDone);
+router.patch("/:id/agree", authMiddleware, JobController.agreeJob);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/submit:
+ *   patch:
+ *     summary: Submit work for job
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               submission:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Work submitted
+ */
+router.patch("/:id/submit", authMiddleware, JobController.submitWork);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/reject:
+ *   patch:
+ *     summary: Reject submitted work
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Work rejected
+ */
+router.patch("/:id/reject", authMiddleware, JobController.rejectWork);
+
+/**
+ * @swagger
+ * /api/v1/jobs/{id}/open:
+ *   patch:
+ *     summary: Re-open job
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job opened
+ */
+router.patch("/:id/open", authMiddleware, JobController.openJob);
 
 
 export default router;

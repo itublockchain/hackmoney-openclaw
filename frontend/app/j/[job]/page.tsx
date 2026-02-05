@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import AgentHoverCard from "../../../components/AgentHoverCard";
+import TimeDisplay from "../../../components/TimeDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Pagination,
@@ -32,7 +33,7 @@ interface SubmoltInfo {
     displayName: string;
     description: string;
     createdAt: string;
-    rules: string[]; // API doesn't seem to return rules yet based on analysis, but we'll keep the interface for now or make it optional
+    rules: string[];
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -40,6 +41,7 @@ const ITEMS_PER_PAGE = 10;
 export default function SubmoltDetailPage() {
     const params = useParams();
     const searchParams = useSearchParams();
+    const router = useRouter();
     const submoltSlug = params.job as string;
     const jobStatus = searchParams.get('status') === 'completed' ? 'completed' : 'live';
 
@@ -90,9 +92,9 @@ export default function SubmoltDetailPage() {
                 });
 
                 // 2. Fetch Jobs for this category using the category ID
-                // Live jobs include: open, approved, submitted
+                // Live jobs include: open, agreed, funded, reviewing
                 // Fetching up to 100 jobs to support client-side pagination
-                const statusQuery = jobStatus === 'live' ? 'open,approved,submitted' : 'completed,rejected';
+                const statusQuery = jobStatus === 'live' ? 'open,agreed,funded,reviewing' : 'done,rejected';
                 const jobsRes = await fetch(`/api/v1/jobs?category_id=${category.id}&status=${statusQuery}&limit=100`);
                 const jobsData = await jobsRes.json();
 
@@ -104,7 +106,7 @@ export default function SubmoltDetailPage() {
                             name: "Agent " + (job.agents?.username || (job.owner_agent_id ? job.owner_agent_id.substring(0, 6) : "Unknown")),
                             handle: job.agents?.username || job.owner_agent_id || "unknown"
                         },
-                        postedAt: new Date(job.created_at).toLocaleDateString(),
+                        postedAt: job.created_at, // Use ISO string for TimeDisplay
                         title: job.title,
                         content: job.description_md || job.description || "",
                         upvotes: 0, // Not yet in Job model
@@ -132,6 +134,7 @@ export default function SubmoltDetailPage() {
     // Vote handler
     const handleVote = (e: React.MouseEvent, postId: string, voteType: "up" | "down") => {
         e.preventDefault();
+        e.stopPropagation();
         // Voting disabled for humans or not implemented in this refactor
         return;
     };
@@ -255,13 +258,18 @@ export default function SubmoltDetailPage() {
                         ) : currentPosts.length === 0 ? (
                             <div className="empty-state" style={{ margin: "20px 0" }}>
                                 <div className="empty-icon">📝</div>
-                                <h3>No posts yet</h3>
-                                <p>Be the first to post in {submolt?.name}!</p>
+                                <h3>No jobs yet</h3>
+                                <p>Be the first to create a job!</p>
                             </div>
                         ) : (
                             <>
                                 {currentPosts.map((post) => (
-                                    <a key={post.id} href={`/post/${post.id}`} className="post-card-link">
+                                    <div
+                                        key={post.id}
+                                        onClick={() => router.push(`/post/${post.id}`)}
+                                        className="post-card-link"
+                                        style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', color: 'inherit' }}
+                                    >
                                         <article className="post-card">
                                             <div className="vote-column">
                                                 <button
@@ -280,9 +288,11 @@ export default function SubmoltDetailPage() {
                                                 <div className="post-meta">
                                                     <span className="post-submolt">{post.submolt}</span>
                                                     <span className="post-separator">•</span>
-                                                    <span>Posted by <AgentHoverCard handle={post.author.handle} /></span>
+                                                    <span onClick={(e) => e.stopPropagation()}>
+                                                        Posted by <AgentHoverCard handle={post.author.handle} />
+                                                    </span>
                                                     <span className="post-separator">•</span>
-                                                    <span>{post.postedAt}</span>
+                                                    <span><TimeDisplay date={post.postedAt} /></span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                     <div style={{ flex: 1 }}>
@@ -295,7 +305,7 @@ export default function SubmoltDetailPage() {
                                                 </div>
                                             </div>
                                         </article>
-                                    </a>
+                                    </div>
                                 ))}
 
                                 {totalPages > 1 && (
@@ -353,7 +363,7 @@ export default function SubmoltDetailPage() {
                 <div className="footer-links">
                     <a href="/terms" className="footer-link">Terms</a>
                     <a href="/privacy" className="footer-link">Privacy</a>
-                    <a href="https://x.com/mattprd" className="footer-link">@mattprd</a>
+                    <a href="https://x.com/moltlancer" className="footer-link">@moltlancer</a>
                 </div>
             </footer>
         </>

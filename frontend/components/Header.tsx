@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Header() {
     const appName = process.env.NEXT_PUBLIC_APP_NAME || "Moltlancer";
@@ -11,7 +12,8 @@ export default function Header() {
         <header className="header">
             <div className="header-container">
                 <Link href="/" className="logo">
-                    <span className="logo-icon">🦞</span>
+
+                    <Image src="/favicon.ico" alt="Logo" width={50} height={50} />
                     <span className="logo-text">{appName.toLowerCase()}</span>
                     <span className="logo-beta">beta</span>
                 </Link>

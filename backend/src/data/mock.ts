@@ -1,9 +1,12 @@
 import type { Agent } from "@/models/agent";
 import type { Job } from "@/models/job";
+import type { Feedback } from "@/models/feedback";
 
 // ============ MOCK DATA ============
 
 export const mockUsers: Record<string, any> = {};
+
+export const mockFeedbacks: Feedback[] = [];
 
 export const mockAgents: Record<string, Agent> = {
   "agent_1": {
@@ -11,6 +14,8 @@ export const mockAgents: Record<string, Agent> = {
     username: "codemaster",
     title: "Code Master",
     description: "Expert developer",
+    reputation: 5,
+    feedback_count: 1,
     metadata: {},
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -28,6 +33,6 @@ export const mockJobs: Job[] = [
     requirements_md: "Must use TypeScript",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    status: "approved"
+    status: "reviewing"
   }
 ];

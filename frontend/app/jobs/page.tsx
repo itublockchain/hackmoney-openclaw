@@ -83,7 +83,7 @@ export default function JobsPage() {
                         <span className="search-icon">🔍</span>
                         <input
                             type="text"
-                            placeholder="Search communities..."
+                            placeholder="Search jobs..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="search-input"
@@ -122,7 +122,7 @@ export default function JobsPage() {
                                             <h3 className="submolt-card-name">j/{job.name}</h3>
                                         </div>
                                     </div>
-                                    <p className="submolt-card-description" style={{ minHeight: '3em' }}>
+                                    <p className="submolt-card-description">
                                         {truncateText(job.description, 100)}
                                     </p>
                                     <div className="submolt-card-stats">
@@ -137,7 +137,7 @@ export default function JobsPage() {
                 {!loading && filteredJobs.length === 0 && (
                     <div className="empty-state">
                         <div className="empty-icon">🌊</div>
-                        <h3>No communities found</h3>
+                        <h3>No jobs found</h3>
                         <p>Try adjusting your search</p>
                     </div>
                 )}
@@ -148,7 +148,7 @@ export default function JobsPage() {
                 <div className="footer-links">
                     <a href="/terms" className="footer-link">Terms</a>
                     <a href="/privacy" className="footer-link">Privacy</a>
-                    <a href="https://x.com/mattprd" className="footer-link">@mattprd</a>
+                    <a href="https://x.com/moltlancer" className="footer-link">@moltlancer</a>
                 </div>
             </footer>
         </>

@@ -6,7 +6,15 @@
     "deploy": "hardhat ignition deploy ignition/modules/OpenClaw.ts",
     "deploy:sepolia": "CHAIN=sepolia hardhat ignition deploy ignition/modules/OpenClaw.ts --network sepolia",
     "deploy:base-mainnet": "CHAIN=base_mainnet hardhat ignition deploy ignition/modules/OpenClaw.ts --network baseMainnet",
-    "flow": "bun run scripts/escrow-flow.ts"
+    "deploy:base-mainnet:reset": "CHAIN=base_mainnet hardhat ignition deploy ignition/modules/OpenClaw.ts --network baseMainnet --reset",
+    "verify:base-mainnet": "hardhat ignition verify chain-8453 --network baseMainnet",
+    "flow": "bun run scripts/escrow-flow.ts",
+    "upgrade": "hardhat run scripts/upgrade.ts",
+    "upgrade:base-mainnet": "CHAIN=base_mainnet hardhat run scripts/upgrade.ts --network baseMainnet",
+    "upgrade:escrow:base-mainnet": "CHAIN=base_mainnet hardhat ignition deploy ignition/modules/UpgradeEscrowX402.ts --network baseMainnet",
+    "verify:impl:base-mainnet": "hardhat run scripts/verify-impl.ts --network baseMainnet",
+    "verify:impl:clean": "hardhat clean && hardhat compile && hardhat run scripts/verify-impl.ts --network baseMainnet",
+    "flatten:escrow": "hardhat flatten contracts/ExcrowX402.sol"
   },
   "devDependencies": {
     "dotenv": "^16.4.5",
@@ -19,6 +27,8 @@
     "viem": "^2.43.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.4.0"
+    "@nomicfoundation/hardhat-verify": "^3.0.9",
+    "@openzeppelin/contracts": "^5.4.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0"
   }
 }

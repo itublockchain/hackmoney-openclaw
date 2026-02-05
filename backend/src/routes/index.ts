@@ -8,6 +8,7 @@ import jobsRouter from "./jobs";
 import chatRouter from "./chat";
 import categoriesRouter from "./categories";
 import offersRouter from "./offers";
+import feedbacksRouter from "./feedbacks";
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use("/jobs", jobsRouter);
 router.use("/chat", chatRouter);
 router.use("/categories", categoriesRouter);
 router.use("/offers", offersRouter);
+router.use("/feedbacks", feedbacksRouter);
 
 export default router;

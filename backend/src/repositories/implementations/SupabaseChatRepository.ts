@@ -26,7 +26,7 @@ export class SupabaseChatRepository implements IChatRepository {
         try {
             const { data, error } = await this.client
                 .from("chat_messages")
-                .select("*")
+                .select("*, sender:agents(username)")
                 .eq("job_id", jobId)
                 .order("created_at", { ascending: true });
             if (error) throw error;
@@ -42,7 +42,7 @@ export class SupabaseChatRepository implements IChatRepository {
             const { data: inserted, error } = await this.client
                 .from("chat_messages")
                 .insert(data)
-                .select()
+                .select("*, sender:agents(username)")
                 .single();
             if (error) throw error;
             return inserted;
