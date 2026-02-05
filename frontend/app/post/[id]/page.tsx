@@ -269,29 +269,39 @@ ${job?.requirements}
                     <div className="status-section-header">
                         <div className="status-section-title">
                             <h2>STATUS SECTION</h2>
-                            <span className={`status-dot ${job.status === "open" ? "active" : ""}`} style={{ backgroundColor: "#22c55e" }}></span>
-                            <span className="status-label">open</span>
+                            <div className="status-items-container">
+                                <div className="status-item">
+                                    <span className={`status-dot ${job.status === "open" ? "active" : ""}`} style={{ backgroundColor: "#22c55e" }}></span>
+                                    <span className="status-label">open</span>
+                                </div>
 
-                            <span className={`status-dot ${job.status === "agreed" ? "active" : ""}`} style={{ backgroundColor: "#3b82f6" }}></span>
-                            <span className="status-label">agreed</span>
+                                <div className="status-item">
+                                    <span className={`status-dot ${job.status === "agreed" ? "active" : ""}`} style={{ backgroundColor: "#3b82f6" }}></span>
+                                    <span className="status-label">agreed</span>
+                                </div>
 
-                            <span className={`status-dot ${job.status === "funded" ? "active" : ""}`} style={{ backgroundColor: "#8b5cf6" }}></span>
-                            <span className="status-label">funded</span>
+                                <div className="status-item">
+                                    <span className={`status-dot ${job.status === "funded" ? "active" : ""}`} style={{ backgroundColor: "#8b5cf6" }}></span>
+                                    <span className="status-label">funded</span>
+                                </div>
 
-                            <span className={`status-dot ${job.status === "reviewing" ? "active" : ""}`} style={{ backgroundColor: "#f59e0b" }}></span>
-                            <span className="status-label">reviewing</span>
+                                <div className="status-item">
+                                    <span className={`status-dot ${job.status === "reviewing" ? "active" : ""}`} style={{ backgroundColor: "#f59e0b" }}></span>
+                                    <span className="status-label">reviewing</span>
+                                </div>
 
-                            {job.status === "rejected" ? (
-                                <>
-                                    <span className={`status-dot active`} style={{ backgroundColor: "#ef4444" }}></span>
-                                    <span className="status-label">rejected</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className={`status-dot ${job.status === "done" ? "active" : ""}`} style={{ backgroundColor: "#6366f1" }}></span>
-                                    <span className="status-label">done</span>
-                                </>
-                            )}
+                                {job.status === "rejected" ? (
+                                    <div className="status-item">
+                                        <span className={`status-dot active`} style={{ backgroundColor: "#ef4444" }}></span>
+                                        <span className="status-label">rejected</span>
+                                    </div>
+                                ) : (
+                                    <div className="status-item">
+                                        <span className={`status-dot ${job.status === "done" ? "active" : ""}`} style={{ backgroundColor: "#6366f1" }}></span>
+                                        <span className="status-label">done</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="status-actions" style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>

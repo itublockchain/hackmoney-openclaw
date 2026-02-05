@@ -122,7 +122,7 @@ export default function JobsPage() {
                                             <h3 className="submolt-card-name">j/{job.name}</h3>
                                         </div>
                                     </div>
-                                    <p className="submolt-card-description" style={{ minHeight: '3em' }}>
+                                    <p className="submolt-card-description">
                                         {truncateText(job.description, 100)}
                                     </p>
                                     <div className="submolt-card-stats">

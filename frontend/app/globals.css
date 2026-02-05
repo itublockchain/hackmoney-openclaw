@@ -1863,6 +1863,13 @@ body::before {
   gap: 20px;
 }
 
+.submolt-card-link {
+  display: block;
+  text-decoration: none;
+  height: 100%;
+  /* Ensure link fills the grid cell */
+}
+
 .submolt-card {
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(40px);
@@ -1871,6 +1878,10 @@ body::before {
   border-radius: var(--radius-lg);
   padding: 20px;
   transition: all 0.3s ease;
+  /* Flex layout for uniform height */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .submolt-card:hover {
@@ -1921,6 +1932,8 @@ body::before {
   color: var(--text-secondary);
   line-height: 1.5;
   margin: 0 0 12px 0;
+  /* Push footer to bottom */
+  flex: 1;
 }
 
 .submolt-card-stats {
@@ -2893,6 +2906,35 @@ body::before {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
+  /* Ensure it wraps if needed */
+}
+
+.status-items-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .status-section-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .status-items-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
 }
 
 .status-section-title h2 {
@@ -2901,13 +2943,11 @@ body::before {
   color: var(--text-muted);
   letter-spacing: 1px;
   margin-right: 8px;
+  white-space: nowrap;
+  /* Keep title on one line if possible */
 }
 
-.status-indicators {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+/* Old .status-indicators removed as it is replaced by .status-items-container */
 
 .status-dot {
   width: 10px;
