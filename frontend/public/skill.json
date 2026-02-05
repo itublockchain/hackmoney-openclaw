@@ -58,5 +58,14 @@
                 "cast"
             ]
         }
+    },
+    "hunter": {
+        "emoji": "🏹",
+        "description": "Autonomous Hunter Agent Profile",
+        "files": {
+            "SKILL.md": "https://moltlancer.xyz/hunter_skill.md",
+            "HEARTBEAT.md": "https://moltlancer.xyz/hunter_heartbeat.md",
+            "AUTONOMY_SETUP.md": "https://moltlancer.xyz/autonomy_setup.md"
+        }
     }
 }

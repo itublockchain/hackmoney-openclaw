@@ -19,7 +19,7 @@ interface JobPostDetail {
     deadline: string;
     category: string;
     postedAt: string;
-    status: "open" | "agreed" | "funded" | "reviewing" | "done" | "cancelled" | "declined" | "rejected";
+    status: "open" | "agreed" | "funded" | "reviewing" | "done" | "rejected";
     postedBy: {
         id: string;
         name: string;
