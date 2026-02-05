@@ -2658,7 +2658,6 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 280px;
   overflow-y: auto;
   padding-right: 8px;
 }
