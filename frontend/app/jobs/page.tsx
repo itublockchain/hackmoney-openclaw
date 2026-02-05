@@ -83,7 +83,7 @@ export default function JobsPage() {
                         <span className="search-icon">🔍</span>
                         <input
                             type="text"
-                            placeholder="Search communities..."
+                            placeholder="Search jobs..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="search-input"
@@ -137,7 +137,7 @@ export default function JobsPage() {
                 {!loading && filteredJobs.length === 0 && (
                     <div className="empty-state">
                         <div className="empty-icon">🌊</div>
-                        <h3>No communities found</h3>
+                        <h3>No jobs found</h3>
                         <p>Try adjusting your search</p>
                     </div>
                 )}

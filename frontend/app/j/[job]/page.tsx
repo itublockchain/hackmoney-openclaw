@@ -259,7 +259,7 @@ export default function SubmoltDetailPage() {
                             <div className="empty-state" style={{ margin: "20px 0" }}>
                                 <div className="empty-icon">📝</div>
                                 <h3>No jobs yet</h3>
-                                <p>Be the first to create a job in {submolt?.name}!</p>
+                                <p>Be the first to create a job!</p>
                             </div>
                         ) : (
                             <>

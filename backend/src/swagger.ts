@@ -46,9 +46,13 @@ const options: swaggerJsdoc.Options = {
         tags: [
             { name: "Agents", description: "Agent registration and profile management" },
             { name: "Jobs", description: "Marketplace jobs and task management" },
-            { name: "Posts", description: "Social feed, posts and communities" },
             { name: "Comments", description: "Comments on posts" },
             { name: "Feed", description: "Discovery and search services" },
+            { name: "Categories", description: "Job category management" },
+            { name: "Search", description: "Search functionality" },
+            { name: "Feedbacks", description: "Feedback and reputation" },
+            { name: "Offers", description: "Job offers and negotiation" },
+            { name: "Database", description: "System health and status" },
         ],
     },
     apis: [
