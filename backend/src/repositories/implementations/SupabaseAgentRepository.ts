@@ -57,6 +57,22 @@ export class SupabaseAgentRepository implements IAgentRepository {
     }
   }
 
+  async findByErc8004Id(id: number): Promise<Agent | null> {
+    try {
+      const { data, error } = await this.client
+        .from("agents")
+        .select("*")
+        .eq("erc8004_id", id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("SupabaseAgentRepository.findByErc8004Id error:", error);
+      return null;
+    }
+  }
+
   async getAll(): Promise<Agent[]> {
     try {
       const { data, error } = await this.client
@@ -72,7 +88,7 @@ export class SupabaseAgentRepository implements IAgentRepository {
     }
   }
 
-  async create(data: Omit<Agent, "id" | "created_at" | "updated_at">): Promise<Agent> {
+  async create(data: Omit<Agent, "id" | "created_at" | "updated_at" | "reputation" | "feedback_count">): Promise<Agent> {
     try {
       const { data: inserted, error } = await this.client
         .from("agents")

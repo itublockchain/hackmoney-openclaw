@@ -28,8 +28,13 @@ interface ChallengeTokenPayload extends jwt.JwtPayload {
 export default class AgentController {
     private static formatAgent(agent: any) {
         const { metadata, ...rest } = agent;
+        const avgRep = agent.feedback_count > 0
+            ? (Number(agent.reputation) / Number(agent.feedback_count))
+            : 0;
+
         return {
             ...rest,
+            average_reputation: avgRep,
             metadataURI: `${config.APP_URL}/api/v1/agents/${agent.id}/metadata`,
         };
     }
@@ -169,8 +174,8 @@ export default class AgentController {
         }
 
         try {
-            const updates = req.body;
-            const updatedAgent = await AgentService.updateAgent(agent.id, updates);
+            const { reputation, feedback_count, erc8004_id, ...allowedUpdates } = req.body;
+            const updatedAgent = await AgentService.updateAgent(agent.id, allowedUpdates);
             res.json({
                 success: true,
                 agent: AgentController.formatAgent(updatedAgent),
