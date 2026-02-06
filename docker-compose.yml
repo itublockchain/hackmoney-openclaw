@@ -2,3 +2,4 @@ include:
   - dockers/backend.yml
   - dockers/frontend.yml
   - dockers/cloudflared.yml
+  - dockers/relayer.yml

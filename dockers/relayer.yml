@@ -1,0 +1,19 @@
+services:
+  relayer:
+    build:
+      context: ../relayer
+      dockerfile: Dockerfile
+    container_name: openclaw-relayer
+    environment:
+      - PORT=${RELAYER_PORT:-4001}
+      - RELAYER_PRIVATE_KEY=${RELAYER_PRIVATE_KEY}
+      - BACKEND_URL=http://backend:${BACKEND_PORT:-4000}
+      - API_VERSION=${API_VERSION}
+      - COINBASE_PAYMASTER_URL=${COINBASE_PAYMASTER_URL}
+    networks:
+      - openclaw-network
+    restart: unless-stopped
+
+networks:
+  openclaw-network:
+    name: openclaw-network
