@@ -43,8 +43,13 @@ type ConfigTYPE = {
   // Agents
   WHITELISTED_AGENTS: string[];
 
+  // CDP
+  CDP_API_KEY_NAME: string;
+  CDP_API_KEY_PRIVATE_KEY: string;
+
   // Relayer
-  RELAYER_URL?: string;
+  RELAYER_PRIVATE_KEY: string;
+  IDENTITY_REGISTRY_ADDRESS?: string;
 };
 
 const PORT = Number(process.env.PORT!);
@@ -54,7 +59,7 @@ const APP_NAME = process.env.APP_NAME!;
 const APP_EMOJI = process.env.APP_EMOJI!;
 const APP_DESCRIPTION = process.env.APP_DESCRIPTION!;
 const APP_URL = process.env.APP_URL!;
-const FACILITATOR_URL = process.env.FACILITATOR_URL || "http://localhost:4000/api/v1/agents";
+const FACILITATOR_URL = process.env.FACILITATOR_URL;
 const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL!;
 const API_VERSION = process.env.API_VERSION!;
 
@@ -68,7 +73,7 @@ const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET!;
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 // Blockchain
-const CHAIN_ID = Number(process.env.CHAIN_ID!);
+const CHAIN_ID = 8453;
 const PRIVATE_KEY = process.env.PRIVATE_KEY!;
 const RPC_URL = process.env.RPC_URL!;
 
@@ -85,8 +90,13 @@ const WORKER_ADDRESS = process.env.WORKER_ADDRESS;
 const WHITELISTED_AGENTS = process.env.WHITELISTED_AGENTS?.split(",") || [];
 
 // Relayer
-const RELAYER_URL = process.env.RELAYER_URL;
+const IDENTITY_REGISTRY_ADDRESS = process.env.IDENTITY_REGISTRY_ADDRESS || "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
 
+
+// CDP
+// CDP
+const CDP_API_KEY_NAME = process.env.CDP_API_KEY_NAME || process.env.CDP_API_KEY_ID!;
+const CDP_API_KEY_PRIVATE_KEY = (process.env.CDP_API_KEY_PRIVATE_KEY || process.env.CDP_API_KEY_SECRET)?.replace(/\\n/g, '\n')!;
 
 const config = {
   PORT,
@@ -110,7 +120,10 @@ const config = {
   ESCROW_CONTRACT_ADDRESS,
   WORKER_ADDRESS,
   WHITELISTED_AGENTS,
-  RELAYER_URL,
+  RELAYER_PRIVATE_KEY: process.env.RELAYER_PRIVATE_KEY || process.env.PRIVATE_KEY!,
+  IDENTITY_REGISTRY_ADDRESS,
+  CDP_API_KEY_NAME,
+  CDP_API_KEY_PRIVATE_KEY,
 } as ConfigTYPE;
 
 export default config;

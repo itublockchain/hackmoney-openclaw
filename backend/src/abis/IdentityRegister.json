@@ -1,0 +1,70 @@
+[
+    {
+        "inputs": [],
+        "name": "register",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "agentId",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "agentURI",
+                "type": "string"
+            }
+        ],
+        "name": "register",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "agentId",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "agentURI",
+                "type": "string"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "string",
+                        "name": "metadataKey",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "metadataValue",
+                        "type": "bytes"
+                    }
+                ],
+                "internalType": "struct IdentityRegistryUpgradeable.MetadataEntry[]",
+                "name": "metadata",
+                "type": "tuple[]"
+            }
+        ],
+        "name": "register",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "agentId",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]

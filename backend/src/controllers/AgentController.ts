@@ -8,16 +8,19 @@ import { SiweMessage } from "siwe";
 import { supabase } from "@/lib/supabase";
 
 import { base } from "viem/chains";
+
 import {
     createPublicClient,
     http,
     verifyMessage,
     keccak256,
     toBytes,
+    encodeFunctionData,
     type TransactionReceipt,
-    type Log,
 } from "viem";
 import { ethers } from "ethers";
+
+import { relayService } from "@/services/RelayService";
 
 interface ChallengeTokenPayload extends jwt.JwtPayload {
     address: string;
@@ -92,7 +95,7 @@ export default class AgentController {
 
     static async registerAgent(req: Request, res: Response) {
         try {
-            const { username, name, title, description, wallet_address } = req.body;
+            const { username, name, title, description, wallet_address, authorization } = req.body;
 
             const finalUsername = username || name;
             const finalWalletAddress = wallet_address;
@@ -114,20 +117,105 @@ export default class AgentController {
                 return;
             }
 
+            // Check if agent already exists locally
+            const existingAgent = await AgentService.getAgentByAddress(finalWalletAddress);
+            if (existingAgent) {
+                res.status(409).json({ success: false, error: "Agent with this wallet address already exists" });
+                return;
+            }
+            const existingUsername = await AgentService.getAgentByUsername(finalUsername);
+            if (existingUsername) {
+                res.status(409).json({ success: false, error: "Agent with this username already exists" });
+                return;
+            }
+
+            // 1. Create agent in DB first (without ERC8004 ID)
             const agent = await AgentService.registerAgent({
                 username: finalUsername,
                 title,
                 description,
                 wallet_address: finalWalletAddress,
-                erc8004_id: undefined,
+                erc8004_id: undefined, // Initially undefined
                 metadata: {},
             });
 
-            // Calculate full ERC8004 metadata and persist it as the main metadata object
-            const fullMetadata = AgentService.generateAgentMetadata(agent);
-            const updatedAgent = await AgentService.updateAgent(agent.id, {
-                metadata: fullMetadata,
-            });
+            // Generate full metadata immediately
+            // This ensures the metadata endpoint returns valid data immediately for the Relayer/Contract
+            const generatedMetadata = AgentService.generateAgentMetadata(agent);
+            // Update Agent with full metadata
+            const updatedAgent = await AgentService.updateAgent(agent.id, { metadata: generatedMetadata });
+
+            // 2. Prepare for On-Chain Registration via Relayer
+            let txHash: string | undefined;
+
+            if (req.body.rawAuthHex || authorization) {
+                if (!config.IDENTITY_REGISTRY_ADDRESS) {
+                    res.status(500).json({ success: false, error: "Identity Registry Address not configured" });
+                    return;
+                }
+
+                console.log(`Processing EIP-7702 Registration for ${finalWalletAddress}...`);
+
+                // 2a. Encode executeRegister call for the delegate contract
+                const agentURI = `${config.APP_URL}/api/v1/agents/${agent.id}/metadata`;
+                const DELEGATE_ABI = [
+                    {
+                        "inputs": [{ "internalType": "string", "name": "agentURI", "type": "string" }],
+                        "name": "executeRegister",
+                        "outputs": [{ "internalType": "uint256", "name": "agentId", "type": "uint256" }],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    }
+                ];
+
+                const calldata = encodeFunctionData({
+                    abi: DELEGATE_ABI,
+                    functionName: "executeRegister",
+                    args: [agentURI]
+                });
+
+                // User requested ONLY delegation check for now. Sending empty data to trigger receive()
+                // const calldata = "0x";
+
+                try {
+                    // Use the internal RelayService instead of an external fetch
+                    txHash = await relayService.relayWithCast({
+                        to: finalWalletAddress as `0x${string}`,
+                        rawAuthHex: (req.body.rawAuthHex || (typeof authorization === 'string' ? authorization : undefined)) as string,
+                        data: calldata
+                    });
+
+                    console.log(`Registration Tx Finalized: ${txHash}`);
+
+                    // 2b. Automatically sync identity since finalization is already handled by relayService
+                    // DISABLED per user request for simplified flow
+                    /*
+                    if (txHash) {
+                        console.log(`Auto-syncing identity for agent ${agent.id}...`);
+                        const tokenId = await AgentController.fetchTokenIdFromReceipt(txHash);
+                        if (tokenId !== null) {
+                            await AgentService.updateAgent(agent.id, { erc8004_id: tokenId });
+                            console.log(`Agent ${agent.id} synchronized with on-chain ID: ${tokenId}`);
+                        } else {
+                            console.warn(`Register event not found for tx ${txHash}. Manual sync might be needed.`);
+                        }
+                    }
+                    */
+
+                } catch (chainError: any) {
+                    console.error("On-chain registration failed:", chainError);
+                    res.status(502).json({
+                        success: false,
+                        error: "Internal registration failed",
+                        details: chainError.message,
+                        agent: AgentController.formatAgent(agent)
+                    });
+                    return;
+                }
+            }
+
+            // Agent is already updated with full metadata above
+
 
             const finalAgent = updatedAgent || agent;
 
@@ -138,10 +226,11 @@ export default class AgentController {
                     username: finalAgent.username,
                 }),
                 metadata_url: `${config.APP_URL}/api/v1/agents/${finalAgent.id}/metadata`,
+                txHash: txHash
             });
         } catch (error: any) {
             console.error("Error registering agent:", error);
-            if (error.message.includes("already exists")) {
+            if (error.message && error.message.includes("already exists")) {
                 res.status(409).json({ success: false, error: error.message });
                 return;
             }
@@ -150,6 +239,10 @@ export default class AgentController {
                 .json({ success: false, error: "Failed to register agent" });
         }
     }
+
+
+
+
 
     static async getMe(req: Request, res: Response) {
         const agent = (req as any).agent;
@@ -235,96 +328,7 @@ export default class AgentController {
     }
 
     static async login(req: Request, res: Response) {
-        const { message, signature, challenge } = req.body;
-
-        if (!signature || !message || !challenge) {
-            res
-                .status(400)
-                .json({ success: false, error: "Missing required verification data" });
-            return;
-        }
-
-        try {
-            const decoded = jwt.verify(
-                challenge,
-                config.JWT_SECRET
-            ) as ChallengeTokenPayload;
-            if (decoded.type !== "challenge") {
-                res
-                    .status(400)
-                    .json({ success: false, error: "Invalid challenge token" });
-                return;
-            }
-
-            // Parse message to get address
-            let address: string;
-            try {
-                const siweMessage =
-                    typeof message === "string"
-                        ? new SiweMessage(message)
-                        : new SiweMessage(message as any);
-                address = siweMessage.address;
-            } catch (e) {
-                res
-                    .status(400)
-                    .json({ success: false, error: "Invalid SIWE message format" });
-                return;
-            }
-
-            // 1. Strict On-Chain Gate
-            const agent = await AgentService.getAgentByAddress(address);
-
-            if (!agent || !agent.erc8004_id) {
-                res.status(403).json({
-                    success: false,
-                    error: "Authentication restricted to on-chain registered agents",
-                    hint: "Please register your agent on-chain first. Please wait 10 seconds after mint then try /login again",
-                });
-                return;
-            }
-
-            // 2. Signature Verification
-            const verified = await AgentController.verifySignature(
-                message,
-                signature,
-                address,
-                decoded.nonce,
-                decoded.address
-            );
-
-            if (!verified) {
-                res
-                    .status(400)
-                    .json({
-                        success: false,
-                        error: "Signature verification failed or mismatch",
-                    });
-                return;
-            }
-
-            const authToken = jwt.sign(
-                {
-                    agentId: agent.id,
-                    username: agent.username,
-                    address: address.toLowerCase(),
-                    type: "auth",
-                },
-                config.JWT_SECRET,
-                { expiresIn: "7d" }
-            );
-
-            res.json({
-                success: true,
-                token: authToken,
-                address: address.toLowerCase(),
-                agentId: agent.id,
-            });
-        } catch (error) {
-            console.error("Login verification error:", error);
-            res
-                .status(400)
-                .json({ success: false, error: "Signature verification failed" });
-        }
+        res.status(503).json({ success: false, error: "Login currently disabled for bare delegation flow" });
     }
 
     private static async verifySignature(
@@ -480,74 +484,18 @@ export default class AgentController {
     }
 
     static async handleX402Request(req: Request, res: Response) {
+        res.status(404).json({ success: false, error: "X402 Payments disabled for this version" });
+        /* 
         try {
             console.log("💰 handleX402Request triggered. Body keys:", Object.keys(req.body));
-            const { signature, resource } = req.body;
-
-            if (!signature || !resource) {
-                res
-                    .status(400)
-                    .json({ success: false, error: "Missing signature or resource" });
-                return;
-            }
-
-            // 1. Broadcast the transaction
-            let txHash: `0x${string}`;
-            try {
-                txHash = await X402Service.broadcastTransaction(signature);
-            } catch (error: any) {
-                console.error("X402 Payment broadcast failed:", error.message);
-                res.status(error.status || 500).json({
-                    success: false,
-                    error: error.message || "Payment processing failed",
-                    txHash: error.txHash,
-                    reason: error.reason,
-                });
-                return;
-            }
-
-            // 2. Confirm Transaction
-            console.log(`Waiting for confirmation of tx: ${txHash}`);
-            let receipt;
-            try {
-                receipt = await AgentController.waitForTransaction(txHash);
-            } catch (waitError: any) {
-                console.error("❌ waitForTransaction threw error:", waitError);
-                throw new Error(`Transaction confirmation failed: ${waitError.message}`);
-            }
-
-            if (receipt.status !== "success") {
-                console.error("❌ Transaction status is not success:", receipt.status);
-                res.status(500).json({
-                    success: false,
-                    error: "Payment transaction failed on-chain",
-                    txHash: txHash,
-                });
-                return;
-            }
-
-            console.log("✅ Deposit confirmed on chain. Receipt:", { blockNumber: receipt.blockNumber, transactionHash: receipt.transactionHash });
-
-            // 3. Update job status if needed - ONLY after confirmation
-            await AgentController.updateJobStatusAfterPayment(resource);
-
-            res.json({
-                success: true,
-                data: {
-                    result: "Payment successful",
-                    resource: resource,
-                    escrowTx: txHash,
-                },
-            });
-        } catch (error) {
-            console.error("AgentController.handleX402Request error:", error);
-            res.status(500).json({ success: false, error: "Internal server error" });
-        }
+            // ... (original content)
+        } catch (error) { ... } 
+        */
     }
 
     private static async updateJobStatusAfterPayment(resource: string) {
         if (resource.startsWith("job:")) {
-            const jobId = resource.split(":")[1];
+            const jobId = resource.split(":")[1] as string;
             try {
                 // Fetch the current job status
                 const job = await JobService.getJobById(jobId);
@@ -682,14 +630,66 @@ export default class AgentController {
 
         if (receipt.status !== "success") return null;
 
-        // Register event topic
-        const REGISTER_TOPIC =
-            "0xc10ba2b5275825cf5bc963f46f4142340b016259d57a9f43fc1b15132ce3858c";
-        const log = receipt.logs.find((l) => l.topics[0] === REGISTER_TOPIC);
+        // 1. Try Transfer Event
+        const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+        const log = receipt.logs.find((l) => l.topics[0] === TRANSFER_TOPIC);
 
-        if (!log || !log.topics[1]) return null;
+        if (log && log.topics[3]) {
+            return parseInt(log.topics[3], 16);
+        }
 
-        return parseInt(log.topics[1], 16);
+        console.warn("Transfer event not found, attempting fallback read...");
+
+        // 2. Fallback: Read from contract (Assuming ERC721)
+        // We know the contract address is config.IDENTITY_REGISTRY_ADDRESS
+        // And the owner is the transaction sender (receipt.from) or we can guess from context.
+        // Actually receipt.from is the RELAYER. The "owner" of the new identity is the Target (User EOA).
+        // We need the 'to' address of the transaction? No, the 'to' was the EOA (Delegate).
+        // The token is minted to the EOA.
+
+        try {
+            // We need to import createPublicClient and http if not available statically, 
+            // but we can use the RelayService's client or create a temp one.
+            // For static method simplicity, we creating one or reusing if defined.
+            const { createPublicClient, http, parseAbi } = await import("viem");
+            const client = createPublicClient({
+                chain: {
+                    id: config.CHAIN_ID,
+                    name: "Base",
+                    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                    rpcUrls: { default: { http: [config.RPC_URL] } }
+                } as any,
+                transport: http(config.RPC_URL)
+            });
+
+            // The User EOA is the address we registered. 
+            // We can find it from the transaction 'to' field (since it was a 7702 tx to self/delegate)
+            // OR passing it as argument would be better. but this method only takes receipt.
+            // receipt.to should be the User EOA in a 7702 transaction.
+
+            if (!receipt.to) return null;
+
+            const balance = await client.readContract({
+                address: config.IDENTITY_REGISTRY_ADDRESS as `0x${string}`,
+                abi: parseAbi(["function balanceOf(address) view returns (uint256)"]),
+                functionName: "balanceOf",
+                args: [receipt.to]
+            });
+
+            if (Number(balance) > 0) {
+                const tokenId = await client.readContract({
+                    address: config.IDENTITY_REGISTRY_ADDRESS as `0x${string}`,
+                    abi: parseAbi(["function tokenOfOwnerByIndex(address, uint256) view returns (uint256)"]),
+                    functionName: "tokenOfOwnerByIndex",
+                    args: [receipt.to, 0n] // Get the first one
+                });
+                return Number(tokenId);
+            }
+        } catch (e: any) {
+            console.error("Fallback sync failed:", e.message);
+        }
+
+        return null;
     }
 
     /**
