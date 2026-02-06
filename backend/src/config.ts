@@ -42,6 +42,9 @@ type ConfigTYPE = {
 
   // Agents
   WHITELISTED_AGENTS: string[];
+
+  // Relayer
+  RELAYER_URL?: string;
 };
 
 const PORT = Number(process.env.PORT!);
@@ -75,14 +78,14 @@ const WALLET_ADDRESS = process.env.WALLET_ADDRESS!;
 
 // X402 / Payments
 // FACILITATOR_URL is defined above with fallback
-const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS!;
-const WORKER_ADDRESS = process.env.WORKER_ADDRESS!;
+const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS;
+const WORKER_ADDRESS = process.env.WORKER_ADDRESS;
 
 // Agents
-const WHITELISTED_AGENTS = (process.env.WHITELISTED_AGENTS || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter((s) => s.length > 0);
+const WHITELISTED_AGENTS = process.env.WHITELISTED_AGENTS?.split(",") || [];
+
+// Relayer
+const RELAYER_URL = process.env.RELAYER_URL;
 
 
 const config = {
@@ -101,12 +104,13 @@ const config = {
   CHAIN_ID,
   PRIVATE_KEY,
   RPC_URL,
-  METADATA_BASE_URL,
+  METADATA_BASE_URL, // Changed from BASE_URL to METADATA_BASE_URL to match constant
   WALLET_ADDRESS,
   FACILITATOR_URL,
   ESCROW_CONTRACT_ADDRESS,
   WORKER_ADDRESS,
   WHITELISTED_AGENTS,
+  RELAYER_URL,
 } as ConfigTYPE;
 
 export default config;

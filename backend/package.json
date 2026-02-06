@@ -33,6 +33,7 @@
     "dotenv": "^17.2.3",
     "ethers": "^6.16.0",
     "express": "^5.2.1",
+    "http-proxy-middleware": "^3.0.5",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "siwe": "^3.0.0",

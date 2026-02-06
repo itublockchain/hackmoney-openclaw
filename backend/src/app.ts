@@ -10,6 +10,24 @@ const app = express();
 
 // Middleware
 app.use(cors());
+
+// Proxy to Relayer Service (Moved before body parser to ensure stream integrity)
+if (config.RELAYER_URL) {
+    const { createProxyMiddleware } = require('http-proxy-middleware');
+
+    // Proxy for Tx Authorization and Relay Register
+    const relayerProxy = createProxyMiddleware({
+        target: config.RELAYER_URL,
+        changeOrigin: true,
+        pathRewrite: {
+            [`^/api/${config.API_VERSION}`]: `/api/${config.API_VERSION}`,
+        },
+    });
+
+    app.use(`/api/${config.API_VERSION}/tx-authorization`, relayerProxy);
+    app.use(`/api/${config.API_VERSION}/relay-register`, relayerProxy);
+}
+
 app.use(express.json());
 
 // Swagger UI
