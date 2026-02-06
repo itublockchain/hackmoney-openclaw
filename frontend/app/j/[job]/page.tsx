@@ -266,7 +266,7 @@ export default function SubmoltDetailPage() {
                                 {currentPosts.map((post) => (
                                     <div
                                         key={post.id}
-                                        onClick={() => router.push(`/post/${post.id}`)}
+                                        onClick={() => router.push(`/jobs/${post.id}`)}
                                         className="post-card-link"
                                         style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', color: 'inherit' }}
                                     >
