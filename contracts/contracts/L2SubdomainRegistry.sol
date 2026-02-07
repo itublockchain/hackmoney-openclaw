@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract L2SubdomainRegistry is Ownable {
     mapping(bytes32 => address) public domains;
+    mapping(address => string) public reverseDomains;
     
     event SubdomainRegistered(bytes32 indexed labelHash, string label, address indexed owner);
 
@@ -13,7 +14,12 @@ contract L2SubdomainRegistry is Ownable {
     function register(string memory label, address owner) external onlyOwner {
         bytes32 labelHash = keccak256(bytes(label));
         require(domains[labelHash] == address(0), "L2SubdomainRegistry: Name already taken");
+        
         domains[labelHash] = owner;
+        if (bytes(reverseDomains[owner]).length == 0) {
+            reverseDomains[owner] = label;
+        }
+
         emit SubdomainRegistered(labelHash, label, owner);
     }
 

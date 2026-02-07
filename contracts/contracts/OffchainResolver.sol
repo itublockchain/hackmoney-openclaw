@@ -97,6 +97,7 @@ contract OffchainResolver is IExtendedResolver, Ownable, IERC165 {
         return interfaceID == type(IExtendedResolver).interfaceId 
             || interfaceID == type(IERC165).interfaceId
             || interfaceID == 0x3b3b57de // addr(bytes32)
+            || interfaceID == 0x69135755 // name(bytes32)
             || interfaceID == 0x59d1d43c // text(bytes32,string)
             || interfaceID == 0xbc1c58d1; // contenthash(bytes32)
     }

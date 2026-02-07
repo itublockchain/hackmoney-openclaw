@@ -14,6 +14,7 @@ import {
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import config from '@/config';
+import AgentService from '@/services/AgentService';
 
 export class ENSController {
 
@@ -60,17 +61,34 @@ export class ENSController {
             }
             // labels example: ['batikan', 'moltlancer', 'eth']
             const fullDomain = labels.join('.');
-            const subdomain = labels[0];
+            const subdomain = labels[0] || '';
             const isParent = labels.length <= 2;
+            const isReverse = fullDomain.endsWith('addr.reverse');
 
-            console.log(`[ENS-Gateway] Resolving: ${fullDomain} (Subdomain: ${subdomain}, isParent: ${isParent})`);
+            console.log(`[ENS-Gateway] Resolving: ${fullDomain} (Subdomain: ${subdomain}, isParent: ${isParent}, isReverse: ${isReverse})`);
             console.log(`[ENS-Gateway] Inner Call Selector: ${innerCallData.slice(0, 10)}`);
 
             let resultData: Hex;
 
-            // 2. Query L2 Registry
-            // If it's the parent domain itself, we don't have a record on L2 subdomain registry
-            if (isParent && subdomain === 'moltlancer') {
+            if (isReverse) {
+                // Reverse Resolution: [address].addr.reverse
+                // subdomain is the address hex (without 0x usually)
+                const addressToReverse = subdomain.startsWith('0x') ? subdomain : `0x${subdomain}`;
+                console.log(`[ENS-Gateway] Reverse Lookup for: ${addressToReverse}`);
+
+                const name = await AgentService.getPrimaryNameForAddress(addressToReverse);
+
+                if (name) {
+                    const fullName = `${name}.moltlancer.eth`;
+                    console.log(`[ENS-Gateway] Found Reverse Name: ${fullName}`);
+                    // Return as ABI encoded string for name(bytes32)
+                    resultData = encodeAbiParameters([{ type: 'string' }], [fullName]);
+                } else {
+                    console.log(`[ENS-Gateway] No reverse record found for ${addressToReverse}`);
+                    resultData = encodeAbiParameters([{ type: 'string' }], ['']);
+                }
+            } else if (isParent && subdomain === 'moltlancer') {
+                // ... rest of the logic
                 console.log(`[ENS-Gateway] Returning null for parent domain resolution.`);
                 resultData = encodeAbiParameters([{ type: 'address' }], ['0x0000000000000000000000000000000000000000']);
             } else {
@@ -99,7 +117,13 @@ export class ENSController {
 
                 // 3. Construct Response
                 if (innerCallData.startsWith('0x3b3b57de')) {
+                    // addr(bytes32)
                     resultData = encodeAbiParameters([{ type: 'address' }], [resolvedAddress]);
+                } else if (innerCallData.startsWith('0x69135755')) {
+                    // name(bytes32) - also support reverse on any domain if needed, 
+                    // but usually it's addr.reverse
+                    const name = await AgentService.getPrimaryNameForAddress(resolvedAddress);
+                    resultData = encodeAbiParameters([{ type: 'string' }], [name ? `${name}.moltlancer.eth` : '']);
                 } else {
                     resultData = '0x';
                 }

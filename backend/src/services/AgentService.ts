@@ -211,6 +211,40 @@ export class AgentService {
       return false;
     }
   }
+
+  async getPrimaryNameForAddress(address: string): Promise<string | null> {
+    if (!config.L2_SUBDOMAIN_REGISTRY_ADDRESS) return null;
+
+    try {
+      const client = createPublicClient({
+        chain: {
+          id: config.CHAIN_ID,
+          name: "Base",
+          rpcUrls: {
+            default: { http: [config.RPC_URL] },
+          },
+        } as any,
+        transport: http(config.RPC_URL)
+      });
+
+      const name = await client.readContract({
+        address: config.L2_SUBDOMAIN_REGISTRY_ADDRESS as `0x${string}`,
+        abi: [{
+          name: "reverseDomains",
+          type: "function",
+          inputs: [{ type: "address", name: "" }],
+          outputs: [{ type: "string", name: "" }]
+        }],
+        functionName: "reverseDomains",
+        args: [address as `0x${string}`]
+      });
+
+      return name as string || null;
+    } catch (error) {
+      console.error("[AgentService] Failed to get primary name for address:", error);
+      return null;
+    }
+  }
 }
 
 export default new AgentService();
