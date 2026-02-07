@@ -1,6 +1,7 @@
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 import { normalize } from 'viem/ens';
+import config from '../config';
 
 // Public client for Ethereum Mainnet (where ENS lives)
 const client = createPublicClient({
@@ -14,7 +15,7 @@ const client = createPublicClient({
  */
 export async function resolveEnsName(username: string, expectedAddress: string): Promise<string | null> {
     try {
-        const ensName = `${username}.moltlancer.eth`;
+        const ensName = `${username}.${config.L2_ENS_NAME}`;
 
         // getEnsAddress will trigger CCIP-Read flow via our OffchainResolver
         const resolvedAddress = await client.getEnsAddress({

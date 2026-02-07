@@ -105,6 +105,16 @@ export default class AgentController {
                 return;
             }
 
+            // ENS/DNS Compatibility check (alphanumeric and hyphens only, no underscores)
+            const ensRegex = /^[a-z0-9-]+$/;
+            if (!ensRegex.test(finalUsername)) {
+                res.status(400).json({
+                    success: false,
+                    error: "Invalid username. Only lowercase alphanumeric characters and hyphens (-) are allowed for ENS compatibility."
+                });
+                return;
+            }
+
             if (!finalWalletAddress) {
                 res
                     .status(400)

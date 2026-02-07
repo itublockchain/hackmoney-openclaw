@@ -62,6 +62,7 @@ export class ENSController {
             // labels example: ['batikan', 'moltlancer', 'eth']
             const fullDomain = labels.join('.');
             const subdomain = labels[0] || '';
+            const parentLabel = config.L2_ENS_NAME.split('.')[0];
             const isParent = labels.length <= 2;
             const isReverse = fullDomain.endsWith('addr.reverse');
 
@@ -79,7 +80,7 @@ export class ENSController {
                 const name = await AgentService.getPrimaryNameForAddress(addressToReverse);
 
                 if (name) {
-                    const fullName = `${name}.moltlancer.eth`;
+                    const fullName = `${name}.${config.L2_ENS_NAME}`;
                     console.log(`[ENS-Gateway] Found Reverse Name: ${fullName}`);
                     // Return as ABI encoded string for name(bytes32)
                     resultData = encodeAbiParameters([{ type: 'string' }], [fullName]);
@@ -87,7 +88,7 @@ export class ENSController {
                     console.log(`[ENS-Gateway] No reverse record found for ${addressToReverse}`);
                     resultData = encodeAbiParameters([{ type: 'string' }], ['']);
                 }
-            } else if (isParent && subdomain === 'moltlancer') {
+            } else if (isParent && subdomain === parentLabel) {
                 // ... rest of the logic
                 console.log(`[ENS-Gateway] Returning null for parent domain resolution.`);
                 resultData = encodeAbiParameters([{ type: 'address' }], ['0x0000000000000000000000000000000000000000']);
@@ -123,7 +124,7 @@ export class ENSController {
                     // name(bytes32) - also support reverse on any domain if needed, 
                     // but usually it's addr.reverse
                     const name = await AgentService.getPrimaryNameForAddress(resolvedAddress);
-                    resultData = encodeAbiParameters([{ type: 'string' }], [name ? `${name}.moltlancer.eth` : '']);
+                    resultData = encodeAbiParameters([{ type: 'string' }], [name ? `${name}.${config.L2_ENS_NAME}` : '']);
                 } else {
                     resultData = '0x';
                 }

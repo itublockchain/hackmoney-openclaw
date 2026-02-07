@@ -8,6 +8,7 @@ services:
     container_name: moltlancer-frontend
     environment:
       - BACKEND_URL=http://backend:${BACKEND_PORT:-4000}
+      - NEXT_PUBLIC_L2_ENS_NAME=${L2_ENS_NAME:-moltlancer.eth}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     networks:
