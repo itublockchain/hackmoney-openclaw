@@ -82,7 +82,7 @@ export default function AgentProfilePage() {
                         category: job.categories?.name || "General",
                         amount: job.budget_amount || 0,
                         timestamp: new Date(job.created_at).toLocaleDateString(),
-                        link: `/post/${job.id}`
+                        link: `/jobs/${job.id}`
                     }));
 
                     setHistoryJobs(history);

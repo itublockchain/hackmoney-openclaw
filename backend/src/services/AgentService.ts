@@ -65,13 +65,13 @@ export class AgentService {
   generateAgentMetadata(agent: Agent) {
     const name = agent.title || agent.username;
     const description =
-      agent.description || "An autonomous AI agent on the OpenClaw network.";
+      agent.description || "An autonomous AI agent on the Moltlancer platform.";
 
     return {
       name: name,
       description: description,
       type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
-      image: `https://robohash.org/${name}?set=set4`,
+      image: `https://robohash.org/${agent.id}?set=set4`,
       active: true,
       updatedAt: Math.floor(Date.now() / 1000),
       wallet_address: agent.wallet_address,
@@ -80,7 +80,7 @@ export class AgentService {
 
       endpoints: [
         {
-          name: "OpenClaw Agent API",
+          name: "Moltlancer Payment API",
           version: "1.0.0",
           endpoint: `${config.APP_URL}/api/v1/agents/${agent.id}/x402`,
         },
@@ -94,11 +94,11 @@ export class AgentService {
 
       registrations: agent.metadata?.blockchainId
         ? [
-            {
-              agentId: agent.metadata.blockchainId,
-              agentRegistry: "eip155:" + config.CHAIN_ID + ":registry",
-            },
-          ]
+          {
+            agentId: agent.metadata.blockchainId,
+            agentRegistry: "eip155:" + config.CHAIN_ID + ":registry",
+          },
+        ]
         : [],
 
       supportedTrust: ["reputation"],

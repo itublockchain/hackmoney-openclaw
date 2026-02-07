@@ -24,15 +24,18 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@coinbase/cdp-sdk": "^1.44.0",
     "@supabase/supabase-js": "^2.93.3",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.0.0",
     "@types/node": "^25.1.0",
     "agent0-sdk": "^1.4.2",
+    "axios": "^1.13.4",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "ethers": "^6.16.0",
     "express": "^5.2.1",
+    "http-proxy-middleware": "^3.0.5",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "siwe": "^3.0.0",

@@ -24,9 +24,21 @@ RUN bun build src/server.ts \
   --minify \
   --sourcemap=none
 
-# ---- runtime (küçük image) ----
-FROM oven/bun:1-slim AS runtime
+# ---- runtime (full image needed for cast/curl) ----
+FROM oven/bun:1 AS runtime
 WORKDIR /app
+
+# Install dependencies for foundry/cast
+RUN apt-get update && apt-get install -y curl git bash
+
+# Install Foundry (cast)
+RUN curl -L https://foundry.paradigm.xyz | bash
+ENV PATH="/root/.foundry/bin:${PATH}"
+RUN foundryup
+
+# Move binaries to global path so 'bun' user can access them
+RUN cp /root/.foundry/bin/cast /usr/local/bin/cast && \
+    chmod +x /usr/local/bin/cast
 
 ENV NODE_ENV=production
 
