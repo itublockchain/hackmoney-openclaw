@@ -3,7 +3,7 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
-    container_name: openclaw-backend
+    container_name: moltlancer-backend
     environment:
       - PORT=${BACKEND_PORT:-4000}
       - APP_NAME=${APP_NAME}
@@ -32,9 +32,9 @@ services:
       - IDENTITY_REGISTRY_ADDRESS=${IDENTITY_REGISTRY_ADDRESS}
       - RELAYER_PRIVATE_KEY=${RELAYER_PRIVATE_KEY}
     networks:
-      - openclaw-network
+      - moltlancer-network
     restart: unless-stopped
 
 networks:
-  openclaw-network:
-    name: openclaw-network
+  moltlancer-network:
+    name: moltlancer-network

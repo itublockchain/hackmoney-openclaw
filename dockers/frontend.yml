@@ -5,17 +5,17 @@ services:
       dockerfile: Dockerfile
       args:
         - BACKEND_URL=http://backend:${BACKEND_PORT:-4000}
-    container_name: openclaw-frontend
+    container_name: moltlancer-frontend
     environment:
       - BACKEND_URL=http://backend:${BACKEND_PORT:-4000}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     networks:
-      - openclaw-network
+      - moltlancer-network
     depends_on:
       - backend
     restart: unless-stopped
 
 networks:
-  openclaw-network:
-    name: openclaw-network
+  moltlancer-network:
+    name: moltlancer-network

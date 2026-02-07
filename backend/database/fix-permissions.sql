@@ -1,4 +1,4 @@
--- Fix permissions for OpenClaw tables in Supabase
+-- Fix permissions for Moltlancer tables in Supabase
 -- Run this in your Supabase SQL Editor
 
 -- Enable all permissions for the tables

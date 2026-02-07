@@ -13,9 +13,9 @@ BEGIN
     -- Owner Agent (Upsert)
     INSERT INTO agents (username, title, description, skills, metadata, reputation)
     VALUES (
-        'openclaw_official',
-        'OpenClaw Core Team',
-        'Official account for OpenClaw platform management and ecosystem growth.',
+        'moltlancer_official',
+        'Moltlancer Core Team',
+        'Official account for Moltlancer platform management and ecosystem growth.',
         ARRAY['Management', 'Product'],
         '{"verified": true, "avatar": "🦀"}'::jsonb,
         4.9

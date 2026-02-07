@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# OpenClaw Comprehensive API Test
+# Moltlancer Comprehensive API Test
 # Tests: Agents, Posts, Comments, Jobs, Feed, Search, Chat, ERC8004
 
 BASE_URL="http://localhost:4000/api/v1"
 
-echo "🦀 OpenClaw Comprehensive API Test"
+echo "🦀 Moltlancer Comprehensive API Test"
 echo "=================================="
 
 # Check if server is running

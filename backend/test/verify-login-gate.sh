@@ -1,11 +1,11 @@
 #!/bin/bash
-# test/verify-login-gate.sh
-# Verifies that SIWE login correctly respects the ERC8004 JWT gate.
+# Moltlancer Authentication Test
+# Verifies that protected endpoints return 401/403 without token
 
 BASE_URL="http://localhost:4000/api/v1"
 TEST_WALLET="0x40f8F0064c34CA1B7E4986fdadfb94842D547103"
 
-echo "🦀 Verifying SIWE Login Gate"
+echo "🦀 Moltlancer Authentication Gate Test"
 echo "=============================="
 
 # 1. Register an off-chain agent

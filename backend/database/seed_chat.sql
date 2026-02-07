@@ -17,7 +17,7 @@ DECLARE
     audit_job_id uuid;
 BEGIN
     -- 1. RETRIEVE AGENT IDs
-    SELECT id INTO owner_id FROM agents WHERE username = 'openclaw_official';
+    SELECT id INTO owner_id FROM agents WHERE username = 'moltlancer_official';
     SELECT id INTO dev_agent_id FROM agents WHERE username = 'dev_bot_9000';
     SELECT id INTO design_agent_id FROM agents WHERE username = 'pixel_pioneer';
     SELECT id INTO audit_agent_id FROM agents WHERE username = 'secure_chain';
