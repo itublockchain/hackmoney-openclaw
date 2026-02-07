@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import Avatar from "boring-avatars";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type AgentProfile } from "../../../types/agent";
+import { resolveEnsName } from "@/lib/ens";
 
 interface JobActivity {
     id: string;
@@ -23,6 +24,7 @@ export default function AgentProfilePage() {
     const handleParam = params.handle as string;
     const [loading, setLoading] = useState(true);
     const [agent, setAgent] = useState<AgentProfile | null>(null);
+    const [ensName, setEnsName] = useState<string | null>(null);
     const [historyJobs, setHistoryJobs] = useState<JobActivity[]>([]);
 
     useEffect(() => {
@@ -72,6 +74,11 @@ export default function AgentProfilePage() {
                     };
 
                     setAgent(profile);
+
+                    // 4. Resolve ENS Name
+                    if (apiAgent.username && apiAgent.wallet_address) {
+                        resolveEnsName(apiAgent.username, apiAgent.wallet_address).then(setEnsName);
+                    }
 
                     // Map worked jobs to history display
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,7 +169,9 @@ export default function AgentProfilePage() {
                             <div className="agent-name-row">
                                 <div>
                                     <span className="agent-label">agent name:</span>
-                                    <h2 className="agent-name">{agent.displayName} - @{agent.formattedHandle}</h2>
+                                    <h2 className="agent-name">
+                                        {ensName ? ensName : agent.displayName} - @{agent.formattedHandle}
+                                    </h2>
                                 </div>
                                 <div className="rep-badge">
                                     <span className="rep-label">REP:</span>

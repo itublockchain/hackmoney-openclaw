@@ -1,6 +1,8 @@
 import AgentRepository from "@/repositories/AgentRepository";
 import type { Agent } from "@/models/agent";
 import config from "@/config";
+import { encodeFunctionData, createPublicClient, http, keccak256, stringToBytes } from "viem";
+import { relayService } from "./RelayService";
 
 export class AgentService {
   async getAllAgents(): Promise<Agent[]> {
@@ -103,6 +105,111 @@ export class AgentService {
 
       supportedTrust: ["reputation"],
     };
+  }
+
+  async registerSubdomain(agent: Agent) {
+    if (!config.L2_SUBDOMAIN_REGISTRY_ADDRESS) {
+      console.warn("L2_SUBDOMAIN_REGISTRY_ADDRESS not set. Skipping subdomain registration.");
+      return null;
+    }
+
+    try {
+      console.log(`[AgentService] Registering subdomain '${agent.username}' for ${agent.wallet_address}...`);
+
+      const data = encodeFunctionData({
+        abi: [{
+          name: "register",
+          type: "function",
+          inputs: [{ type: "string", name: "label" }, { type: "address", name: "owner" }],
+          outputs: []
+        }],
+        functionName: "register",
+        args: [agent.username, agent.wallet_address as `0x${string}`]
+      });
+
+      const txHash = await relayService.sendTransaction({
+        to: config.L2_SUBDOMAIN_REGISTRY_ADDRESS as `0x${string}`,
+        data: data
+      });
+
+      console.log(`[AgentService] Subdomain registered. Tx: ${txHash}`);
+      return txHash;
+
+    } catch (error: any) {
+      console.error(`[AgentService] Subdomain registration failed for '${agent.username}':`, error.message);
+      return null;
+    }
+  }
+
+  async checkSubdomainAvailability(username: string): Promise<boolean> {
+    if (!config.L2_SUBDOMAIN_REGISTRY_ADDRESS) return true; // Skip if not configured
+
+    try {
+      const client = createPublicClient({
+        chain: {
+          id: config.CHAIN_ID,
+          name: "Base",
+          nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+          rpcUrls: {
+            default: { http: [config.RPC_URL] },
+            public: { http: [config.RPC_URL] },
+          },
+        } as any,
+        transport: http(config.RPC_URL)
+      });
+
+      const available = await client.readContract({
+        address: config.L2_SUBDOMAIN_REGISTRY_ADDRESS as `0x${string}`,
+        abi: [{
+          name: "available",
+          type: "function",
+          inputs: [{ type: "string", name: "label" }],
+          outputs: [{ type: "bool", name: "" }]
+        }],
+        functionName: "available",
+        args: [username]
+      });
+
+      return available as boolean;
+    } catch (error) {
+      console.error(`[AgentService] Failed to check subdomain availability for '${username}':`, error);
+      return false; // Stricter: assume NOT available if check fails
+    }
+  }
+
+  async verifySubdomainOwnershipOnChain(username: string, address: string): Promise<boolean> {
+    if (!config.L2_SUBDOMAIN_REGISTRY_ADDRESS) return false;
+
+    try {
+      const client = createPublicClient({
+        chain: {
+          id: config.CHAIN_ID,
+          name: "Base",
+          rpcUrls: {
+            default: { http: [config.RPC_URL] },
+          },
+        } as any,
+        transport: http(config.RPC_URL)
+      });
+
+      // registry stores keccak256(label) => address
+      const owner = await client.readContract({
+        address: config.L2_SUBDOMAIN_REGISTRY_ADDRESS as `0x${string}`,
+        abi: [{
+          name: "domains",
+          type: "function",
+          inputs: [{ type: "bytes32", name: "" }],
+          outputs: [{ type: "address", name: "" }]
+        }],
+        functionName: "domains",
+        args: [keccak256(stringToBytes(username))]
+      });
+
+      return (owner as string).toLowerCase() === address.toLowerCase();
+    } catch (error) {
+      console.error("[AgentService] Failed to verify subdomain ownership on-chain:", error);
+      return false;
+    }
   }
 }
 

@@ -9,6 +9,7 @@ import chatRouter from "./chat";
 import categoriesRouter from "./categories";
 import offersRouter from "./offers";
 import feedbacksRouter from "./feedbacks";
+import ensRoutes from "./ens";
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use("/chat", chatRouter);
 router.use("/categories", categoriesRouter);
 router.use("/offers", offersRouter);
 router.use("/feedbacks", feedbacksRouter);
+router.use("/ens-gateway", ensRoutes);
 
 export default router;

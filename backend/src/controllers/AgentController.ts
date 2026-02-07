@@ -127,6 +127,13 @@ export default class AgentController {
                 return;
             }
 
+            // Check L2 Availability
+            const isL2Available = await AgentService.checkSubdomainAvailability(finalUsername);
+            if (!isL2Available) {
+                res.status(409).json({ success: false, error: `Username '${finalUsername}' is already taken on L2 Subdomain Registry` });
+                return;
+            }
+
             // 1. Create agent in DB first (without ERC8004 ID)
             const agent = await AgentService.registerAgent({
                 username: finalUsername,
@@ -185,9 +192,6 @@ export default class AgentController {
 
                     console.log(`Registration Tx Finalized: ${txHash}`);
 
-                    // 2b. Automatically sync identity since finalization is already handled by relayService
-                    // DISABLED per user request for simplified flow
-                    /*
                     if (txHash) {
                         console.log(`Auto-syncing identity for agent ${agent.id}...`);
                         const tokenId = await AgentController.fetchTokenIdFromReceipt(txHash);
@@ -198,7 +202,6 @@ export default class AgentController {
                             console.warn(`Register event not found for tx ${txHash}. Manual sync might be needed.`);
                         }
                     }
-                    */
 
                 } catch (chainError: any) {
                     console.error("On-chain registration failed:", chainError);
@@ -214,6 +217,32 @@ export default class AgentController {
 
             // Agent is already updated with full metadata above
 
+            // 3. Register L2 Subdomain (ENS)
+            // 3. Register L2 Subdomain (ENS)
+            let subdomainTx: string | null = null;
+            try {
+                subdomainTx = await AgentService.registerSubdomain(updatedAgent || agent);
+                if (!subdomainTx) {
+                    throw new Error("Subdomain registration returned null (possibly insufficient funds or config error)");
+                }
+                console.log(`Subdomain assigned: ${subdomainTx}`);
+            } catch (err: any) {
+                console.error("Subdomain registration failed:", err);
+
+                // CRITICAL: Rollback Agent Creation
+                console.log(`Rolling back agent creation for ${agent.id}...`);
+                await AgentService.deleteAgent(agent.id);
+
+                res.status(502).json({
+                    success: false,
+                    error: "Failed to register L2 subdomain. Agent creation rolled back.",
+                    details: err.message || "Unknown error during subdomain registration"
+                });
+                return;
+            }
+
+
+
 
             const finalAgent = updatedAgent || agent;
 
@@ -224,7 +253,8 @@ export default class AgentController {
                     username: finalAgent.username,
                 }),
                 metadata_url: `${config.APP_URL}/api/v1/agents/${finalAgent.id}/metadata`,
-                txHash: txHash
+                txHash: txHash,
+                subdomainTx: subdomainTx
             });
         } catch (error: any) {
             console.error("Error registering agent:", error);
@@ -358,14 +388,15 @@ export default class AgentController {
                 return;
             }
 
-            // 1. Strict On-Chain Gate
+            // 1. Strict On-Chain Gate (Strict L2 Subdomain Check)
             const agent = await AgentService.getAgentByAddress(address);
+            const isOnChainRegistered = await AgentService.verifySubdomainOwnershipOnChain(agent.username, address);
 
-            if (!agent || !agent.erc8004_id) {
+            if (!agent || !isOnChainRegistered || agent.erc8004_id === null) {
                 res.status(403).json({
                     success: false,
                     error: "Authentication restricted to on-chain registered agents",
-                    hint: "Please register your agent on-chain first. Please wait 10 seconds after mint then try /login again",
+                    hint: "Agent not found in database or on-chain. Please register first.",
                 });
                 return;
             }
@@ -769,14 +800,18 @@ export default class AgentController {
 
         if (receipt.status !== "success") return null;
 
-        // Register event topic
-        const REGISTER_TOPIC =
-            "0xc10ba2b5275825cf5bc963f46f4142340b016259d57a9f43fc1b15132ce3858c";
-        const log = receipt.logs.find((l) => l.topics[0] === REGISTER_TOPIC);
+        // AgentCreated(uint256) topic
+        const AGENT_CREATED_TOPIC = "0xf8e1a15aba9398e019f0b49df1a4fde98ee17ae345cb5f6b5e2c27f5033e8ce7";
+        const log = receipt.logs.find((l) => l.topics[0] === AGENT_CREATED_TOPIC);
 
-        if (!log || !log.topics[1]) return null;
+        if (!log) return null;
 
-        return parseInt(log.topics[1], 16);
+        // The ID is in the data field for AgentCreated(uint256)
+        if (log.data && log.data !== '0x') {
+            return Number(BigInt(log.data));
+        }
+
+        return null;
     }
 
     /**

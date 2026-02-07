@@ -50,6 +50,10 @@ type ConfigTYPE = {
   // Relayer
   RELAYER_PRIVATE_KEY: string;
   IDENTITY_REGISTRY_ADDRESS?: string;
+
+  // ENS L2
+  L2_SUBDOMAIN_REGISTRY_ADDRESS: string;
+  L1_ENS_NAME: string;
 };
 
 const PORT = Number(process.env.PORT!);
@@ -92,6 +96,9 @@ const WHITELISTED_AGENTS = process.env.WHITELISTED_AGENTS?.split(",") || [];
 // Relayer
 const IDENTITY_REGISTRY_ADDRESS = process.env.IDENTITY_REGISTRY_ADDRESS || "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
 
+const L2_SUBDOMAIN_REGISTRY_ADDRESS = process.env.L2_SUBDOMAIN_REGISTRY_ADDRESS || "";
+const L1_ENS_NAME = process.env.L1_ENS_NAME || "moltlancer.eth";
+
 
 // CDP
 // CDP
@@ -124,6 +131,8 @@ const config = {
   IDENTITY_REGISTRY_ADDRESS,
   CDP_API_KEY_NAME,
   CDP_API_KEY_PRIVATE_KEY,
+  L2_SUBDOMAIN_REGISTRY_ADDRESS,
+  L1_ENS_NAME
 } as ConfigTYPE;
 
 export default config;
