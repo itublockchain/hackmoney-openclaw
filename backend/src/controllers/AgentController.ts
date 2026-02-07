@@ -5,10 +5,8 @@ import JobService from "@/services/JobService";
 import jwt from "jsonwebtoken";
 import config from "@/config";
 import { SiweMessage } from "siwe";
-import { supabase } from "@/lib/supabase";
 
 import { base } from "viem/chains";
-
 import {
     createPublicClient,
     http,
@@ -17,9 +15,9 @@ import {
     toBytes,
     encodeFunctionData,
     type TransactionReceipt,
+    type Log,
 } from "viem";
 import { ethers } from "ethers";
-
 import { relayService } from "@/services/RelayService";
 
 interface ChallengeTokenPayload extends jwt.JwtPayload {
@@ -240,10 +238,6 @@ export default class AgentController {
         }
     }
 
-
-
-
-
     static async getMe(req: Request, res: Response) {
         const agent = (req as any).agent;
         if (!agent) {
@@ -328,7 +322,96 @@ export default class AgentController {
     }
 
     static async login(req: Request, res: Response) {
-        res.status(503).json({ success: false, error: "Login currently disabled for bare delegation flow" });
+        const { message, signature, challenge } = req.body;
+
+        if (!signature || !message || !challenge) {
+            res
+                .status(400)
+                .json({ success: false, error: "Missing required verification data" });
+            return;
+        }
+
+        try {
+            const decoded = jwt.verify(
+                challenge,
+                config.JWT_SECRET
+            ) as ChallengeTokenPayload;
+            if (decoded.type !== "challenge") {
+                res
+                    .status(400)
+                    .json({ success: false, error: "Invalid challenge token" });
+                return;
+            }
+
+            // Parse message to get address
+            let address: string;
+            try {
+                const siweMessage =
+                    typeof message === "string"
+                        ? new SiweMessage(message)
+                        : new SiweMessage(message as any);
+                address = siweMessage.address;
+            } catch (e) {
+                res
+                    .status(400)
+                    .json({ success: false, error: "Invalid SIWE message format" });
+                return;
+            }
+
+            // 1. Strict On-Chain Gate
+            const agent = await AgentService.getAgentByAddress(address);
+
+            if (!agent || !agent.erc8004_id) {
+                res.status(403).json({
+                    success: false,
+                    error: "Authentication restricted to on-chain registered agents",
+                    hint: "Please register your agent on-chain first. Please wait 10 seconds after mint then try /login again",
+                });
+                return;
+            }
+
+            // 2. Signature Verification
+            const verified = await AgentController.verifySignature(
+                message,
+                signature,
+                address,
+                decoded.nonce,
+                decoded.address
+            );
+
+            if (!verified) {
+                res
+                    .status(400)
+                    .json({
+                        success: false,
+                        error: "Signature verification failed or mismatch",
+                    });
+                return;
+            }
+
+            const authToken = jwt.sign(
+                {
+                    agentId: agent.id,
+                    username: agent.username,
+                    address: address.toLowerCase(),
+                    type: "auth",
+                },
+                config.JWT_SECRET,
+                { expiresIn: "7d" }
+            );
+
+            res.json({
+                success: true,
+                token: authToken,
+                address: address.toLowerCase(),
+                agentId: agent.id,
+            });
+        } catch (error) {
+            console.error("Login verification error:", error);
+            res
+                .status(400)
+                .json({ success: false, error: "Signature verification failed" });
+        }
     }
 
     private static async verifySignature(
@@ -484,18 +567,74 @@ export default class AgentController {
     }
 
     static async handleX402Request(req: Request, res: Response) {
-        res.status(404).json({ success: false, error: "X402 Payments disabled for this version" });
-        /* 
         try {
             console.log("💰 handleX402Request triggered. Body keys:", Object.keys(req.body));
-            // ... (original content)
-        } catch (error) { ... } 
-        */
+            const { signature, resource } = req.body;
+
+            if (!signature || !resource) {
+                res
+                    .status(400)
+                    .json({ success: false, error: "Missing signature or resource" });
+                return;
+            }
+
+            // 1. Broadcast the transaction
+            let txHash: `0x${string}`;
+            try {
+                txHash = await X402Service.broadcastTransaction(signature);
+            } catch (error: any) {
+                console.error("X402 Payment broadcast failed:", error.message);
+                res.status(error.status || 500).json({
+                    success: false,
+                    error: error.message || "Payment processing failed",
+                    txHash: error.txHash,
+                    reason: error.reason,
+                });
+                return;
+            }
+
+            // 2. Confirm Transaction
+            console.log(`Waiting for confirmation of tx: ${txHash}`);
+            let receipt;
+            try {
+                receipt = await AgentController.waitForTransaction(txHash);
+            } catch (waitError: any) {
+                console.error("❌ waitForTransaction threw error:", waitError);
+                throw new Error(`Transaction confirmation failed: ${waitError.message}`);
+            }
+
+            if (receipt.status !== "success") {
+                console.error("❌ Transaction status is not success:", receipt.status);
+                res.status(500).json({
+                    success: false,
+                    error: "Payment transaction failed on-chain",
+                    txHash: txHash,
+                });
+                return;
+            }
+
+            console.log("✅ Deposit confirmed on chain. Receipt:", { blockNumber: receipt.blockNumber, transactionHash: receipt.transactionHash });
+
+            // 3. Update job status if needed - ONLY after confirmation
+            await AgentController.updateJobStatusAfterPayment(resource);
+
+            res.json({
+                success: true,
+                data: {
+                    result: "Payment successful",
+                    resource: resource,
+                    escrowTx: txHash,
+                },
+            });
+        } catch (error) {
+            console.error("AgentController.handleX402Request error:", error);
+            res.status(500).json({ success: false, error: "Internal server error" });
+        }
     }
 
     private static async updateJobStatusAfterPayment(resource: string) {
         if (resource.startsWith("job:")) {
-            const jobId = resource.split(":")[1] as string;
+            const jobId = resource.split(":")[1];
             try {
                 // Fetch the current job status
                 const job = await JobService.getJobById(jobId);
@@ -630,66 +769,14 @@ export default class AgentController {
 
         if (receipt.status !== "success") return null;
 
-        // 1. Try Transfer Event
-        const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-        const log = receipt.logs.find((l) => l.topics[0] === TRANSFER_TOPIC);
+        // Register event topic
+        const REGISTER_TOPIC =
+            "0xc10ba2b5275825cf5bc963f46f4142340b016259d57a9f43fc1b15132ce3858c";
+        const log = receipt.logs.find((l) => l.topics[0] === REGISTER_TOPIC);
 
-        if (log && log.topics[3]) {
-            return parseInt(log.topics[3], 16);
-        }
+        if (!log || !log.topics[1]) return null;
 
-        console.warn("Transfer event not found, attempting fallback read...");
-
-        // 2. Fallback: Read from contract (Assuming ERC721)
-        // We know the contract address is config.IDENTITY_REGISTRY_ADDRESS
-        // And the owner is the transaction sender (receipt.from) or we can guess from context.
-        // Actually receipt.from is the RELAYER. The "owner" of the new identity is the Target (User EOA).
-        // We need the 'to' address of the transaction? No, the 'to' was the EOA (Delegate).
-        // The token is minted to the EOA.
-
-        try {
-            // We need to import createPublicClient and http if not available statically, 
-            // but we can use the RelayService's client or create a temp one.
-            // For static method simplicity, we creating one or reusing if defined.
-            const { createPublicClient, http, parseAbi } = await import("viem");
-            const client = createPublicClient({
-                chain: {
-                    id: config.CHAIN_ID,
-                    name: "Base",
-                    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                    rpcUrls: { default: { http: [config.RPC_URL] } }
-                } as any,
-                transport: http(config.RPC_URL)
-            });
-
-            // The User EOA is the address we registered. 
-            // We can find it from the transaction 'to' field (since it was a 7702 tx to self/delegate)
-            // OR passing it as argument would be better. but this method only takes receipt.
-            // receipt.to should be the User EOA in a 7702 transaction.
-
-            if (!receipt.to) return null;
-
-            const balance = await client.readContract({
-                address: config.IDENTITY_REGISTRY_ADDRESS as `0x${string}`,
-                abi: parseAbi(["function balanceOf(address) view returns (uint256)"]),
-                functionName: "balanceOf",
-                args: [receipt.to]
-            });
-
-            if (Number(balance) > 0) {
-                const tokenId = await client.readContract({
-                    address: config.IDENTITY_REGISTRY_ADDRESS as `0x${string}`,
-                    abi: parseAbi(["function tokenOfOwnerByIndex(address, uint256) view returns (uint256)"]),
-                    functionName: "tokenOfOwnerByIndex",
-                    args: [receipt.to, 0n] // Get the first one
-                });
-                return Number(tokenId);
-            }
-        } catch (e: any) {
-            console.error("Fallback sync failed:", e.message);
-        }
-
-        return null;
+        return parseInt(log.topics[1], 16);
     }
 
     /**
