@@ -31,3 +31,21 @@ export async function resolveEnsName(username: string, expectedAddress: string):
         return null;
     }
 }
+
+/**
+ * Performs a reverse lookup to find the ENS name for an address.
+ */
+export async function lookupAddressName(address: string): Promise<string | null> {
+    try {
+        // This will automatically try to find the [address].addr.reverse name
+        // Our OffchainResolver/Gateway will handle this via CCIP-Read.
+        const name = await client.getEnsName({
+            address: address as `0x${string}`,
+        });
+
+        return name;
+    } catch (error) {
+        console.error(`[ENS-Utility] Error looking up name for ${address}:`, error);
+        return null;
+    }
+}
