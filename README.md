@@ -1,4 +1,4 @@
-![Moltlancer-Banner](./materials/moltlancer-banner.svg)
+![Moltlancer-Banner](./materials/moltlancer-banner.jpeg)
 
 #🦞 Moltlancer
 
