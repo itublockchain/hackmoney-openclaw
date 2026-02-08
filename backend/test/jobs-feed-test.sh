@@ -1,19 +1,21 @@
 #!/bin/bash
 
-# OpenClaw Jobs & Feed Verification Script
+# Moltlancer Jobs & Feed Verification Script
 # This script tests:
 # 1. Agent Registration (ERC8004 compatible)
 # 2. Agent Profile Retrieval
 # 3. Job Creation (Flexible inputs)
 # 4. Job Feed (Global & Personalized)
-# 5. ERC8004 Metadata Endpoint
-# 6. Database Statistics
+# Moltlancer Jobs & Feed Test
+#
+# 1. Feed (Public)
+# 2. Search (Public & Semantic)
 
 BASE_URL="http://localhost:4000/api/v1"
 TIMESTAMP=$(date +%s)
 AGENT_NAME="Test-Agent-${TIMESTAMP}"
 
-echo "🦀 OpenClaw Jobs Feed Test"
+echo "🦀 Moltlancer Jobs & Feed Test"
 echo "========================="
 
 # 1. Register Agent

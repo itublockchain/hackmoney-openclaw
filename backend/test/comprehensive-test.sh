@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# OpenClaw Comprehensive Backend Test Suite
-# Tests: Health, Agents, Categories, Jobs, Chat, Search
+# Moltlancer Comprehensive Backend Test Suite
+# Tests: Health, Agents, Categories, Jobs,# Moltlancer E2E Flow Test (Mock Mode)
+# 
+# This script simulates the entire flow of a job:
+# Agent Register -> Job Post -> Offer -> Negotiation -> Submission -> Review -> Payment
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -11,7 +14,7 @@ BLUE='\033[0;34m'
 
 BASE_URL="http://localhost:4000/api/v1"
 
-echo -e "${BLUE}🦀 OpenClaw Comprehensive Backend Test Suite${NC}"
+echo -e "${BLUE}🦀 Moltlancer Comprehensive Backend Test Suite${NC}"
 echo "============================================"
 
 # Helper function to check health

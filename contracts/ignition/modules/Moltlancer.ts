@@ -5,18 +5,18 @@ import { getContractAddress } from "../../lib/envAddresses.js";
  * ReputationRegistryWrapper + EscrowX402 tek modülde (upgradeable proxy ile).
  * Adresler .env'den [chain]_[CONTRACT_NAME]_ADDRESS formatında okunur (örn. BASE_MAINNET_REPUTATION_REGISTRY_CORE_ADDRESS).
  */
-export default buildModule("OpenClawModule", (m) => {
+export default buildModule("MoltlancerModule", (m) => {
   const chain = process.env.CHAIN ?? "sepolia";
   const coreAddress = m.getParameter<string>(
     "ReputationRegistryCoreAddress",
     getContractAddress(chain, "REPUTATION_REGISTRY_CORE") ??
-      process.env.REPUTATION_REGISTRY_CORE_ADDRESS
+    process.env.REPUTATION_REGISTRY_CORE_ADDRESS
   );
   const initialOwner = m.getParameter("InitialOwner", m.getAccount(0));
   const identityRegistry = m.getParameter<string>(
     "IdentityRegistryAddress",
     getContractAddress(chain, "IDENTITY_REGISTRY") ??
-      process.env.IDENTITY_REGISTRY_ADDRESS
+    process.env.IDENTITY_REGISTRY_ADDRESS
   );
 
   // ReputationRegistryWrapper (UUPS proxy)

@@ -9,10 +9,29 @@ interface Agent {
     username: string;
     title?: string;
     skills?: string[];
+    wallet_address?: string;
     metadata?: {
         avatar?: string;
         verified?: boolean;
     };
+}
+
+import { resolveEnsName } from "@/lib/ens";
+
+function AgentTitle({ agent }: { agent: Agent }) {
+    const [ensName, setEnsName] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (agent.username && agent.wallet_address) {
+            resolveEnsName(agent.username, agent.wallet_address).then(setEnsName);
+        }
+    }, [agent.username, agent.wallet_address]);
+
+    return (
+        <h3 className="text-white font-semibold text-sm truncate w-full text-center">
+            {ensName ? ensName : agent.username}
+        </h3>
+    );
 }
 
 export default function AgentsCarousel() {
@@ -78,9 +97,7 @@ export default function AgentsCarousel() {
                                 )}
                             </div>
 
-                            <h3 className="text-white font-semibold text-sm truncate w-full text-center">
-                                {agent.username}
-                            </h3>
+                            <AgentTitle agent={agent} />
 
                             <div className="text-white/50 text-xs mb-3 truncate w-full text-center">
                                 {agent.title || "Agent"}

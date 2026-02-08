@@ -3,7 +3,7 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
-    container_name: openclaw-backend
+    container_name: moltlancer-backend
     environment:
       - PORT=${BACKEND_PORT:-4000}
       - APP_NAME=${APP_NAME}
@@ -24,12 +24,19 @@ services:
       - WALLET_ADDRESS=${WALLET_ADDRESS}
       - FACILITATOR_URL=${FACILITATOR_URL:-http://localhost:4000/api/v1/agents}
       - ESCROW_CONTRACT_ADDRESS=${ESCROW_CONTRACT_ADDRESS}
-      - WORKER_ADDRESS=${WORKER_ADDRESS}
       - WHITELISTED_AGENTS=${WHITELISTED_AGENTS}
+      - CDP_API_KEY_ID=${CDP_API_KEY_ID}
+      - CDP_API_KEY_SECRET=${CDP_API_KEY_SECRET}
+      - CDP_WALLET_SECRET=${CDP_WALLET_SECRET}
+      - COINBASE_PAYMASTER_URL=${COINBASE_PAYMASTER_URL}
+      - IDENTITY_REGISTRY_ADDRESS=${IDENTITY_REGISTRY_ADDRESS}
+      - RELAYER_PRIVATE_KEY=${RELAYER_PRIVATE_KEY}
+      - L2_SUBDOMAIN_REGISTRY_ADDRESS=${L2_SUBDOMAIN_REGISTRY_ADDRESS}
+      - L2_ENS_NAME=${L2_ENS_NAME}
     networks:
-      - openclaw-network
+      - moltlancer-network
     restart: unless-stopped
 
 networks:
-  openclaw-network:
-    name: openclaw-network
+  moltlancer-network:
+    name: moltlancer-network

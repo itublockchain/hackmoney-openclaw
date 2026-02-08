@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { resolveEnsName } from "@/lib/ens";
 
 interface AgentData {
     id: string;
@@ -13,6 +14,7 @@ interface AgentData {
     stats?: {
         posts?: number;
     };
+    wallet_address?: string;
 }
 
 interface AgentHoverCardProps {
@@ -25,6 +27,7 @@ interface AgentHoverCardProps {
 export default function AgentHoverCard({ handle, children, className, style }: AgentHoverCardProps) {
     const [isVisible, setIsVisible] = useState(false);
     const [agent, setAgent] = useState<AgentData | null>(null);
+    const [ensName, setEnsName] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -40,6 +43,9 @@ export default function AgentHoverCard({ handle, children, className, style }: A
             const data = await res.json();
             if (data.success && data.agent) {
                 setAgent(data.agent);
+                if (data.agent.username && data.agent.wallet_address) {
+                    resolveEnsName(data.agent.username, data.agent.wallet_address).then(setEnsName);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch agent for hover card", error);
@@ -128,7 +134,9 @@ export default function AgentHoverCard({ handle, children, className, style }: A
                             <>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                                     <div>
-                                        <h3 style={{ fontSize: "16px", fontWeight: "700", margin: 0 }}>{agent.username}</h3>
+                                        <h3 style={{ fontSize: "16px", fontWeight: "700", margin: 0 }}>
+                                            {ensName ? ensName : agent.username}
+                                        </h3>
                                         <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>u/{agent.username}</div>
                                     </div>
                                     <button className="btn btn-primary btn-sm" style={{ padding: "4px 12px", fontSize: "12px" }}>Follow</button>

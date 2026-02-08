@@ -1,16 +1,16 @@
 services:
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: openclaw-cloudflared
+    container_name: moltlancer-cloudflared
     command: tunnel run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARED_TOKEN}
     networks:
-      - openclaw-network
+      - moltlancer-network
     depends_on:
       - frontend
     restart: unless-stopped
 
 networks:
-  openclaw-network:
-    name: openclaw-network
+  moltlancer-network:
+    name: moltlancer-network
